@@ -1,0 +1,134 @@
+{
+ "id": "mission_031",
+ "number": 31,
+ "title": "IRON WALL",
+ "type": "FIREWALL",
+ "difficulty": 3,
+ "chapter": 3,
+ "main": false,
+ "required_level": 19,
+ "min_reputation": 15,
+ "requires": [
+  "mission_008"
+ ],
+ "description": "KESTREL's firewall has five slots and seven symbols. Breach it and plant the signal.",
+ "goal": "breach the wall, upload payload.sig, disconnect.",
+ "reward": {
+  "xp": 2400,
+  "credits": 2800,
+  "reputation": 4,
+  "items": []
+ },
+ "hint": "Credentials are in ~/kestrel_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "kestrel"
+  ],
+  "files": {
+   "kestrel_access.txt": [
+    "KESTREL",
+    "user: pilot",
+    "pass: talon-5",
+    "task: IRON WALL"
+   ],
+   "payload.sig": [
+    "SIGNATURE: PAYLOAD",
+    "AUTHOR: VECTOR",
+    "[SIMULATED] 0x42 0x00 0xFF"
+   ]
+  }
+ },
+ "story_start": [
+  "VECTOR: \"Seven symbols, five slots. Use the feedback. Do not guess blindly.\"",
+  "VECTOR: \"Payload is ~/payload.sig. Upload, then leave.\""
+ ],
+ "story_end": [
+  "KESTREL didn't blink. Its drones are still sweeping the sky."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to KESTREL",
+   "event": "route",
+   "server": "kestrel"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to KESTREL",
+   "event": "connect",
+   "server": "kestrel",
+   "hint": "connect kestrel"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the KESTREL-PRIME firewall",
+   "event": "firewall",
+   "server": "kestrel",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as pilot",
+   "event": "login",
+   "server": "kestrel",
+   "user": "pilot",
+   "hint": "login pilot talon-5  (see ~/kestrel_access.txt)"
+  },
+  {
+   "id": "upload",
+   "text": "Upload payload.sig",
+   "event": "upload",
+   "server": "kestrel",
+   "file": "payload.sig",
+   "hint": "upload payload.sig"
+  },
+  {
+   "id": "leave",
+   "text": "Disconnect cleanly",
+   "event": "disconnect"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "kestrel",
+   "path": "/jobs/iron_wall/.stash_iron_wall",
+   "optional": true,
+   "bonus": {
+    "xp": 192,
+    "credits": 224
+   },
+   "hint": "ls -a /jobs/iron_wall"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 288,
+    "credits": 336
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 240,
+    "credits": 280
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Five slots of pure frustration, and you won. I owe you a coffee."
+   }
+  ],
+  "flags": {}
+ }
+}

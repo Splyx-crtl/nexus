@@ -1,0 +1,136 @@
+{
+ "id": "mission_041",
+ "number": 41,
+ "title": "RECOVERY PROTOCOL",
+ "type": "RECOVERY",
+ "difficulty": 4,
+ "chapter": 5,
+ "main": false,
+ "required_level": 38,
+ "min_reputation": 30,
+ "requires": [
+  "mission_014"
+ ],
+ "description": "SABLE holds the payment trail behind CERBERUS. Recover both ledgers and read the manifest.",
+ "goal": "download part_a.dat and part_b.dat, then read the manifest.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/sable_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "sable"
+  ],
+  "files": {
+   "sable_access.txt": [
+    "SABLE",
+    "user: teller",
+    "pass: gold-bar-3",
+    "task: RECOVERY PROTOCOL"
+   ]
+  }
+ },
+ "story_start": [
+  "GHOST: \"Follow the money. SABLE's deep vault has two ledgers: both go home with you.\""
+ ],
+ "story_end": [
+  "The money trail ends at one account: NEXUS-LEGAL. The account balance is zero. The movements aren't."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to SABLE",
+   "event": "route",
+   "server": "sable"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to SABLE",
+   "event": "connect",
+   "server": "sable",
+   "hint": "connect sable"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the SABLE-VAULT firewall",
+   "event": "firewall",
+   "server": "sable",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as teller",
+   "event": "login",
+   "server": "sable",
+   "user": "teller",
+   "hint": "login teller gold-bar-3  (see ~/sable_access.txt)"
+  },
+  {
+   "id": "manifest",
+   "text": "Read manifest.txt",
+   "event": "read",
+   "server": "sable",
+   "path": "/jobs/recovery_protocol/manifest.txt"
+  },
+  {
+   "id": "dl_a",
+   "text": "Download part_a.dat",
+   "event": "download",
+   "server": "sable",
+   "file": "part_a.dat"
+  },
+  {
+   "id": "dl_b",
+   "text": "Download part_b.dat",
+   "event": "download",
+   "server": "sable",
+   "file": "part_b.dat"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "sable",
+   "path": "/jobs/recovery_protocol/.stash_recovery_protocol",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/recovery_protocol"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 410 seconds",
+   "cond": "time_under",
+   "value": 410,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "Reset costs. They billed for erasing you. Three times. Gall of a bureaucrat."
+   }
+  ],
+  "flags": {}
+ }
+}

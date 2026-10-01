@@ -1,0 +1,133 @@
+{
+ "id": "mission_006",
+ "number": 6,
+ "title": "FIREWALL",
+ "difficulty": 3,
+ "description": "HELIX received the fourteen operator profiles. Break into its research wing and find out why.",
+ "goal": "Breach HELIX, decrypt Project LAZARUS and read it.",
+ "reward": {
+  "xp": 900,
+  "credits": 2200,
+  "reputation": 4
+ },
+ "requires": [
+  "mission_005"
+ ],
+ "hint": "firewall helix -> login tech_lee -> cd /research -> decrypt project_lazarus.enc",
+ "on_start": {
+  "discover": [
+   "helix"
+  ],
+  "files": {
+   "helix_access.txt": [
+    "FROM: VECTOR",
+    "pulled these from the relay logs, don't lose them:",
+    "HELIX   user: tech_lee   pass: lazarus-9"
+   ]
+  },
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Credentials for HELIX are in ~/helix_access.txt. Try not to set anything on fire."
+   }
+  ]
+ },
+ "story_start": [
+  "MIRA: \"HELIX is a bio-research facility. Its firewall has five slots instead of four. Take your time.\"",
+  "VECTOR: \"The memo you want is encrypted. Caesar-style. The shift is a lucky number.\""
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to HELIX",
+   "event": "connect",
+   "server": "helix"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the HELIX firewall",
+   "event": "firewall",
+   "server": "helix",
+   "hint": "Type: firewall. Five symbols this time."
+  },
+  {
+   "id": "login",
+   "text": "Log in as tech_lee",
+   "event": "login",
+   "server": "helix",
+   "user": "tech_lee",
+   "hint": "Credentials are in your local file helix_access.txt (cat it before you connect)."
+  },
+  {
+   "id": "decrypt",
+   "text": "Decrypt project_lazarus.enc",
+   "event": "decrypt",
+   "server": "helix",
+   "path": "/research/project_lazarus.enc",
+   "hint": "cd /research  then  decrypt project_lazarus.enc"
+  },
+  {
+   "id": "read",
+   "text": "Read the decrypted memo",
+   "event": "read",
+   "server": "helix",
+   "path": "/research/project_lazarus.enc",
+   "hint": "cat project_lazarus.enc"
+  },
+  {
+   "id": "frag",
+   "text": "Take fragment_h.bin",
+   "event": "download",
+   "server": "helix",
+   "file": "fragment_h.bin",
+   "optional": true,
+   "bonus": {
+    "xp": 100,
+    "credits": 250
+   }
+  }
+ ],
+ "story_end": [
+  "PROJECT LAZARUS: subjects are not dead. They are processes. And NEXUS was never merely watching."
+ ],
+ "on_complete": {
+  "trust": {
+   "zero": 3
+  },
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> you read it. now you know what 'on leave' means."
+   },
+   {
+    "from": "mira",
+    "text": "That memo... it can't be true. Please. Don't act on it before we talk."
+   }
+  ]
+ },
+ "type": "FIREWALL",
+ "chapter": 3,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 90,
+    "credits": 220
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 420 seconds",
+   "cond": "time_under",
+   "value": 420,
+   "reward": {
+    "xp": 72,
+    "credits": 176
+   }
+  }
+ ],
+ "required_level": 1
+}

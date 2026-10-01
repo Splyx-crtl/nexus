@@ -1,0 +1,177 @@
+{
+ "id": "mission_028",
+ "number": 28,
+ "title": "ORCHARD LEAK",
+ "type": "INVESTIGATION",
+ "difficulty": 3,
+ "chapter": 3,
+ "main": false,
+ "required_level": 15,
+ "min_reputation": 15,
+ "requires": [
+  "mission_006"
+ ],
+ "description": "ORCHARD's research logs leak coolant data that doesn't belong in a farm. Find who's leaking.",
+ "goal": "read both logs, decode the supplier id, read the report.",
+ "reward": {
+  "xp": 2400,
+  "credits": 2800,
+  "reputation": 4,
+  "items": []
+ },
+ "hint": "Credentials are in ~/orchard_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "orchard"
+  ],
+  "files": {
+   "orchard_access.txt": [
+    "ORCHARD",
+    "user: agro",
+    "pass: seed-bank",
+    "task: ORCHARD LEAK"
+   ]
+  }
+ },
+ "story_start": [
+  "MIRA: \"A farm shouldn't need cryogenics. Read the logs and find out who ordered them.\""
+ ],
+ "story_end": [
+  "A name in the purchase order. The same name that signed LAZARUS."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to ORCHARD",
+   "event": "connect",
+   "server": "orchard",
+   "hint": "connect orchard"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the ORCHARD-SHIELD firewall",
+   "event": "firewall",
+   "server": "orchard",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as agro",
+   "event": "login",
+   "server": "orchard",
+   "user": "agro",
+   "hint": "login agro seed-bank  (see ~/orchard_access.txt)"
+  },
+  {
+   "id": "log_a",
+   "text": "Read log_a.txt",
+   "event": "read",
+   "server": "orchard",
+   "path": "/jobs/orchard_leak/log_a.txt"
+  },
+  {
+   "id": "decode",
+   "text": "Decode the handler id",
+   "event": "decode",
+   "contains_result": "HELIX-SHELL",
+   "hint": "decode SEVMSVgtU0hFTEw="
+  },
+  {
+   "id": "log_b",
+   "text": "Read log_b.txt",
+   "event": "read",
+   "server": "orchard",
+   "path": "/jobs/orchard_leak/log_b.txt"
+  },
+  {
+   "id": "report",
+   "text": "Read the incident report",
+   "event": "read",
+   "server": "orchard",
+   "path": "/jobs/orchard_leak/report.txt"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "orchard",
+   "path": "/jobs/orchard_leak/.stash_orchard_leak",
+   "optional": true,
+   "bonus": {
+    "xp": 192,
+    "credits": 224
+   },
+   "hint": "ls -a /jobs/orchard_leak"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 288,
+    "credits": 336
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 410 seconds",
+   "cond": "time_under",
+   "value": 410,
+   "reward": {
+    "xp": 240,
+    "credits": 280
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "Cryo rooms and dormant subjects... I need to sit with that, {player}."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "orchard_leak",
+  "prompt": "How do you close the operation?",
+  "options": [
+   {
+    "id": "clean",
+    "text": "Wipe your traces carefully and leave no footprint.",
+    "trust": {
+     "mira": 3
+    },
+    "reward": {
+     "reputation": 2
+    },
+    "result": ""
+   },
+   {
+    "id": "loud",
+    "text": "Leave a calling card. Let them know someone was here.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": -2
+    },
+    "result": ""
+   },
+   {
+    "id": "share",
+    "text": "Share the file with every contact you trust.",
+    "trust": {
+     "ghost": 2,
+     "vector": 2
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

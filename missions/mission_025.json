@@ -1,0 +1,123 @@
+{
+ "id": "mission_025",
+ "number": 25,
+ "title": "LOST SHIPMENT",
+ "type": "RECOVERY",
+ "difficulty": 2,
+ "chapter": 2,
+ "main": false,
+ "required_level": 11,
+ "min_reputation": 0,
+ "requires": [
+  "mission_005"
+ ],
+ "description": "A shipment's data trail went dark. Recover both halves of the shipping record.",
+ "goal": "download part_a.dat and part_b.dat, then read the manifest.",
+ "reward": {
+  "xp": 1100,
+  "credits": 1300,
+  "reputation": 3,
+  "items": []
+ },
+ "hint": "Credentials are in ~/harbor_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "harbor"
+  ],
+  "files": {
+   "harbor_access.txt": [
+    "HARBOR",
+    "user: dockhand",
+    "pass: crane-41",
+    "task: LOST SHIPMENT"
+   ]
+  }
+ },
+ "story_start": [
+  "MIRA: \"The shipment itself is gone; the data isn't. Pull both halves from HARBOR.\""
+ ],
+ "story_end": [
+  "Both halves of the record match. The shipment was never lost — it was hidden."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to HARBOR",
+   "event": "connect",
+   "server": "harbor",
+   "hint": "connect harbor"
+  },
+  {
+   "id": "login",
+   "text": "Log in as dockhand",
+   "event": "login",
+   "server": "harbor",
+   "user": "dockhand",
+   "hint": "login dockhand crane-41  (see ~/harbor_access.txt)"
+  },
+  {
+   "id": "manifest",
+   "text": "Read manifest.txt",
+   "event": "read",
+   "server": "harbor",
+   "path": "/jobs/lost_shipment/manifest.txt"
+  },
+  {
+   "id": "dl_a",
+   "text": "Download part_a.dat",
+   "event": "download",
+   "server": "harbor",
+   "file": "part_a.dat"
+  },
+  {
+   "id": "dl_b",
+   "text": "Download part_b.dat",
+   "event": "download",
+   "server": "harbor",
+   "file": "part_b.dat"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "harbor",
+   "path": "/jobs/lost_shipment/.stash_lost_shipment",
+   "optional": true,
+   "bonus": {
+    "xp": 88,
+    "credits": 104
+   },
+   "hint": "ls -a /jobs/lost_shipment"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 132,
+    "credits": 156
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 330 seconds",
+   "cond": "time_under",
+   "value": 330,
+   "reward": {
+    "xp": 110,
+    "credits": 130
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "Fourteen tonnes of 'agricultural equipment'. I don't love that number either."
+   }
+  ],
+  "flags": {}
+ }
+}

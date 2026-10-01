@@ -1,0 +1,133 @@
+{
+ "id": "mission_044",
+ "number": 44,
+ "title": "SPECTER I: THE TOKEN",
+ "type": "INFILTRATION",
+ "difficulty": 4,
+ "chapter": 3,
+ "main": false,
+ "required_level": 30,
+ "min_reputation": 20,
+ "requires": [
+  "mission_009"
+ ],
+ "description": "GHOST's private stage opens only to Ghost Token holders. Step on, and take what's behind the curtain.",
+ "goal": "pull curtain.dat from the main stage.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/shadow_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "shadow"
+  ],
+  "files": {
+   "shadow_access.txt": [
+    "SHADOW",
+    "user: specter",
+    "pass: ghost-key",
+    "task: SPECTER I: THE TOKEN"
+   ]
+  }
+ },
+ "story_start": [
+  "GHOST: \"A token like that is a promise. Come onto SHADOW. Don't touch anything you can't carry.\""
+ ],
+ "story_end": [
+  "The stage is real. So is the audience."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to SHADOW",
+   "event": "route",
+   "server": "shadow"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to SHADOW",
+   "event": "connect",
+   "server": "shadow",
+   "hint": "connect shadow"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the SHADOW-VEIL firewall",
+   "event": "firewall",
+   "server": "shadow",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as specter",
+   "event": "login",
+   "server": "shadow",
+   "user": "specter",
+   "hint": "login specter ghost-key  (see ~/shadow_access.txt)"
+  },
+  {
+   "id": "read",
+   "text": "Read curtain.dat",
+   "event": "read",
+   "server": "shadow",
+   "path": "/jobs/specter_i/curtain.dat"
+  },
+  {
+   "id": "dl",
+   "text": "Download curtain.dat",
+   "event": "download",
+   "server": "shadow",
+   "file": "curtain.dat"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "shadow",
+   "path": "/jobs/specter_i/.stash_specter_i",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/specter_i"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "Welcome to the stage, kid. The next act is tougher."
+   }
+  ],
+  "flags": {}
+ },
+ "requires_items": [
+  "ghost_token"
+ ],
+ "secret": true
+}

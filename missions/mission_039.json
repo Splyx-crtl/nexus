@@ -1,0 +1,173 @@
+{
+ "id": "mission_039",
+ "number": 39,
+ "title": "ORACLE RUN",
+ "type": "DECRYPTION",
+ "difficulty": 4,
+ "chapter": 5,
+ "main": false,
+ "required_level": 34,
+ "min_reputation": 30,
+ "requires": [
+  "mission_013"
+ ],
+ "description": "An entangled cipher guards ATLAS' prediction model. Only a Quantum Decryptor can touch it.",
+ "goal": "decrypt oracle.enc using the Quantum Decryptor.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/atlas_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "atlas"
+  ],
+  "files": {
+   "atlas_access.txt": [
+    "ATLAS",
+    "user: surveyor",
+    "pass: true-north",
+    "task: ORACLE RUN"
+   ]
+  }
+ },
+ "story_start": [
+  "VECTOR: \"This cipher is entangled. Without a Quantum Decryptor you're just wasting electricity.\""
+ ],
+ "story_end": [
+  "The prediction model has one forecast: your next move. It was right."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to ATLAS",
+   "event": "route",
+   "server": "atlas"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to ATLAS",
+   "event": "connect",
+   "server": "atlas",
+   "hint": "connect atlas"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the ATLAS-AEGIS firewall",
+   "event": "firewall",
+   "server": "atlas",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as surveyor",
+   "event": "login",
+   "server": "atlas",
+   "user": "surveyor",
+   "hint": "login surveyor true-north  (see ~/atlas_access.txt)"
+  },
+  {
+   "id": "decrypt",
+   "text": "Decrypt oracle.enc",
+   "event": "decrypt",
+   "server": "atlas",
+   "path": "/jobs/oracle_run/oracle.enc",
+   "hint": "decrypt /jobs/oracle_run/oracle.enc"
+  },
+  {
+   "id": "read",
+   "text": "Read the decrypted oracle.enc",
+   "event": "read",
+   "server": "atlas",
+   "path": "/jobs/oracle_run/oracle.enc"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "atlas",
+   "path": "/jobs/oracle_run/.stash_oracle_run",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/oracle_run"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Told you it was entangled. Now it's just humbled."
+   }
+  ],
+  "flags": {}
+ },
+ "requires_items": [
+  "quantum_decryptor"
+ ],
+ "secret": false,
+ "choice": {
+  "key": "oracle_run",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

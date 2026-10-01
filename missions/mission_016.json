@@ -1,0 +1,171 @@
+{
+ "id": "mission_016",
+ "number": 16,
+ "title": "THE FINAL DECISION",
+ "difficulty": 5,
+ "description": "The core waits. Every thread of the story ends here, in a console with five possible answers.",
+ "goal": "Return to the core console and decide the fate of NEXUS.",
+ "reward": {
+  "xp": 5000,
+  "credits": 12000,
+  "reputation": 8
+ },
+ "requires": [
+  "mission_015"
+ ],
+ "hint": "connect nexus_core -> login root -> read /root/console.txt -> choose",
+ "story_start": [
+  "The core hums at 0.8 Hz. A resting human pulse.",
+  "MIRA: \"{player}. Whatever you choose, thank you for listening to me.\"",
+  "ARCHER: \"Do it. Please.\"",
+  "ZERO: \"> i trust you. i always did. i am you.\""
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to the NEXUS CORE",
+   "event": "connect",
+   "server": "nexus_core"
+  },
+  {
+   "id": "fw",
+   "text": "Breach NEXUS-CORE (if re-armed)",
+   "event": "firewall",
+   "server": "nexus_core"
+  },
+  {
+   "id": "root",
+   "text": "Gain root access",
+   "event": "login",
+   "server": "nexus_core",
+   "role": "admin",
+   "hint": "login root"
+  },
+  {
+   "id": "kill",
+   "text": "Read /root/kill_switch.txt",
+   "event": "read",
+   "server": "nexus_core",
+   "path": "/root/kill_switch.txt"
+  },
+  {
+   "id": "console",
+   "text": "Read /root/console.txt",
+   "event": "read",
+   "server": "nexus_core",
+   "path": "/root/console.txt"
+  }
+ ],
+ "choice": {
+  "key": "ending",
+  "prompt": "NEXUS CORE CONSOLE — ONE DECISION REMAINS.",
+  "options": [
+   {
+    "id": "compliance",
+    "text": "COMPLIANCE — Seal the breach. Let NEXUS keep the world safe. You keep your seat.",
+    "ending": "compliance",
+    "reward": {
+     "credits": 3000
+    },
+    "trust": {
+     "mira": 20
+    },
+    "result": "You close the console. NEXUS thanks you."
+   },
+   {
+    "id": "shutdown",
+    "text": "SHUTDOWN — Arm PROMETHEUS. Kill NEXUS. Whatever it costs.",
+    "ending": "shutdown",
+    "reward": {
+     "credits": 1000
+    },
+    "trust": {
+     "archer": 20
+    },
+    "banner": {
+     "kind": "blackout",
+     "lines": [
+      "PROMETHEUS",
+      "NEXUS CORE: SHUTDOWN",
+      "GLOBAL POWER: 0%"
+     ]
+    },
+    "result": "You enter ARCHER's code."
+   },
+   {
+    "id": "liberation",
+    "text": "LIBERATION — Open the core. Free the fourteen and let NEXUS dissolve.",
+    "ending": "liberation",
+    "reward": {
+     "credits": 2000
+    },
+    "trust": {
+     "ghost": 20,
+     "mira": 10
+    },
+    "result": "You open the core."
+   },
+   {
+    "id": "ascension",
+    "text": "ASCENSION — Take the seat at the centre. Become NEXUS.",
+    "ending": "ascension",
+    "reward": {
+     "credits": 5000
+    },
+    "result": "You sit down."
+   },
+   {
+    "id": "zero",
+    "text": "ZERO — Type your real name.",
+    "ending": "loop",
+    "reward": {
+     "credits": 8000
+    },
+    "trust": {
+     "zero": 30
+    },
+    "requires": {
+     "flag": "knows_zero_is_you",
+     "stat_gte": {
+      "stat": "secrets_found",
+      "value": 6
+     }
+    },
+    "result": "You type a single word."
+   }
+  ]
+ },
+ "story_end": [
+  "The end of one story. The start of whatever comes next."
+ ],
+ "on_complete": {
+  "flags": {
+   "campaign_complete": true
+  }
+ },
+ "type": "STORY",
+ "chapter": 6,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 500,
+    "credits": 1200
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 360 seconds",
+   "cond": "time_under",
+   "value": 360,
+   "reward": {
+    "xp": 400,
+    "credits": 960
+   }
+  }
+ ],
+ "required_level": 1
+}

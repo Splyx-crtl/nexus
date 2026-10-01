@@ -1,0 +1,176 @@
+{
+ "id": "mission_035",
+ "number": 35,
+ "title": "SURVEY ZERO",
+ "type": "INTELLIGENCE",
+ "difficulty": 4,
+ "chapter": 4,
+ "main": false,
+ "required_level": 26,
+ "min_reputation": 30,
+ "requires": [
+  "mission_011"
+ ],
+ "description": "Ask ZERO about the survey, read the layer index and decode the coordinates.",
+ "goal": "ask ZERO who he is, read the layer index, decode the coordinates.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/atlas_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "atlas"
+  ],
+  "files": {
+   "atlas_access.txt": [
+    "ATLAS",
+    "user: surveyor",
+    "pass: true-north",
+    "task: SURVEY ZERO"
+   ]
+  }
+ },
+ "story_start": [
+  "ZERO: \"> the survey knows where i hide. read it. ask me anything. i'll tell you what i can.\""
+ ],
+ "story_end": [
+  "The coordinates point to a place called WREN. A hospital. Of course."
+ ],
+ "objectives": [
+  {
+   "id": "topic",
+   "text": "Ask ZERO about it ('msg zero who')",
+   "event": "topic",
+   "contact": "zero",
+   "topic": "who",
+   "hint": "msg zero who"
+  },
+  {
+   "id": "route",
+   "text": "Build a relay route to ATLAS",
+   "event": "route",
+   "server": "atlas"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to ATLAS",
+   "event": "connect",
+   "server": "atlas",
+   "hint": "connect atlas"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the ATLAS-AEGIS firewall",
+   "event": "firewall",
+   "server": "atlas",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as surveyor",
+   "event": "login",
+   "server": "atlas",
+   "user": "surveyor",
+   "hint": "login surveyor true-north  (see ~/atlas_access.txt)"
+  },
+  {
+   "id": "notes",
+   "text": "Read notes.txt",
+   "event": "read",
+   "server": "atlas",
+   "path": "/jobs/survey_zero/notes.txt"
+  },
+  {
+   "id": "decode",
+   "text": "Decode the hidden line",
+   "event": "decode",
+   "contains_result": "WREN WARD",
+   "hint": "decode V1JFTiBXQVJE"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "atlas",
+   "path": "/jobs/survey_zero/.stash_survey_zero",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/survey_zero"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 410 seconds",
+   "cond": "time_under",
+   "value": 410,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> wren is where they put the ones who remembered. be gentle with the quiet ward."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "survey_zero",
+  "prompt": "Someone asks who authorised this job...",
+  "options": [
+   {
+    "id": "mira",
+    "text": "'MIRA did.' Hand the responsibility to your handler.",
+    "trust": {
+     "mira": -2
+    },
+    "reward": {
+     "reputation": 0
+    },
+    "result": ""
+   },
+   {
+    "id": "self",
+    "text": "'I did.' Take the credit and the risk.",
+    "trust": {
+     "archer": 2
+    },
+    "reward": {
+     "reputation": 2
+    },
+    "result": ""
+   },
+   {
+    "id": "zero",
+    "text": "'A friend.' Say nothing more.",
+    "trust": {
+     "zero": 4
+    },
+    "reward": {
+     "reputation": 0
+    },
+    "result": ""
+   }
+  ]
+ }
+}

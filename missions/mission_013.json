@@ -1,0 +1,110 @@
+{
+ "id": "mission_013",
+ "number": 13,
+ "title": "CERBERUS PROTOCOL",
+ "difficulty": 5,
+ "description": "The final doors of NEXUS answer only to a Quantum Key. Forge one from your data fragments and read the Cerberus containment protocol.",
+ "goal": "Forge the Quantum Key, then read the protocol hidden on CERBERUS.",
+ "reward": {
+  "xp": 2400,
+  "credits": 5500,
+  "reputation": 4
+ },
+ "requires": [
+  "mission_012"
+ ],
+ "hint": "use data_fragment (needs 4)  ->  connect cerberus  ->  login protocol",
+ "on_start": {
+  "ensure_items": {
+   "data_fragment": 4
+  }
+ },
+ "story_start": [
+  "VECTOR: \"Fuse four fragments and you get a key that exists in several states at once. The core can't tell it from its own.\"",
+  "The CERBERUS console is waiting for a user named 'protocol'. It needs no password. Just the key."
+ ],
+ "objectives": [
+  {
+   "id": "key",
+   "text": "Forge the Quantum Key",
+   "event": "item",
+   "item": "quantum_key",
+   "hint": "Type: use data_fragment (you need 4 fragments)."
+  },
+  {
+   "id": "connect",
+   "text": "Connect to CERBERUS",
+   "event": "connect",
+   "server": "cerberus"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the CERBERUS-3 firewall (if re-armed)",
+   "event": "firewall",
+   "server": "cerberus"
+  },
+  {
+   "id": "login",
+   "text": "Log in as 'protocol'",
+   "event": "login",
+   "server": "cerberus",
+   "user": "protocol",
+   "hint": "login protocol — the Quantum Key is the credential."
+  },
+  {
+   "id": "read",
+   "text": "Read the Cerberus protocol",
+   "event": "read",
+   "server": "cerberus",
+   "path": "/protocol/cerberus_protocol.txt",
+   "hint": "cd /protocol then cat cerberus_protocol.txt"
+  },
+  {
+   "id": "list",
+   "text": "Download containment_list.txt",
+   "event": "download",
+   "server": "cerberus",
+   "file": "containment_list.txt"
+  }
+ ],
+ "story_end": [
+  "CERBERUS is not a power grid. It is a leash. And your name is on its list."
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "archer",
+    "text": "AEGIS. Now. Alone. Credentials attached. I have something you need to see. — ARCHER"
+   },
+   {
+    "from": "mira",
+    "text": "Please don't go. I'm begging you. He doesn't understand us."
+   }
+  ]
+ },
+ "type": "RECOVERY",
+ "chapter": 5,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 240,
+    "credits": 550
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 420 seconds",
+   "cond": "time_under",
+   "value": 420,
+   "reward": {
+    "xp": 192,
+    "credits": 440
+   }
+  }
+ ],
+ "required_level": 1
+}

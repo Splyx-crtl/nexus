@@ -1,0 +1,182 @@
+{
+ "id": "mission_033",
+ "number": 33,
+ "title": "SHADOW LEDGER",
+ "type": "INVESTIGATION",
+ "difficulty": 3,
+ "chapter": 4,
+ "main": false,
+ "required_level": 22,
+ "min_reputation": 15,
+ "requires": [
+  "mission_010"
+ ],
+ "description": "PIKE keeps a ledger of closed cases that link back to NEXUS. Read between the lines.",
+ "goal": "read the case notes, decode the operator id, read the verdict.",
+ "reward": {
+  "xp": 2400,
+  "credits": 2800,
+  "reputation": 4,
+  "items": []
+ },
+ "hint": "Credentials are in ~/pike_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "pike"
+  ],
+  "files": {
+   "pike_access.txt": [
+    "PIKE",
+    "user: clerk",
+    "pass: case-closed",
+    "task: SHADOW LEDGER"
+   ]
+  }
+ },
+ "story_start": [
+  "GHOST: \"A ledger of cases NEXUS wanted closed. Read between the lines.\""
+ ],
+ "story_end": [
+  "Every closed case ends with the same operator ID. It isn't yours. Yet."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to PIKE",
+   "event": "route",
+   "server": "pike"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to PIKE",
+   "event": "connect",
+   "server": "pike",
+   "hint": "connect pike"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the PIKE-LOCK firewall",
+   "event": "firewall",
+   "server": "pike",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as clerk",
+   "event": "login",
+   "server": "pike",
+   "user": "clerk",
+   "hint": "login clerk case-closed  (see ~/pike_access.txt)"
+  },
+  {
+   "id": "log_a",
+   "text": "Read log_a.txt",
+   "event": "read",
+   "server": "pike",
+   "path": "/jobs/shadow_ledger/log_a.txt"
+  },
+  {
+   "id": "decode",
+   "text": "Decode the handler id",
+   "event": "decode",
+   "contains_result": "OP-000",
+   "hint": "decode T1AtMDAw"
+  },
+  {
+   "id": "log_b",
+   "text": "Read log_b.txt",
+   "event": "read",
+   "server": "pike",
+   "path": "/jobs/shadow_ledger/log_b.txt"
+  },
+  {
+   "id": "report",
+   "text": "Read the incident report",
+   "event": "read",
+   "server": "pike",
+   "path": "/jobs/shadow_ledger/report.txt"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "pike",
+   "path": "/jobs/shadow_ledger/.stash_shadow_ledger",
+   "optional": true,
+   "bonus": {
+    "xp": 192,
+    "credits": 224
+   },
+   "hint": "ls -a /jobs/shadow_ledger"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 288,
+    "credits": 336
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 450 seconds",
+   "cond": "time_under",
+   "value": 450,
+   "reward": {
+    "xp": 240,
+    "credits": 280
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "OP-000 again. Your name keeps showing up in places you've never been, {player}."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "shadow_ledger",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

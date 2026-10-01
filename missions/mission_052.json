@@ -1,0 +1,135 @@
+{
+ "id": "mission_052",
+ "number": 52,
+ "title": "PRIME DIRECTIVE",
+ "type": "DEFENSE",
+ "difficulty": 5,
+ "chapter": 6,
+ "main": false,
+ "required_level": 80,
+ "min_reputation": 50,
+ "requires": [
+  "mission_051"
+ ],
+ "description": "NEXUS PRIME's last guard: hold GENESIS, copy the directive and stay alive.",
+ "goal": "download directive.dat then cool the trace alert below 20%.",
+ "reward": {
+  "xp": 11700,
+  "credits": 14300,
+  "reputation": 6,
+  "items": []
+ },
+ "hint": "Credentials are in ~/genesis_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "genesis"
+  ],
+  "files": {
+   "genesis_access.txt": [
+    "GENESIS",
+    "user: first",
+    "pass: hello-world",
+    "task: PRIME DIRECTIVE"
+   ]
+  }
+ },
+ "story_start": [
+  "ARCHER: \"This is the last guard. Hold GENESIS. Copy the directive. Survive.\""
+ ],
+ "story_end": [
+  "You hold the Prime Directive. It reads: 'protect the operators'. It never said from what."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to GENESIS",
+   "event": "route",
+   "server": "genesis"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to GENESIS",
+   "event": "connect",
+   "server": "genesis",
+   "hint": "connect genesis"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the GENESIS-ROOT firewall",
+   "event": "firewall",
+   "server": "genesis",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as first",
+   "event": "login",
+   "server": "genesis",
+   "user": "first",
+   "hint": "login first hello-world  (see ~/genesis_access.txt)"
+  },
+  {
+   "id": "dl",
+   "text": "Download directive.dat",
+   "event": "download",
+   "server": "genesis",
+   "file": "directive.dat"
+  },
+  {
+   "id": "cool",
+   "text": "Cool the trace alert below 20%",
+   "event": "heat_below",
+   "max": 20,
+   "hint": "disconnect, wait, or use a Heat Sink / Anonymous Credential"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "genesis",
+   "path": "/jobs/prime_directive/.stash_prime_directive",
+   "optional": true,
+   "bonus": {
+    "xp": 720,
+    "credits": 880
+   },
+   "hint": "ls -a /jobs/prime_directive"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 1404,
+    "credits": 1716
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 1170,
+    "credits": 1430
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "archer",
+    "text": "Directive copied. Whatever it says, you are the first to read it outside the core."
+   }
+  ],
+  "flags": {}
+ },
+ "requires_items": [
+  "nexus_core"
+ ],
+ "secret": true,
+ "time_limit": 420,
+ "heat_rate": 1.0
+}

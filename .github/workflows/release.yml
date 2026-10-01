@@ -1,0 +1,49 @@
+name: Build release
+
+# Push a tag like v2.2.0 and GitHub builds the Windows installer and attaches it to a release.
+# The game's update check then offers it to every installed copy.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          .venv\Scripts\python -m pip install --upgrade pip
+          .venv\Scripts\python -m pip install -r requirements-build.txt
+      - name: Run tests
+        run: .venv\Scripts\python -m unittest discover -s tests -t .
+        env:
+          QT_QPA_PLATFORM: offscreen
+          NEXUS_NO_AUDIO: "1"
+      - name: Check tag matches nexus/version.py
+        shell: pwsh
+        run: |
+          $v = (Select-String -Path nexus\version.py -Pattern '^VERSION\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          if ("v$v" -ne "${{ github.ref_name }}") { throw "Tag ${{ github.ref_name }} does not match VERSION $v" }
+      - name: Build EXE and installer
+        shell: cmd
+        run: build_exe.bat installer nopause
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $h = (Get-FileHash dist\NEXUS-Setup.exe -Algorithm SHA256).Hash.ToLower()
+          "$h  NEXUS-Setup.exe" | Set-Content dist\NEXUS-Setup.exe.sha256 -Encoding ASCII
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/NEXUS-Setup.exe
+            dist/NEXUS-Setup.exe.sha256
+          generate_release_notes: true

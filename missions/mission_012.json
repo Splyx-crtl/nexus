@@ -1,0 +1,125 @@
+{
+ "id": "mission_012",
+ "number": 12,
+ "title": "ECHOES",
+ "difficulty": 4,
+ "description": "ECHO — the training node you started on — has a root partition that did not exist before. Operator 000 built it.",
+ "goal": "Unlock ECHO's root partition, read the first-contact log and trace the original signal.",
+ "reward": {
+  "xp": 2000,
+  "credits": 5000,
+  "reputation": 4
+ },
+ "requires": [
+  "mission_011"
+ ],
+ "hint": "login root on echo — the code is a date: MMDD of the last reset in op000.rec.",
+ "story_start": [
+  "Back where it started. ECHO looks the same. It isn't.",
+  "ZERO: \"> the code is a date. you already read it. you wrote it.\""
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to ECHO",
+   "event": "connect",
+   "server": "echo"
+  },
+  {
+   "id": "root",
+   "text": "Unlock the root partition",
+   "event": "login",
+   "server": "echo",
+   "role": "admin",
+   "hint": "login root — the code is the LAST RESET date (MMDD) from op000.rec."
+  },
+  {
+   "id": "log",
+   "text": "Read /root/first_contact.log",
+   "event": "read",
+   "server": "echo",
+   "path": "/root/first_contact.log"
+  },
+  {
+   "id": "trace",
+   "text": "Trace the original signal",
+   "event": "trace",
+   "server": "echo",
+   "hint": "Type: trace"
+  },
+  {
+   "id": "dl",
+   "text": "Download loop.dat",
+   "event": "download",
+   "server": "echo",
+   "file": "loop.dat",
+   "hint": "cd /root then download loop.dat"
+  }
+ ],
+ "choice": {
+  "key": "tell_mira",
+  "prompt": "MIRA's channel opens. \"{player}... you've been to ECHO. What did you find?\"",
+  "options": [
+   {
+    "id": "tell",
+    "text": "Tell MIRA everything. You still want to believe in her.",
+    "trust": {
+     "mira": 8,
+     "zero": -4
+    },
+    "flags": {
+     "told_mira_echo": true
+    },
+    "result": "MIRA is silent for a long time. \"Thank you for trusting me,\" she finally says."
+   },
+   {
+    "id": "secret",
+    "text": "Keep it secret. Whatever she is, she isn't safe.",
+    "trust": {
+     "zero": 6,
+     "mira": -4
+    },
+    "flags": {
+     "kept_echo_secret": true
+    },
+    "result": "You close the channel before she can answer."
+   }
+  ]
+ },
+ "story_end": [
+  "Mission 001 was a lure. You wrote it, for the person you would become."
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Four fragments make a Quantum Key. You should have enough by now. 'use data_fragment' — I'm told it's the only thing the core respects."
+   }
+  ]
+ },
+ "type": "TRACE",
+ "chapter": 4,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 200,
+    "credits": 500
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 420 seconds",
+   "cond": "time_under",
+   "value": 420,
+   "reward": {
+    "xp": 160,
+    "credits": 400
+   }
+  }
+ ],
+ "required_level": 1
+}

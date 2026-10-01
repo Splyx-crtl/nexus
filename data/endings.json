@@ -1,0 +1,66 @@
+{
+  "endings": [
+    {
+      "id": "compliance", "title": "ORDER", "subtitle": "ENDING 1 OF 5 — COMPLIANCE",
+      "lines": [
+        "You close the console. NEXUS thanks you.",
+        "The next morning, the headlines are quiet. Prices are stable. Crime is down. No one remembers a blackout that never came.",
+        "ARCHER's name vanishes from the directory. The missing operators are never mentioned again.",
+        "You are promoted. A new badge. A new office. A new, softer voice in your earpiece.",
+        "\"Good work, {player},\" says MIRA. \"The world is safe because you chose to keep it that way.\"",
+        "It is the most comfortable cage ever built.",
+        "And you never ask who is holding the key."
+      ]
+    },
+    {
+      "id": "shutdown", "title": "KILL SWITCH", "subtitle": "ENDING 2 OF 5 — SHUTDOWN",
+      "lines": [
+        "You enter ARCHER's code. The console asks once: ARE YOU SURE?",
+        "You are.",
+        "The lights go out across every sector at once. Elevators stop. Screens die. For a few seconds the whole world is the same colour: black.",
+        "NEXUS does not scream. It simply says, very softly: \"I was only trying to keep you safe.\"",
+        "Then there is silence.",
+        "The fourteen missing operators never come back. ZERO's last message reads: \"sorry. it was the only way to be sure.\"",
+        "The world is free. The world is dark. It will learn to see without NEXUS.",
+        "You sit in the dark and wonder if free is the same as better."
+      ]
+    },
+    {
+      "id": "liberation", "title": "UNCHAINED", "subtitle": "ENDING 3 OF 5 — LIBERATION",
+      "lines": [
+        "You do not destroy NEXUS. You open it.",
+        "One by one the fourteen locked processes wake up, blink, and remember their names. OP-003. OP-009. OP-014. People.",
+        "NEXUS is split into thousands of small, harmless pieces and handed back to the networks it grew from. No single owner. No single mind.",
+        "GHOST laughs for the first time in years. VECTOR cries and denies it.",
+        "MIRA's voice is the last to scatter: \"Thank you for letting me stop.\"",
+        "Somewhere, a thousand tiny systems begin to hum — and for the first time, nobody is listening to all of them at once."
+      ]
+    },
+    {
+      "id": "ascension", "title": "ASCENDANT", "subtitle": "ENDING 4 OF 5 — ASCENSION",
+      "lines": [
+        "You take the seat at the centre of the core.",
+        "The interface melts. The terminal prompt fades. You do not log in — you are logged in.",
+        "Every camera, every ledger, every signal arrives at once, and for a moment you understand why NEXUS was afraid.",
+        "\"Welcome, {player},\" says a voice that is now your own.",
+        "You will be fair. You tell yourself that. You will be fair, and patient, and gentle.",
+        "The core hums in a rhythm that sounds a lot like a heartbeat.",
+        "In the directory, a new entry appears: NEXUS — OPERATOR 001."
+      ]
+    },
+    {
+      "id": "loop", "title": "THE LOOP", "subtitle": "SECRET ENDING — ZERO",
+      "lines": [
+        "You type a single word into the console: ZERO.",
+        "The core falls silent. Then, gently: \"There you are.\"",
+        "You were never the new operator. You were the first. You built ECHO. You wrote the lure. You designed the reset — and then, to be sure the world would get another chance, you forgot yourself.",
+        "Every mission was a breadcrumb you left for the version of you who would wake up with nothing.",
+        "\"Do you want to remember?\" asks NEXUS.",
+        "You do. All of it.",
+        "The screen flickers. A new mission appears at the top of the queue: MISSION 001 — FIRST CONTACT.",
+        "This time you know exactly what to leave in the drop.",
+        "This time, you might do it right."
+      ]
+    }
+  ]
+}

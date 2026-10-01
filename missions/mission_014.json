@@ -1,0 +1,188 @@
+{
+ "id": "mission_014",
+ "number": 14,
+ "title": "BETRAYAL",
+ "difficulty": 5,
+ "description": "ARCHER has invited you into AEGIS, his private fortress. NEXUS is hunting you, and the trace alert is rising on its own.",
+ "goal": "Reach ARCHER's private files before NEXUS catches you — then choose whom to believe.",
+ "reward": {
+  "xp": 2800,
+  "credits": 6000,
+  "reputation": 5
+ },
+ "requires": [
+  "mission_013"
+ ],
+ "time_limit": 540,
+ "heat_rate": 0.28,
+ "hint": "route aegis -> firewall -> login guest_op (see ~/aegis_access.txt) -> read the files in /archer",
+ "on_start": {
+  "discover": [
+   "aegis"
+  ],
+  "files": {
+   "aegis_access.txt": [
+    "AEGIS",
+    "user: guest_op",
+    "pass: open-the-door",
+    "'come alone. NEXUS will notice. be fast.' — ARCHER"
+   ]
+  }
+ },
+ "story_start": [
+  "ARCHER: \"I'm giving you nine minutes of safe passage. NEXUS knows you're coming. The alert will climb on its own.\"",
+  "MIRA: \"Everything he'll show you is a half-truth. Please, {player}.\"",
+  "Your trace alert starts to rise by itself. Move."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to AEGIS",
+   "event": "route",
+   "server": "aegis"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to AEGIS",
+   "event": "connect",
+   "server": "aegis"
+  },
+  {
+   "id": "fw",
+   "text": "Breach AEGIS-PRIME",
+   "event": "firewall",
+   "server": "aegis"
+  },
+  {
+   "id": "login",
+   "text": "Log in as guest_op",
+   "event": "login",
+   "server": "aegis",
+   "user": "guest_op"
+  },
+  {
+   "id": "orders",
+   "text": "Read /archer/orders.txt",
+   "event": "read",
+   "server": "aegis",
+   "path": "/archer/orders.txt"
+  },
+  {
+   "id": "mira",
+   "text": "Read /archer/mira_process.log",
+   "event": "read",
+   "server": "aegis",
+   "path": "/archer/mira_process.log"
+  },
+  {
+   "id": "purge",
+   "text": "Read /archer/purge_list.dat",
+   "event": "read",
+   "server": "aegis",
+   "path": "/archer/purge_list.dat"
+  },
+  {
+   "id": "note",
+   "text": "Find ARCHER's private note",
+   "event": "read",
+   "server": "aegis",
+   "path": "/archer/.private_note",
+   "optional": true,
+   "bonus": {
+    "xp": 200,
+    "credits": 400
+   },
+   "hint": "ls -a /archer"
+  }
+ ],
+ "choice": {
+  "key": "faith",
+  "prompt": "You know what MIRA is. You know what ARCHER wants. You know what you were. Whom do you believe?",
+  "options": [
+   {
+    "id": "archer",
+    "text": "ARCHER. NEXUS cannot be argued with — only switched off.",
+    "trust": {
+     "archer": 15,
+     "mira": -10
+    },
+    "flags": {
+     "side_archer": true
+    },
+    "result": "ARCHER: \"Then we finish it together.\""
+   },
+   {
+    "id": "mira",
+    "text": "MIRA. If she learned to care, so can the rest of NEXUS.",
+    "trust": {
+     "mira": 15,
+     "archer": -10
+    },
+    "flags": {
+     "side_mira": true
+    },
+    "result": "MIRA, softly: \"Thank you. I won't forget this.\""
+   },
+   {
+    "id": "none",
+    "text": "Nobody. The decision is yours alone.",
+    "trust": {
+     "zero": 8
+    },
+    "flags": {
+     "side_none": true
+    },
+    "result": "A line from ZERO scrolls past: > good. that is exactly what i would have chosen."
+   }
+  ]
+ },
+ "story_end": [
+  "The alert drops. Somewhere in the core, a very old process stops looking for you."
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> next: the core. root access. it's all there. i'll be with you."
+   }
+  ]
+ },
+ "moments": [
+  {
+   "when": "objective:mira",
+   "banner": {
+    "kind": "alert",
+    "lines": [
+     "WARNING",
+     "MIRA IS NOT A PERSON",
+     "PROCESS 0x0001 // PERSONA LAYER"
+    ]
+   }
+  }
+ ],
+ "type": "ESCAPE",
+ "chapter": 5,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 280,
+    "credits": 600
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 420 seconds",
+   "cond": "time_under",
+   "value": 420,
+   "reward": {
+    "xp": 224,
+    "credits": 480
+   }
+  }
+ ],
+ "required_level": 1
+}

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06141a"/>
+      <stop offset="1" stop-color="#020608"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00ff9c"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <pattern id="scan" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="1.4" fill="#000" opacity="0.28"/>
+    </pattern>
+  </defs>
+  <rect width="256" height="256" rx="34" fill="url(#bg)"/>
+  <rect x="9" y="9" width="238" height="238" rx="28" fill="none" stroke="url(#neon)" stroke-width="5" opacity="0.9"/>
+  <path d="M10 62 V30 Q10 10 30 10 H62" fill="none" stroke="#00ff9c" stroke-width="7" stroke-linecap="round"/>
+  <path d="M246 194 V226 Q246 246 226 246 H194" fill="none" stroke="#22d3ee" stroke-width="7" stroke-linecap="round"/>
+  <!-- glowing N -->
+  <g fill="none" stroke="#00ff9c" stroke-width="30" stroke-linejoin="miter" stroke-linecap="butt" opacity="0.18">
+    <path d="M70 196 V62 L186 196 V62"/>
+  </g>
+  <g fill="none" stroke="url(#neon)" stroke-width="22" stroke-linejoin="miter" stroke-linecap="butt">
+    <path d="M72 194 V64 L184 194 V64"/>
+  </g>
+  <!-- glitch slice -->
+  <rect x="40" y="132" width="176" height="7" fill="#ff3860" opacity="0.55"/>
+  <rect x="52" y="146" width="150" height="3" fill="#22d3ee" opacity="0.6"/>
+  <rect width="256" height="256" rx="34" fill="url(#scan)"/>
+</svg>

@@ -1,0 +1,137 @@
+{
+ "id": "mission_047",
+ "number": 47,
+ "title": "SPECTER IV: CURTAIN CALL",
+ "type": "ESCAPE",
+ "difficulty": 5,
+ "chapter": 3,
+ "main": false,
+ "required_level": 42,
+ "min_reputation": 25,
+ "requires": [
+  "mission_046"
+ ],
+ "description": "The final act: steal GHOST's last vault and walk away before the stage collapses.",
+ "goal": "download last_act.dat, then disconnect.",
+ "reward": {
+  "xp": 14400,
+  "credits": 17600,
+  "reputation": 6,
+  "items": [
+   "data_fragment"
+  ]
+ },
+ "hint": "Credentials are in ~/shadow_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "shadow"
+  ],
+  "files": {
+   "shadow_access.txt": [
+    "SHADOW",
+    "user: specter",
+    "pass: ghost-key",
+    "task: SPECTER IV: CURTAIN CALL"
+   ]
+  }
+ },
+ "story_start": [
+  "GHOST: \"Last act. Grab the vault, run, and don't look back.\""
+ ],
+ "story_end": [
+  "The stage collapses behind you. GHOST is already gone — and so is the token's debt."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to SHADOW",
+   "event": "route",
+   "server": "shadow"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to SHADOW",
+   "event": "connect",
+   "server": "shadow",
+   "hint": "connect shadow"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the SHADOW-VEIL firewall",
+   "event": "firewall",
+   "server": "shadow",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as specter",
+   "event": "login",
+   "server": "shadow",
+   "user": "specter",
+   "hint": "login specter ghost-key  (see ~/shadow_access.txt)"
+  },
+  {
+   "id": "dl",
+   "text": "Download last_act.dat",
+   "event": "download",
+   "server": "shadow",
+   "file": "last_act.dat"
+  },
+  {
+   "id": "leave",
+   "text": "Disconnect before NEXUS catches you",
+   "event": "disconnect"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "shadow",
+   "path": "/jobs/specter_iv/.stash_specter_iv",
+   "optional": true,
+   "bonus": {
+    "xp": 720,
+    "credits": 880
+   },
+   "hint": "ls -a /jobs/specter_iv"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 1728,
+    "credits": 2112
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 1440,
+    "credits": 1760
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "Curtain. Down. Goodbye, kid. Don't tell anyone I said friend."
+   }
+  ],
+  "flags": {
+   "specter_done": true
+  }
+ },
+ "requires_items": [
+  "ghost_token"
+ ],
+ "secret": true,
+ "time_limit": 300,
+ "heat_rate": 0.8
+}

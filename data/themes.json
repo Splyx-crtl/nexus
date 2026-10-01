@@ -1,0 +1,175 @@
+{
+ "themes": [
+  {
+   "id": "default",
+   "name": "DEFAULT",
+   "free": true,
+   "palette": {
+    "bg": "#03080a",
+    "bg_alt": "#07120f",
+    "panel": "#08141a",
+    "panel_hi": "#0c1e26",
+    "border": "#0f3b33",
+    "green": "#00ff9c",
+    "green_dim": "#13a36b",
+    "cyan": "#22d3ee",
+    "cyan_dim": "#0e7490",
+    "red": "#ff3860",
+    "amber": "#ffb020",
+    "text": "#b8f5cf",
+    "dim": "#4b7a6c",
+    "white": "#e8fff4",
+    "purple": "#b388ff"
+   }
+  },
+  {
+   "id": "contrast",
+   "name": "HIGH CONTRAST",
+   "free": true,
+   "palette": {
+    "bg": "#000000",
+    "bg_alt": "#0a0a0a",
+    "panel": "#111111",
+    "panel_hi": "#1c1c1c",
+    "border": "#ffffff",
+    "green": "#00ff00",
+    "green_dim": "#00cc00",
+    "cyan": "#00ffff",
+    "cyan_dim": "#00b3b3",
+    "red": "#ff6666",
+    "amber": "#ffd000",
+    "text": "#ffffff",
+    "dim": "#bdbdbd",
+    "white": "#ffffff",
+    "purple": "#ff99ff"
+   }
+  },
+  {
+   "id": "classic",
+   "name": "CLASSIC GREEN",
+   "palette": {
+    "bg": "#000800",
+    "bg_alt": "#021002",
+    "panel": "#031403",
+    "panel_hi": "#061f06",
+    "border": "#0b4a0b",
+    "green": "#33ff33",
+    "green_dim": "#1a9e1a",
+    "cyan": "#66ff99",
+    "cyan_dim": "#2e9e5a",
+    "red": "#ff4444",
+    "amber": "#c8ff3a",
+    "text": "#a6ffa6",
+    "dim": "#3d7a3d",
+    "white": "#e6ffe6",
+    "purple": "#99ffcc"
+   }
+  },
+  {
+   "id": "cyan",
+   "name": "CYAN",
+   "palette": {
+    "bg": "#020a0e",
+    "bg_alt": "#04121a",
+    "panel": "#061a24",
+    "panel_hi": "#0a2633",
+    "border": "#0e4358",
+    "green": "#2de2ff",
+    "green_dim": "#1590a8",
+    "cyan": "#7df0ff",
+    "cyan_dim": "#2a8da3",
+    "red": "#ff4d6d",
+    "amber": "#ffc857",
+    "text": "#bfeefa",
+    "dim": "#4d7f8d",
+    "white": "#eafcff",
+    "purple": "#a98bff"
+   }
+  },
+  {
+   "id": "red_alert",
+   "name": "RED ALERT",
+   "palette": {
+    "bg": "#0a0204",
+    "bg_alt": "#150509",
+    "panel": "#1c070c",
+    "panel_hi": "#2a0b12",
+    "border": "#5a1422",
+    "green": "#ff3860",
+    "green_dim": "#a3223f",
+    "cyan": "#ff8a5c",
+    "cyan_dim": "#a34e2c",
+    "red": "#ff1744",
+    "amber": "#ffb020",
+    "text": "#ffc4cf",
+    "dim": "#8a4553",
+    "white": "#fff0f3",
+    "purple": "#ff7aa8"
+   }
+  },
+  {
+   "id": "purple",
+   "name": "PURPLE",
+   "palette": {
+    "bg": "#06020c",
+    "bg_alt": "#0d0618",
+    "panel": "#130a22",
+    "panel_hi": "#1c1032",
+    "border": "#3b2268",
+    "green": "#b388ff",
+    "green_dim": "#6f4fb8",
+    "cyan": "#ff7ae0",
+    "cyan_dim": "#a1487f",
+    "red": "#ff4d79",
+    "amber": "#ffc857",
+    "text": "#e0d0ff",
+    "dim": "#6f5a99",
+    "white": "#f6f0ff",
+    "purple": "#7df0ff"
+   }
+  },
+  {
+   "id": "amber",
+   "name": "AMBER",
+   "palette": {
+    "bg": "#0a0600",
+    "bg_alt": "#140c02",
+    "panel": "#1b1103",
+    "panel_hi": "#291a05",
+    "border": "#5a3c0b",
+    "green": "#ffb020",
+    "green_dim": "#a8730f",
+    "cyan": "#ffd166",
+    "cyan_dim": "#a8862f",
+    "red": "#ff5a36",
+    "amber": "#fff2a8",
+    "text": "#ffe3a3",
+    "dim": "#8a6a2a",
+    "white": "#fff8e0",
+    "purple": "#ffb38a"
+   }
+  },
+  {
+   "id": "nexus",
+   "name": "NEXUS",
+   "unlock_achievement": "nexus",
+   "palette": {
+    "bg": "#050505",
+    "bg_alt": "#0c0c0c",
+    "panel": "#121212",
+    "panel_hi": "#1c1c1c",
+    "border": "#4a4228",
+    "green": "#ffd700",
+    "green_dim": "#a8902a",
+    "cyan": "#ffffff",
+    "cyan_dim": "#8a8a8a",
+    "red": "#ff3860",
+    "amber": "#ffb020",
+    "text": "#e8e2c8",
+    "dim": "#7a7355",
+    "white": "#ffffff",
+    "purple": "#d8c8ff"
+   }
+  }
+ ]
+}

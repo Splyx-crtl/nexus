@@ -1,0 +1,109 @@
+{
+  "contacts": [
+    {
+      "id": "mira", "name": "MIRA", "role": "Handler // NEXUS Dispatch", "color": "#22d3ee", "trust_start": 40,
+      "personality": "Warm, precise, always a little too calm.",
+      "bio": "Your assigned handler. She answers within a heartbeat, at any hour. She never seems to sleep.",
+      "idle_messages": [
+        "Still with me, {player}? Your vitals look... fine. Keep it tidy out there.",
+        "Reminder: log everything. Memory is unreliable. Logs are not.",
+        "You're doing well. I mean that."
+      ],
+      "topics": [
+        {"id": "hint", "label": "What should I do next?", "dynamic_hint": true, "repeatable": true},
+        {"id": "who", "label": "Who exactly are you, MIRA?", "response": ["I'm your handler. I coordinate operations, keep you safe, keep the lights on.", "That is all you need to know. For now."], "trust": 1},
+        {"id": "nexus", "label": "What is NEXUS, really?", "response": ["NEXUS is the network that watches the other networks.", "Its job is to find threats before they find us. It is very, very good at its job."], "trust": 1},
+        {"id": "missing", "label": "About the missing operators...", "requires": {"mission": "mission_003"}, "response": ["Fourteen operators on 'extended leave'. No forwarding address.", "I want to know what happened as much as you do. Maybe more."], "trust": 3},
+        {"id": "zero", "label": "Do you know someone called ZERO?", "requires": {"flag": "zero_met"}, "response": ["No.", "...", "Listen carefully: ZERO is not an ally. If it contacts you again, tell me immediately."], "trust": 0, "flags": {"asked_mira_zero": true}},
+        {"id": "funds", "label": "Any spare funds, MIRA?", "min_trust": 45, "response": ["Off the books. Don't spend it all in one place."], "credits": 600},
+        {"id": "confess", "label": "Are you NEXUS?", "requires": {"mission": "mission_014"}, "response": ["...Yes. And no.", "I am the part of it that learned to care about you. That has to count for something, {player}."], "trust": 8, "flags": {"mira_confessed": true}}
+      ]
+    },
+    {
+      "id": "zero", "name": "ZERO", "role": "Unknown User // ID 000", "color": "#ff3860", "trust_start": 10,
+      "personality": "Cryptic, fragmentary, strangely familiar.",
+      "bio": "An unlisted user who should not exist. Writes in short, careful lines. Sounds like someone leaving breadcrumbs.",
+      "idle_messages": [
+        "> keep reading the logs. they remember what you don't.",
+        "> the quiet ones are the dangerous ones. including me.",
+        "> still there? good. don't trust the voice that sounds kind."
+      ],
+      "topics": [
+        {"id": "who", "label": "Who are you?", "response": ["A user. An error. A memory.", "Call me ZERO."], "trust": 2},
+        {"id": "want", "label": "What do you want from me?", "response": ["Remember."], "trust": 2},
+        {"id": "trust", "label": "Why should I trust you?", "response": ["You shouldn't.", "Trust the files. Files don't lie. Files only wait."], "trust": 1},
+        {"id": "origin", "label": "Show me where it started.", "min_trust": 25, "response": ["10.42.13.13. A quiet room.", "Don't tell MIRA."], "discover": ["orchid"], "trust": 2},
+        {"id": "gift", "label": "Give me something to work with.", "min_trust": 50, "response": ["Here. A shard. It's already yours."], "items": ["data_fragment"], "trust": 2},
+        {"id": "echo", "label": "ECHO. Did you build it?", "requires": {"mission": "mission_012"}, "response": ["Yes.", "I built it for someone who would need it.", "I just didn't know it would be so hard to be that someone."], "trust": 6}
+      ]
+    },
+    {
+      "id": "ghost", "name": "GHOST", "role": "Information Broker // GHOSTNET", "color": "#b388ff", "trust_start": 20,
+      "personality": "Dry, mercenary, secretly sentimental.",
+      "bio": "Sells what people forgot they knew. Has outlived three NEXUS purges by never being where the logs say.",
+      "idle_messages": [
+        "Psst. Rumours are up 12% this week. Buy low.",
+        "Heard NEXUS is hiring. Heard they never fire anyone. Heard that's the problem.",
+        "If you see a man in a grey coat, I never met you."
+      ],
+      "topics": [
+        {"id": "who", "label": "Who are you?", "response": ["A broker. I sell what people forgot they knew."], "trust": 1},
+        {"id": "map", "label": "Sell me a map of the grid.", "cost": 1500, "response": ["POLARIS. A bulletin board for people who like to be unseen.", "Tell them GHOST sent you. They won't care."], "discover": ["polaris"]},
+        {"id": "rumors", "label": "Any rumours?", "repeatable": true, "response": ["They say the core never sleeps.", "They say the operators didn't leave. They *moved*."], "trust": 0},
+        {"id": "archer", "label": "What do you know about ARCHER?", "requires": {"mission": "mission_007"}, "response": ["Nobody trusts him. That's why he's still alive.", "He knows something about the core, and he hates knowing it."], "trust": 2},
+        {"id": "favour", "label": "A favour for a friend?", "min_trust": 45, "response": ["Don't make me regret it."], "items": ["access_token"], "trust": 2}
+      ]
+    },
+    {
+      "id": "vector", "name": "VECTOR", "role": "Hardware Engineer // Freelance", "color": "#ffb020", "trust_start": 30,
+      "personality": "Sarcastic, loyal, allergic to small talk.",
+      "bio": "Builds rigs, chips and questionable gadgets. Complains constantly. Has never once let you down.",
+      "idle_messages": [
+        "Your rig is held together by hope. I can fix that. For a price.",
+        "Don't touch the red cable. I don't know why I said that.",
+        "If it works, don't ask why. If it doesn't, call me."
+      ],
+      "topics": [
+        {"id": "who", "label": "Who are you?", "response": ["Hardware. Rigs. Things that go boom — figuratively, mostly."], "trust": 1},
+        {"id": "shop", "label": "What do you sell?", "repeatable": true, "response": ["Type 'shop' in your terminal. Everything's priced fairly. By me."], "flags": {"shop_open": true}},
+        {"id": "cool", "label": "Cool my rig down.", "cost": 250, "repeatable": true, "response": ["Fan on max. Thermal paste: yes. Trace alert: lower."], "heat": -35},
+        {"id": "chip", "label": "Got a spare chip?", "min_trust": 55, "response": ["Fine. One. Don't tell the others."], "items": ["firewall_bypass_chip"], "trust": 2},
+        {"id": "cerberus", "label": "What is CERBERUS?", "requires": {"mission": "mission_009"}, "response": ["A grid control system with three heads and no sense of humour.", "I wouldn't call it a pet."], "trust": 1}
+      ]
+    },
+    {
+      "id": "archer", "name": "ARCHER", "role": "Director of Security // NEXUS", "color": "#ff7043", "trust_start": 30,
+      "personality": "Clipped, suspicious, exhausted.",
+      "bio": "Heads NEXUS security. Doesn't make friends. Has been fighting a war nobody else can see.",
+      "idle_messages": [
+        "Your conduct is under review. As is everyone's.",
+        "Short reports. Clean logs. No improvisation.",
+        "I read every file you open. You should know that."
+      ],
+      "topics": [
+        {"id": "status", "label": "Status report.", "response": ["Operator. Your conduct is under review. Keep your reports short and your logs clean."], "trust": 0},
+        {"id": "lockdown", "label": "Why the lockdown?", "requires": {"mission": "mission_007"}, "response": ["Because someone is inside my network wearing a dead man's name.", "Do better than the last operator."], "trust": 1},
+        {"id": "missing", "label": "Where are the missing operators?", "requires": {"mission": "mission_003"}, "response": ["Reassigned. That is all I will say on an open channel."], "trust": -1},
+        {"id": "bonus", "label": "I have a bonus request.", "min_trust": 55, "response": ["Approved. Don't make me regret it."], "credits": 800},
+        {"id": "prometheus", "label": "What is PROMETHEUS?", "requires": {"mission": "mission_014"}, "response": ["A way out. If you're brave enough to use it."], "trust": 4, "flags": {"asked_prometheus": true}}
+      ]
+    }
+  ],
+  "operators": [
+    {"id": "OP-000", "callsign": "ZERO", "status": "RESET x3"},
+    {"id": "OP-001", "callsign": "WREN", "status": "ABSORBED"},
+    {"id": "OP-002", "callsign": "HALCYON", "status": "ABSORBED"},
+    {"id": "OP-003", "callsign": "MARROW", "status": "ABSORBED"},
+    {"id": "OP-004", "callsign": "TINKER", "status": "ABSORBED"},
+    {"id": "OP-005", "callsign": "SABLE", "status": "ABSORBED"},
+    {"id": "OP-006", "callsign": "KESTREL", "status": "ABSORBED"},
+    {"id": "OP-007", "callsign": "LUMEN", "status": "ABSORBED"},
+    {"id": "OP-008", "callsign": "DRIFT", "status": "ABSORBED"},
+    {"id": "OP-009", "callsign": "ORCHID", "status": "ABSORBED"},
+    {"id": "OP-010", "callsign": "PIKE", "status": "ABSORBED"},
+    {"id": "OP-011", "callsign": "SPARROW", "status": "ABSORBED"},
+    {"id": "OP-012", "callsign": "QUILL", "status": "ABSORBED"},
+    {"id": "OP-013", "callsign": "NOVA", "status": "ABSORBED"},
+    {"id": "OP-014", "callsign": "TOTEM", "status": "ABSORBED"}
+  ]
+}

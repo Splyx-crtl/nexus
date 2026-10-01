@@ -1,0 +1,163 @@
+{
+ "id": "mission_008",
+ "number": 8,
+ "title": "ZERO DAY",
+ "difficulty": 4,
+ "description": "ORBITAL stores a payload written by user 000 — an exploit that lets anyone speak with NEXUS's own voice.",
+ "goal": "Route to ORBITAL, breach it and decrypt the zero-day payload.",
+ "reward": {
+  "xp": 1200,
+  "credits": 3000,
+  "reputation": 5
+ },
+ "requires": [
+  "mission_007"
+ ],
+ "hint": "route orbital (watch the risk budget) -> firewall -> login sat_ops -> decrypt zeroday.dat",
+ "on_start": {
+  "discover": [
+   "orbital"
+  ],
+  "files": {
+   "orbital_access.txt": [
+    "ORBITAL",
+    "user: sat_ops",
+    "pass: uplink-c9",
+    "(routing is harder up there. mind the monitored relays)"
+   ]
+  },
+  "messages": [
+   {
+    "from": "vector",
+    "text": "~/orbital_access.txt. Fair warning: the relay chain there is a nightmare. Keep your risk low."
+   }
+  ]
+ },
+ "story_start": [
+  "MIRA: \"ORBITAL is exposed and loud. Every mistake echoes.\"",
+  "GHOST: \"The payload is encrypted with a word. A short one. It's what the station does for a living.\""
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to ORBITAL",
+   "event": "route",
+   "server": "orbital",
+   "hint": "Total risk must stay inside the budget. Fewer hops is not always safer."
+  },
+  {
+   "id": "connect",
+   "text": "Connect to ORBITAL",
+   "event": "connect",
+   "server": "orbital"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the ORBITAL shield",
+   "event": "firewall",
+   "server": "orbital"
+  },
+  {
+   "id": "login",
+   "text": "Log in as sat_ops",
+   "event": "login",
+   "server": "orbital",
+   "user": "sat_ops",
+   "hint": "cat ~/orbital_access.txt on the local node"
+  },
+  {
+   "id": "decrypt",
+   "text": "Decrypt zeroday.dat",
+   "event": "decrypt",
+   "server": "orbital",
+   "path": "/payload/zeroday.dat",
+   "hint": "cd /payload then decrypt zeroday.dat  — the key is 5 letters: what a satellite does."
+  },
+  {
+   "id": "read",
+   "text": "Read the zero-day payload",
+   "event": "read",
+   "server": "orbital",
+   "path": "/payload/zeroday.dat"
+  }
+ ],
+ "choice": {
+  "key": "zeroday",
+  "prompt": "You hold an exploit that lets you impersonate NEXUS itself. What do you do with it?",
+  "options": [
+   {
+    "id": "archer",
+    "text": "Hand it to ARCHER so NEXUS can be patched.",
+    "trust": {
+     "archer": 10,
+     "zero": -8
+    },
+    "flags": {
+     "gave_zeroday_archer": true
+    },
+    "result": "ARCHER: \"This will save lives. Perhaps even yours.\""
+   },
+   {
+    "id": "keep",
+    "text": "Keep it. Tell no one.",
+    "trust": {
+     "zero": 8
+    },
+    "reward": {
+     "credits": 500
+    },
+    "flags": {
+     "kept_zeroday": true
+    },
+    "result": "The exploit sits in your inventory like a loaded coin."
+   },
+   {
+    "id": "mira",
+    "text": "Give it to MIRA. She'll know what to do.",
+    "trust": {
+     "mira": 8
+    },
+    "flags": {
+     "gave_zeroday_mira": true
+    },
+    "result": "MIRA: \"Thank you. I'll keep it safe.\"  Something in her tone makes you uneasy."
+   }
+  ]
+ },
+ "story_end": [
+  "The forged heartbeat on uplink-2 is a skeleton key to NEXUS's voice — and whoever wrote it knew NEXUS very well."
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "That was brave. The grid is next: CERBERUS controls the city's power. NEXUS keeps a very short leash on it."
+   }
+  ]
+ },
+ "type": "DECRYPTION",
+ "chapter": 3,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 120,
+    "credits": 300
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 480 seconds",
+   "cond": "time_under",
+   "value": 480,
+   "reward": {
+    "xp": 96,
+    "credits": 240
+   }
+  }
+ ],
+ "required_level": 1
+}

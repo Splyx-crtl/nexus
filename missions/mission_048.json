@@ -1,0 +1,172 @@
+{
+ "id": "mission_048",
+ "number": 48,
+ "title": "VOID I: ARRIVAL",
+ "type": "INFILTRATION",
+ "difficulty": 4,
+ "chapter": 4,
+ "main": false,
+ "required_level": 32,
+ "min_reputation": 20,
+ "requires": [
+  "mission_010"
+ ],
+ "description": "A door that is not on any map. Step through it.",
+ "goal": "pull arrival.dat.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/void_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "void"
+  ],
+  "files": {
+   "void_access.txt": [
+    "VOID",
+    "user: walker",
+    "pass: null-ptr",
+    "task: VOID I: ARRIVAL"
+   ]
+  }
+ },
+ "story_start": [
+  "ZERO: \"> the black key opens a room nobody wrote down. i wrote it down.\""
+ ],
+ "story_end": [
+  "You are standing in a room with no walls. Something has been written on the floor."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to VOID",
+   "event": "route",
+   "server": "void"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to VOID",
+   "event": "connect",
+   "server": "void",
+   "hint": "connect void"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the VOID-NULL firewall",
+   "event": "firewall",
+   "server": "void",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as walker",
+   "event": "login",
+   "server": "void",
+   "user": "walker",
+   "hint": "login walker null-ptr  (see ~/void_access.txt)"
+  },
+  {
+   "id": "read",
+   "text": "Read arrival.dat",
+   "event": "read",
+   "server": "void",
+   "path": "/jobs/void_i/arrival.dat"
+  },
+  {
+   "id": "dl",
+   "text": "Download arrival.dat",
+   "event": "download",
+   "server": "void",
+   "file": "arrival.dat"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "void",
+   "path": "/jobs/void_i/.stash_void_i",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/void_i"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> the next room is one level deeper."
+   }
+  ],
+  "flags": {}
+ },
+ "requires_items": [
+  "black_key"
+ ],
+ "secret": true,
+ "choice": {
+  "key": "void_i",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

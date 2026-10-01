@@ -1,0 +1,170 @@
+{
+ "id": "mission_017",
+ "number": 17,
+ "title": "HARBOR LIGHTS",
+ "type": "INVESTIGATION",
+ "difficulty": 1,
+ "chapter": 1,
+ "main": false,
+ "required_level": 2,
+ "min_reputation": 0,
+ "requires": [
+  "mission_001"
+ ],
+ "description": "A crate vanished from HARBOR's freight records. Follow the trail in the logs.",
+ "goal": "find out who edited manifest #4411.",
+ "reward": {
+  "xp": 500,
+  "credits": 600,
+  "reputation": 2,
+  "items": []
+ },
+ "hint": "Credentials are in ~/harbor_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "harbor"
+  ],
+  "files": {
+   "harbor_access.txt": [
+    "HARBOR",
+    "user: dockhand",
+    "pass: crane-41",
+    "task: HARBOR LIGHTS"
+   ]
+  }
+ },
+ "story_start": [
+  "MIRA: \"Freight records don't just lose crates. Somebody edited this one. Read the logs, find the edit.\"",
+  "MIRA: \"There's an encoded handler id in the first log. 'decode' it.\""
+ ],
+ "story_end": [
+  "The crate never left the dock. Somebody just wanted NEXUS to believe it had."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to HARBOR",
+   "event": "connect",
+   "server": "harbor",
+   "hint": "connect harbor"
+  },
+  {
+   "id": "login",
+   "text": "Log in as dockhand",
+   "event": "login",
+   "server": "harbor",
+   "user": "dockhand",
+   "hint": "login dockhand crane-41  (see ~/harbor_access.txt)"
+  },
+  {
+   "id": "log_a",
+   "text": "Read log_a.txt",
+   "event": "read",
+   "server": "harbor",
+   "path": "/jobs/harbor_lights/log_a.txt"
+  },
+  {
+   "id": "decode",
+   "text": "Decode the handler id",
+   "event": "decode",
+   "contains_result": "PIKE-TWO",
+   "hint": "decode UElLRS1UV08="
+  },
+  {
+   "id": "log_b",
+   "text": "Read log_b.txt",
+   "event": "read",
+   "server": "harbor",
+   "path": "/jobs/harbor_lights/log_b.txt"
+  },
+  {
+   "id": "report",
+   "text": "Read the incident report",
+   "event": "read",
+   "server": "harbor",
+   "path": "/jobs/harbor_lights/report.txt"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "harbor",
+   "path": "/jobs/harbor_lights/.stash_harbor_lights",
+   "optional": true,
+   "bonus": {
+    "xp": 40,
+    "credits": 48
+   },
+   "hint": "ls -a /jobs/harbor_lights"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 60,
+    "credits": 72
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 50,
+    "credits": 60
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "Neat work, {player}. Small jobs like this keep the grid honest."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "harbor_lights",
+  "prompt": "Someone asks who authorised this job...",
+  "options": [
+   {
+    "id": "mira",
+    "text": "'MIRA did.' Hand the responsibility to your handler.",
+    "trust": {
+     "mira": -2
+    },
+    "reward": {
+     "reputation": 0
+    },
+    "result": ""
+   },
+   {
+    "id": "self",
+    "text": "'I did.' Take the credit and the risk.",
+    "trust": {
+     "archer": 2
+    },
+    "reward": {
+     "reputation": 2
+    },
+    "result": ""
+   },
+   {
+    "id": "zero",
+    "text": "'A friend.' Say nothing more.",
+    "trust": {
+     "zero": 4
+    },
+    "reward": {
+     "reputation": 0
+    },
+    "result": ""
+   }
+  ]
+ }
+}

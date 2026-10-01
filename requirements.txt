@@ -1,0 +1,3 @@
+# NEXUS // TERMINAL - runtime dependencies
+# Python 3.12+ on Windows (also runs on Linux/macOS).
+PySide6>=6.6

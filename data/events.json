@@ -1,0 +1,163 @@
+{
+ "events": [
+  {
+   "id": "evt_message",
+   "kind": "message",
+   "title": "INCOMING MESSAGE",
+   "weight": 5
+  },
+  {
+   "id": "evt_unknown_conn",
+   "kind": "unknown_connection",
+   "title": "UNKNOWN CONNECTION",
+   "weight": 3,
+   "texts": [
+    "A stranger probed your uplink.",
+    "An unregistered relay pinged your node.",
+    "Someone is knocking on a port you never opened."
+   ]
+  },
+  {
+   "id": "evt_system_alert",
+   "kind": "system_alert",
+   "title": "SYSTEM ALERT",
+   "weight": 3,
+   "texts": [
+    "NEXUS integrity scan in progress.",
+    "Anomalous traffic spike detected on the grid.",
+    "A watchdog process woke up and looked around."
+   ]
+  },
+  {
+   "id": "evt_firewall_update",
+   "kind": "firewall_update",
+   "title": "FIREWALL UPDATE",
+   "weight": 2
+  },
+  {
+   "id": "evt_server_offline",
+   "kind": "server_offline",
+   "title": "SERVER OFFLINE",
+   "weight": 2
+  },
+  {
+   "id": "evt_unknown_user",
+   "kind": "unknown_user",
+   "title": "UNKNOWN USER DETECTED",
+   "weight": 2,
+   "requires": {
+    "mission": "mission_002"
+   },
+   "texts": [
+    "An unlisted user was seen near the NEXUS grid.",
+    "A ghost account flickered online for 0.3 seconds.",
+    "User ID 000 touched the network, then vanished."
+   ]
+  },
+  {
+   "id": "evt_fragment",
+   "kind": "data_fragment",
+   "title": "DATA FRAGMENT FOUND",
+   "weight": 2,
+   "requires": {
+    "mission": "mission_003"
+   }
+  },
+  {
+   "id": "evt_credits",
+   "kind": "credits",
+   "title": "DEAD CREDIT TRANSFER",
+   "weight": 2,
+   "texts": [
+    "An abandoned account paid out.",
+    "A bounty cleared in your name.",
+    "A forgotten escrow released."
+   ]
+  },
+  {
+   "id": "evt_xp",
+   "kind": "xp",
+   "title": "SIGNAL BREAKTHROUGH",
+   "weight": 2,
+   "texts": [
+    "Patterns in the noise suddenly made sense.",
+    "You spotted a flaw in a routine you ran earlier.",
+    "A late insight pays off."
+   ]
+  },
+  {
+   "id": "evt_instability",
+   "kind": "system_instability",
+   "title": "SYSTEM INSTABILITY",
+   "weight": 2,
+   "texts": [
+    "The grid is wobbling. Traces are getting sharper.",
+    "A cascade of timeouts rolls through the network.",
+    "NEXUS routing tables are flapping."
+   ]
+  },
+  {
+   "id": "evt_data_leak",
+   "kind": "data_leak",
+   "title": "DATA LEAK",
+   "weight": 2,
+   "requires": {
+    "mission": "mission_002"
+   },
+   "texts": [
+    "A leaked archive is circulating the back channels.",
+    "Someone dumped a database into the open. You grabbed a copy.",
+    "A careless admin posted credentials to a public board."
+   ]
+  },
+  {
+   "id": "evt_blackout",
+   "kind": "blackout",
+   "title": "BLACKOUT",
+   "weight": 1,
+   "requires": {
+    "mission": "mission_005"
+   },
+   "texts": [
+    "A power fault knocked several nodes offline.",
+    "Sector failure: connections dropped across the grid."
+   ]
+  },
+  {
+   "id": "evt_migration",
+   "kind": "server_migration",
+   "title": "SERVER MIGRATION",
+   "weight": 1,
+   "requires": {
+    "mission": "mission_003"
+   },
+   "texts": [
+    "A host is being migrated to new hardware. Its defences reset.",
+    "Scheduled migration: services will return shortly."
+   ]
+  },
+  {
+   "id": "evt_zero",
+   "kind": "zero_event",
+   "title": "UNKNOWN USER DETECTED",
+   "weight": 3,
+   "requires": {
+    "flag": "zero_met"
+   }
+  },
+  {
+   "id": "evt_secret_data",
+   "kind": "secret_data",
+   "title": "SECRET DATA FOUND",
+   "weight": 1,
+   "requires": {
+    "mission": "mission_003"
+   },
+   "texts": [
+    "A hidden cache surfaced in your scan buffers.",
+    "An encrypted drawer opened by itself.",
+    "A dormant account coughed up a bonus."
+   ]
+  }
+ ]
+}

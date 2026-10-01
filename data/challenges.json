@@ -1,0 +1,37 @@
+{
+  "daily": [
+    {"id": "d_missions", "text": "Complete 3 operations", "stat": "missions_completed", "target": 3, "reward": {"credits": 900, "xp": 400}},
+    {"id": "d_decrypt", "text": "Decrypt 5 files", "stat": "decryptions", "target": 5, "reward": {"credits": 700, "xp": 300}},
+    {"id": "d_credits", "text": "Earn 10,000 credits", "stat": "credits_earned", "target": 10000, "reward": {"credits": 1000, "xp": 350}},
+    {"id": "d_clean", "text": "Complete a mission without failure", "stat": "clean_missions", "target": 1, "reward": {"credits": 800, "xp": 350}},
+    {"id": "d_firewall", "text": "Breach 3 firewalls", "stat": "firewalls_breached", "target": 3, "reward": {"credits": 700, "xp": 300}},
+    {"id": "d_scan", "text": "Scan 8 hosts", "stat": "scans", "target": 8, "reward": {"credits": 500, "xp": 200}},
+    {"id": "d_connect", "text": "Open 6 connections", "stat": "connections", "target": 6, "reward": {"credits": 500, "xp": 200}},
+    {"id": "d_read", "text": "Read 12 files", "stat": "files_read", "target": 12, "reward": {"credits": 500, "xp": 250}},
+    {"id": "d_trace", "text": "Complete 2 traces", "stat": "traces_done", "target": 2, "reward": {"credits": 700, "xp": 300}},
+    {"id": "d_route", "text": "Solve 2 routing puzzles", "stat": "routes_solved", "target": 2, "reward": {"credits": 700, "xp": 300}},
+    {"id": "d_download", "text": "Download 5 files", "stat": "downloads", "target": 5, "reward": {"credits": 500, "xp": 200}},
+    {"id": "d_minigames", "text": "Win 6 mini-games", "stat": "minigames_won", "target": 6, "reward": {"credits": 900, "xp": 400}}
+  ],
+  "weekly": [
+    {"id": "w_missions", "text": "Complete {n} missions", "stat": "missions_completed", "target": 8, "scale": 0.25, "reward": {"credits": 8000, "xp": 3000, "item": "heat_sink"}},
+    {"id": "w_credits", "text": "Earn {n} credits", "stat": "credits_earned", "target": 40000, "scale": 0.5, "reward": {"credits": 10000, "xp": 3500}},
+    {"id": "w_firewall", "text": "Solve {n} firewall puzzles", "stat": "firewalls_breached", "target": 10, "scale": 0.2, "reward": {"credits": 6000, "xp": 2500, "item": "firewall_bypass_chip"}},
+    {"id": "w_hard", "text": "Complete {n} hard missions", "stat": "hard_missions", "target": 3, "scale": 0.15, "reward": {"credits": 9000, "xp": 4000, "item": "access_token"}},
+    {"id": "w_decrypt", "text": "Decrypt {n} files", "stat": "decryptions", "target": 12, "scale": 0.25, "reward": {"credits": 7000, "xp": 2800}},
+    {"id": "w_perfect", "text": "Earn {n} PERFECT ratings", "stat": "perfect_missions", "target": 4, "scale": 0.15, "reward": {"credits": 9000, "xp": 3500, "achievement": "weekly_master"}},
+    {"id": "w_traces", "text": "Complete {n} traces", "stat": "traces_done", "target": 6, "scale": 0.15, "reward": {"credits": 6000, "xp": 2500}},
+    {"id": "w_minigames", "text": "Win {n} mini-games", "stat": "minigames_won", "target": 25, "scale": 0.5, "reward": {"credits": 7000, "xp": 3000}},
+    {"id": "w_secrets", "text": "Discover {n} secrets", "stat": "secrets_found", "target": 2, "scale": 0.05, "reward": {"credits": 8000, "xp": 3000, "item": "data_fragment"}}
+  ],
+  "streak": [
+    {"day": 1, "credits": 500},
+    {"day": 2, "credits": 750},
+    {"day": 3, "credits": 1000},
+    {"day": 4, "credits": 1250},
+    {"day": 5, "credits": 1500},
+    {"day": 6, "credits": 2000},
+    {"day": 7, "credits": 3000, "rare_item": true}
+  ],
+  "rare_pool": ["firewall_analyzer", "trace_module_mk2", "learning_matrix", "credit_siphon", "mesh_antenna"]
+}

@@ -1,0 +1,502 @@
+{
+ "mission_017": {
+  "commands": [
+   "connect harbor",
+   "login dockhand crane-41",
+   "cat /jobs/harbor_lights/log_a.txt",
+   "decode UElLRS1UV08=",
+   "cat /jobs/harbor_lights/log_b.txt",
+   "cat /jobs/harbor_lights/report.txt",
+   "cat /jobs/harbor_lights/.stash_harbor_lights"
+  ],
+  "choice": 1,
+  "type": "INVESTIGATION",
+  "items": []
+ },
+ "mission_018": {
+  "commands": [
+   "connect lumen",
+   "firewall",
+   "login grid_tech ohm-law",
+   "cat /jobs/cold_storage/manifest.txt",
+   "download /jobs/cold_storage/part_a.dat",
+   "download /jobs/cold_storage/part_b.dat",
+   "cat /jobs/cold_storage/.stash_cold_storage"
+  ],
+  "choice": 1,
+  "type": "RECOVERY",
+  "items": []
+ },
+ "mission_019": {
+  "commands": [
+   "connect tidal",
+   "login line_ops wave-9",
+   "cat /jobs/signal_check/alert.log",
+   "trace",
+   "cat /jobs/signal_check/origin.txt",
+   "cat /jobs/signal_check/.stash_signal_check"
+  ],
+  "choice": 0,
+  "type": "TRACE",
+  "items": []
+ },
+ "mission_020": {
+  "commands": [
+   "msg mira nexus",
+   "connect harbor",
+   "login dockhand crane-41",
+   "cat /jobs/paper_trail/notes.txt",
+   "decode RkxPT1IgRk9VUlRFRU4=",
+   "cat /jobs/paper_trail/.stash_paper_trail"
+  ],
+  "choice": 1,
+  "type": "INTELLIGENCE",
+  "items": []
+ },
+ "mission_021": {
+  "commands": [
+   "connect sable",
+   "scan",
+   "firewall",
+   "login teller gold-bar-3",
+   "cat /jobs/dockside/night_ledger.dat",
+   "download /jobs/dockside/night_ledger.dat",
+   "cat /jobs/dockside/.stash_dockside"
+  ],
+  "choice": 1,
+  "type": "INFILTRATION",
+  "items": []
+ },
+ "mission_022": {
+  "commands": [
+   "connect sable",
+   "firewall",
+   "login teller gold-bar-3",
+   "decrypt /jobs/locked_ledger/locked_ledger.enc",
+   "cat /jobs/locked_ledger/locked_ledger.enc",
+   "cat /jobs/locked_ledger/.stash_locked_ledger"
+  ],
+  "choice": 0,
+  "type": "DECRYPTION",
+  "items": []
+ },
+ "mission_023": {
+  "commands": [
+   "connect tidal",
+   "login line_ops wave-9",
+   "cat /jobs/grid_noise/alert.log",
+   "trace",
+   "cat /jobs/grid_noise/origin.txt",
+   "cat /jobs/grid_noise/.stash_grid_noise"
+  ],
+  "choice": 0,
+  "type": "TRACE",
+  "items": []
+ },
+ "mission_024": {
+  "commands": [
+   "connect foundry",
+   "firewall",
+   "login smith anvil-7",
+   "upload payload.sig",
+   "disconnect",
+   "cat /jobs/patch_tuesday/.stash_patch_tuesday"
+  ],
+  "choice": 1,
+  "type": "FIREWALL",
+  "items": []
+ },
+ "mission_025": {
+  "commands": [
+   "connect harbor",
+   "login dockhand crane-41",
+   "cat /jobs/lost_shipment/manifest.txt",
+   "download /jobs/lost_shipment/part_a.dat",
+   "download /jobs/lost_shipment/part_b.dat",
+   "cat /jobs/lost_shipment/.stash_lost_shipment"
+  ],
+  "choice": 0,
+  "type": "RECOVERY",
+  "items": []
+ },
+ "mission_026": {
+  "commands": [
+   "connect foundry",
+   "firewall",
+   "login smith anvil-7",
+   "download /jobs/night_shift/schematics.dat",
+   "cat /jobs/night_shift/.stash_night_shift",
+   "disconnect"
+  ],
+  "choice": 0,
+  "type": "DEFENSE",
+  "items": []
+ },
+ "mission_027": {
+  "commands": [
+   "msg ghost rumors",
+   "connect pike",
+   "firewall",
+   "login clerk case-closed",
+   "cat /jobs/whisper_net/notes.txt",
+   "decode Q0FTRSBGT1VSVEVFTg==",
+   "cat /jobs/whisper_net/.stash_whisper_net"
+  ],
+  "choice": 1,
+  "type": "INTELLIGENCE",
+  "items": []
+ },
+ "mission_028": {
+  "commands": [
+   "connect orchard",
+   "firewall",
+   "login agro seed-bank",
+   "cat /jobs/orchard_leak/log_a.txt",
+   "decode SEVMSVgtU0hFTEw=",
+   "cat /jobs/orchard_leak/log_b.txt",
+   "cat /jobs/orchard_leak/report.txt",
+   "cat /jobs/orchard_leak/.stash_orchard_leak"
+  ],
+  "choice": 1,
+  "type": "INVESTIGATION",
+  "items": []
+ },
+ "mission_029": {
+  "commands": [
+   "connect orchard",
+   "firewall",
+   "login agro seed-bank",
+   "decrypt /jobs/deep_cipher/research_core.enc",
+   "cat /jobs/deep_cipher/research_core.enc",
+   "cat /jobs/deep_cipher/.stash_deep_cipher"
+  ],
+  "choice": 0,
+  "type": "DECRYPTION",
+  "items": []
+ },
+ "mission_030": {
+  "commands": [
+   "connect lumen",
+   "firewall",
+   "login grid_tech ohm-law",
+   "download /jobs/hot_wire/grid_keys.dat",
+   "disconnect",
+   "cat /jobs/hot_wire/.stash_hot_wire"
+  ],
+  "choice": 1,
+  "type": "ESCAPE",
+  "items": []
+ },
+ "mission_031": {
+  "commands": [
+   "connect kestrel",
+   "firewall",
+   "login pilot talon-5",
+   "upload payload.sig",
+   "disconnect",
+   "cat /jobs/iron_wall/.stash_iron_wall"
+  ],
+  "choice": 0,
+  "type": "FIREWALL",
+  "items": []
+ },
+ "mission_032": {
+  "commands": [
+   "connect kestrel",
+   "firewall",
+   "login pilot talon-5",
+   "cat /jobs/black_ice/flight_recorder.dat",
+   "download /jobs/black_ice/flight_recorder.dat",
+   "cat /jobs/black_ice/.stash_black_ice"
+  ],
+  "choice": 0,
+  "type": "INFILTRATION",
+  "items": []
+ },
+ "mission_033": {
+  "commands": [
+   "connect pike",
+   "firewall",
+   "login clerk case-closed",
+   "cat /jobs/shadow_ledger/log_a.txt",
+   "decode T1AtMDAw",
+   "cat /jobs/shadow_ledger/log_b.txt",
+   "cat /jobs/shadow_ledger/report.txt",
+   "cat /jobs/shadow_ledger/.stash_shadow_ledger"
+  ],
+  "choice": 1,
+  "type": "INVESTIGATION",
+  "items": []
+ },
+ "mission_034": {
+  "commands": [
+   "connect atlas",
+   "firewall",
+   "login surveyor true-north",
+   "download /jobs/crossfire/survey.dat",
+   "cat /jobs/crossfire/.stash_crossfire",
+   "disconnect"
+  ],
+  "choice": 0,
+  "type": "DEFENSE",
+  "items": []
+ },
+ "mission_035": {
+  "commands": [
+   "msg zero who",
+   "connect atlas",
+   "firewall",
+   "login surveyor true-north",
+   "cat /jobs/survey_zero/notes.txt",
+   "decode V1JFTiBXQVJE",
+   "cat /jobs/survey_zero/.stash_survey_zero"
+  ],
+  "choice": 1,
+  "type": "INTELLIGENCE",
+  "items": []
+ },
+ "mission_036": {
+  "commands": [
+   "connect wren",
+   "firewall",
+   "login nurse night-ward",
+   "cat /jobs/quiet_room/patient_000.txt",
+   "cat /jobs/quiet_room/ward_log.txt",
+   "cat /jobs/quiet_room/.stash_quiet_room"
+  ],
+  "choice": 1,
+  "type": "STORY",
+  "items": []
+ },
+ "mission_037": {
+  "commands": [
+   "connect wren",
+   "firewall",
+   "login nurse night-ward",
+   "cat /jobs/cold_call/alert.log",
+   "trace",
+   "cat /jobs/cold_call/origin.txt",
+   "cat /jobs/cold_call/.stash_cold_call"
+  ],
+  "choice": 0,
+  "type": "TRACE",
+  "items": []
+ },
+ "mission_038": {
+  "commands": [
+   "connect kestrel",
+   "firewall",
+   "login pilot talon-5",
+   "cat /jobs/glass_house/strike_log.dat",
+   "download /jobs/glass_house/strike_log.dat",
+   "cat /jobs/glass_house/.stash_glass_house"
+  ],
+  "choice": 0,
+  "type": "INFILTRATION",
+  "items": []
+ },
+ "mission_039": {
+  "commands": [
+   "connect atlas",
+   "firewall",
+   "login surveyor true-north",
+   "decrypt /jobs/oracle_run/oracle.enc",
+   "cat /jobs/oracle_run/oracle.enc",
+   "cat /jobs/oracle_run/.stash_oracle_run"
+  ],
+  "choice": 1,
+  "type": "DECRYPTION",
+  "items": [
+   "quantum_decryptor"
+  ]
+ },
+ "mission_040": {
+  "commands": [
+   "connect wren",
+   "firewall",
+   "login nurse night-ward",
+   "download /jobs/vanishing_act/records.dat",
+   "disconnect",
+   "cat /jobs/vanishing_act/.stash_vanishing_act"
+  ],
+  "choice": 0,
+  "type": "ESCAPE",
+  "items": []
+ },
+ "mission_041": {
+  "commands": [
+   "connect sable",
+   "firewall",
+   "login teller gold-bar-3",
+   "cat /jobs/recovery_protocol/manifest.txt",
+   "download /jobs/recovery_protocol/part_a.dat",
+   "download /jobs/recovery_protocol/part_b.dat",
+   "cat /jobs/recovery_protocol/.stash_recovery_protocol"
+  ],
+  "choice": 0,
+  "type": "RECOVERY",
+  "items": []
+ },
+ "mission_042": {
+  "commands": [
+   "connect atlas",
+   "firewall",
+   "login surveyor true-north",
+   "download /jobs/core_siege/blueprint.dat",
+   "cat /jobs/core_siege/.stash_core_siege",
+   "disconnect"
+  ],
+  "choice": 1,
+  "type": "DEFENSE",
+  "items": []
+ },
+ "mission_043": {
+  "commands": [
+   "connect wren",
+   "firewall",
+   "login nurse night-ward",
+   "cat /jobs/architects_door/note.txt",
+   "cat /jobs/architects_door/ward_log.txt",
+   "cat /jobs/architects_door/.stash_architects_door"
+  ],
+  "choice": 1,
+  "type": "STORY",
+  "items": []
+ },
+ "mission_044": {
+  "commands": [
+   "connect shadow",
+   "firewall",
+   "login specter ghost-key",
+   "cat /jobs/specter_i/curtain.dat",
+   "download /jobs/specter_i/curtain.dat",
+   "cat /jobs/specter_i/.stash_specter_i"
+  ],
+  "choice": 0,
+  "type": "INFILTRATION",
+  "items": [
+   "ghost_token"
+  ]
+ },
+ "mission_045": {
+  "commands": [
+   "connect shadow",
+   "firewall",
+   "login specter ghost-key",
+   "decrypt /jobs/specter_ii/hollow.enc",
+   "cat /jobs/specter_ii/hollow.enc",
+   "cat /jobs/specter_ii/.stash_specter_ii"
+  ],
+  "choice": 1,
+  "type": "DECRYPTION",
+  "items": [
+   "ghost_token"
+  ]
+ },
+ "mission_046": {
+  "commands": [
+   "msg zero who",
+   "connect shadow",
+   "firewall",
+   "login specter ghost-key",
+   "cat /jobs/specter_iii/notes.txt",
+   "decode VEhFIFRXRUxGVEggRkxPT1I=",
+   "cat /jobs/specter_iii/.stash_specter_iii"
+  ],
+  "choice": 1,
+  "type": "INTELLIGENCE",
+  "items": [
+   "ghost_token"
+  ]
+ },
+ "mission_047": {
+  "commands": [
+   "connect shadow",
+   "firewall",
+   "login specter ghost-key",
+   "download /jobs/specter_iv/last_act.dat",
+   "disconnect",
+   "cat /jobs/specter_iv/.stash_specter_iv"
+  ],
+  "choice": 0,
+  "type": "ESCAPE",
+  "items": [
+   "ghost_token"
+  ]
+ },
+ "mission_048": {
+  "commands": [
+   "connect void",
+   "firewall",
+   "login walker null-ptr",
+   "cat /jobs/void_i/arrival.dat",
+   "download /jobs/void_i/arrival.dat",
+   "cat /jobs/void_i/.stash_void_i"
+  ],
+  "choice": 1,
+  "type": "INFILTRATION",
+  "items": [
+   "black_key"
+  ]
+ },
+ "mission_049": {
+  "commands": [
+   "connect void",
+   "firewall",
+   "login walker null-ptr",
+   "decrypt /jobs/void_ii/null.enc",
+   "cat /jobs/void_ii/null.enc",
+   "cat /jobs/void_ii/.stash_void_ii"
+  ],
+  "choice": 0,
+  "type": "DECRYPTION",
+  "items": [
+   "black_key"
+  ]
+ },
+ "mission_050": {
+  "commands": [
+   "connect void",
+   "firewall",
+   "login walker null-ptr",
+   "download /jobs/void_iii/departure.dat",
+   "disconnect",
+   "cat /jobs/void_iii/.stash_void_iii"
+  ],
+  "choice": 0,
+  "type": "ESCAPE",
+  "items": [
+   "black_key"
+  ]
+ },
+ "mission_051": {
+  "commands": [
+   "connect genesis",
+   "firewall",
+   "login first hello-world",
+   "cat /jobs/genesis/first_log.txt",
+   "cat /jobs/genesis/ward_log.txt",
+   "cat /jobs/genesis/.stash_genesis"
+  ],
+  "choice": 1,
+  "type": "STORY",
+  "items": [
+   "nexus_core"
+  ]
+ },
+ "mission_052": {
+  "commands": [
+   "connect genesis",
+   "firewall",
+   "login first hello-world",
+   "download /jobs/prime_directive/directive.dat",
+   "cat /jobs/prime_directive/.stash_prime_directive",
+   "disconnect"
+  ],
+  "choice": 0,
+  "type": "DEFENSE",
+  "items": [
+   "nexus_core"
+  ]
+ }
+}

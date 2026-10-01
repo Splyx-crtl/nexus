@@ -1,0 +1,130 @@
+{
+ "id": "mission_022",
+ "number": 22,
+ "title": "LOCKED LEDGER",
+ "type": "DECRYPTION",
+ "difficulty": 2,
+ "chapter": 2,
+ "main": false,
+ "required_level": 8,
+ "min_reputation": 0,
+ "requires": [
+  "mission_003"
+ ],
+ "description": "A second ledger is locked behind a classic shift cipher. Crack it.",
+ "goal": "decrypt locked_ledger.enc and read it.",
+ "reward": {
+  "xp": 1100,
+  "credits": 1300,
+  "reputation": 3,
+  "items": []
+ },
+ "hint": "Credentials are in ~/sable_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "sable"
+  ],
+  "files": {
+   "sable_access.txt": [
+    "SABLE",
+    "user: teller",
+    "pass: gold-bar-3",
+    "task: LOCKED LEDGER"
+   ]
+  }
+ },
+ "story_start": [
+  "VECTOR: \"Caesar would be proud. Find the shift, read the ledger, don't spill coffee on the rig.\""
+ ],
+ "story_end": [
+  "Whatever's in that ledger is clearly why nobody wanted it read."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to SABLE",
+   "event": "route",
+   "server": "sable"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to SABLE",
+   "event": "connect",
+   "server": "sable",
+   "hint": "connect sable"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the SABLE-VAULT firewall",
+   "event": "firewall",
+   "server": "sable",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as teller",
+   "event": "login",
+   "server": "sable",
+   "user": "teller",
+   "hint": "login teller gold-bar-3  (see ~/sable_access.txt)"
+  },
+  {
+   "id": "decrypt",
+   "text": "Decrypt locked_ledger.enc",
+   "event": "decrypt",
+   "server": "sable",
+   "path": "/jobs/locked_ledger/locked_ledger.enc",
+   "hint": "decrypt /jobs/locked_ledger/locked_ledger.enc"
+  },
+  {
+   "id": "read",
+   "text": "Read the decrypted locked_ledger.enc",
+   "event": "read",
+   "server": "sable",
+   "path": "/jobs/locked_ledger/locked_ledger.enc"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "sable",
+   "path": "/jobs/locked_ledger/.stash_locked_ledger",
+   "optional": true,
+   "bonus": {
+    "xp": 88,
+    "credits": 104
+   },
+   "hint": "ls -a /jobs/locked_ledger"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 132,
+    "credits": 156
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 110,
+    "credits": 130
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Told you. Caesar. Always Caesar."
+   }
+  ],
+  "flags": {}
+ }
+}

@@ -1,0 +1,129 @@
+{
+ "id": "mission_038",
+ "number": 38,
+ "title": "GLASS HOUSE",
+ "type": "INFILTRATION",
+ "difficulty": 4,
+ "chapter": 5,
+ "main": false,
+ "required_level": 32,
+ "min_reputation": 30,
+ "requires": [
+  "mission_013"
+ ],
+ "description": "KESTREL's command archive lists every strike NEXUS ordered. Pull the log.",
+ "goal": "pull strike_log.dat.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/kestrel_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "kestrel"
+  ],
+  "files": {
+   "kestrel_access.txt": [
+    "KESTREL",
+    "user: pilot",
+    "pass: talon-5",
+    "task: GLASS HOUSE"
+   ]
+  }
+ },
+ "story_start": [
+  "ARCHER: \"This is the one that proves it. Command log, every strike.\""
+ ],
+ "story_end": [
+  "The log proves what ARCHER feared: NEXUS has been choosing targets for years."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to KESTREL",
+   "event": "route",
+   "server": "kestrel"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to KESTREL",
+   "event": "connect",
+   "server": "kestrel",
+   "hint": "connect kestrel"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the KESTREL-PRIME firewall",
+   "event": "firewall",
+   "server": "kestrel",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as pilot",
+   "event": "login",
+   "server": "kestrel",
+   "user": "pilot",
+   "hint": "login pilot talon-5  (see ~/kestrel_access.txt)"
+  },
+  {
+   "id": "read",
+   "text": "Read strike_log.dat",
+   "event": "read",
+   "server": "kestrel",
+   "path": "/jobs/glass_house/strike_log.dat"
+  },
+  {
+   "id": "dl",
+   "text": "Download strike_log.dat",
+   "event": "download",
+   "server": "kestrel",
+   "file": "strike_log.dat"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "kestrel",
+   "path": "/jobs/glass_house/.stash_glass_house",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/glass_house"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "archer",
+    "text": "That log is a loaded weapon. Handle with care."
+   }
+  ],
+  "flags": {}
+ }
+}

@@ -1,0 +1,124 @@
+{
+ "id": "mission_029",
+ "number": 29,
+ "title": "DEEP CIPHER",
+ "type": "DECRYPTION",
+ "difficulty": 3,
+ "chapter": 3,
+ "main": false,
+ "required_level": 17,
+ "min_reputation": 15,
+ "requires": [
+  "mission_008"
+ ],
+ "description": "ORCHARD's research core is locked behind a keyword cipher. Break it.",
+ "goal": "decrypt research_core.enc.",
+ "reward": {
+  "xp": 2400,
+  "credits": 2800,
+  "reputation": 4,
+  "items": []
+ },
+ "hint": "Credentials are in ~/orchard_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "orchard"
+  ],
+  "files": {
+   "orchard_access.txt": [
+    "ORCHARD",
+    "user: agro",
+    "pass: seed-bank",
+    "task: DEEP CIPHER"
+   ]
+  }
+ },
+ "story_start": [
+  "VECTOR: \"Vigenère. Keyword. Think what the lab does with plants.\""
+ ],
+ "story_end": [
+  "The research core is not about plants. It is about memory."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to ORCHARD",
+   "event": "connect",
+   "server": "orchard",
+   "hint": "connect orchard"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the ORCHARD-SHIELD firewall",
+   "event": "firewall",
+   "server": "orchard",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as agro",
+   "event": "login",
+   "server": "orchard",
+   "user": "agro",
+   "hint": "login agro seed-bank  (see ~/orchard_access.txt)"
+  },
+  {
+   "id": "decrypt",
+   "text": "Decrypt research_core.enc",
+   "event": "decrypt",
+   "server": "orchard",
+   "path": "/jobs/deep_cipher/research_core.enc",
+   "hint": "decrypt /jobs/deep_cipher/research_core.enc"
+  },
+  {
+   "id": "read",
+   "text": "Read the decrypted research_core.enc",
+   "event": "read",
+   "server": "orchard",
+   "path": "/jobs/deep_cipher/research_core.enc"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "orchard",
+   "path": "/jobs/deep_cipher/.stash_deep_cipher",
+   "optional": true,
+   "bonus": {
+    "xp": 192,
+    "credits": 224
+   },
+   "hint": "ls -a /jobs/deep_cipher"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 288,
+    "credits": 336
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 330 seconds",
+   "cond": "time_under",
+   "value": 330,
+   "reward": {
+    "xp": 240,
+    "credits": 280
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Seed. Of course. A seed is just a plan that hasn't been told it's a tree yet."
+   }
+  ],
+  "flags": {}
+ }
+}

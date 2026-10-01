@@ -1,0 +1,175 @@
+{
+ "id": "mission_021",
+ "number": 21,
+ "title": "DOCKSIDE HEIST",
+ "type": "INFILTRATION",
+ "difficulty": 2,
+ "chapter": 2,
+ "main": false,
+ "required_level": 7,
+ "min_reputation": 0,
+ "requires": [
+  "mission_003"
+ ],
+ "description": "SABLE's night ledger lists payouts to people who do not exist. Get in and pull the ledger.",
+ "goal": "pull night_ledger.dat from the teller vault.",
+ "reward": {
+  "xp": 1100,
+  "credits": 1300,
+  "reputation": 3,
+  "items": []
+ },
+ "hint": "Credentials are in ~/sable_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "sable"
+  ],
+  "files": {
+   "sable_access.txt": [
+    "SABLE",
+    "user: teller",
+    "pass: gold-bar-3",
+    "task: DOCKSIDE HEIST"
+   ]
+  }
+ },
+ "story_start": [
+  "GHOST: \"Banks are boring until you read what they hide. SABLE hides a lot.\"",
+  "GHOST: \"It's a relay route plus a firewall. Eat your vegetables first.\""
+ ],
+ "story_end": [
+  "The ledger lists forty ghosts on NEXUS payroll. GHOST seems delighted."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to SABLE",
+   "event": "route",
+   "server": "sable"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to SABLE",
+   "event": "connect",
+   "server": "sable",
+   "hint": "connect sable"
+  },
+  {
+   "id": "scan",
+   "text": "Scan SABLE",
+   "event": "scan",
+   "server": "sable"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the SABLE-VAULT firewall",
+   "event": "firewall",
+   "server": "sable",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as teller",
+   "event": "login",
+   "server": "sable",
+   "user": "teller",
+   "hint": "login teller gold-bar-3  (see ~/sable_access.txt)"
+  },
+  {
+   "id": "read",
+   "text": "Read night_ledger.dat",
+   "event": "read",
+   "server": "sable",
+   "path": "/jobs/dockside/night_ledger.dat"
+  },
+  {
+   "id": "dl",
+   "text": "Download night_ledger.dat",
+   "event": "download",
+   "server": "sable",
+   "file": "night_ledger.dat"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "sable",
+   "path": "/jobs/dockside/.stash_dockside",
+   "optional": true,
+   "bonus": {
+    "xp": 88,
+    "credits": 104
+   },
+   "hint": "ls -a /jobs/dockside"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 132,
+    "credits": 156
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 410 seconds",
+   "cond": "time_under",
+   "value": 410,
+   "reward": {
+    "xp": 110,
+    "credits": 130
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "Forty ghosts on the books and none of them ever cashed a cheque. Beautiful."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "dockside",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

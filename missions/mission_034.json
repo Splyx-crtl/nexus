@@ -1,0 +1,131 @@
+{
+ "id": "mission_034",
+ "number": 34,
+ "title": "CROSSFIRE",
+ "type": "DEFENSE",
+ "difficulty": 4,
+ "chapter": 4,
+ "main": false,
+ "required_level": 24,
+ "min_reputation": 30,
+ "requires": [
+  "mission_010"
+ ],
+ "description": "ATLAS is aware of you and fighting back. Steal survey data while the alert climbs.",
+ "goal": "download survey.dat then cool the trace alert below 25%.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/atlas_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "atlas"
+  ],
+  "files": {
+   "atlas_access.txt": [
+    "ATLAS",
+    "user: surveyor",
+    "pass: true-north",
+    "task: CROSSFIRE"
+   ]
+  }
+ },
+ "story_start": [
+  "ARCHER: \"They know you're there. Survive long enough to copy the data, then cool down.\""
+ ],
+ "story_end": [
+  "You walked out through a storm of countermeasures with the survey intact."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to ATLAS",
+   "event": "route",
+   "server": "atlas"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to ATLAS",
+   "event": "connect",
+   "server": "atlas",
+   "hint": "connect atlas"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the ATLAS-AEGIS firewall",
+   "event": "firewall",
+   "server": "atlas",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as surveyor",
+   "event": "login",
+   "server": "atlas",
+   "user": "surveyor",
+   "hint": "login surveyor true-north  (see ~/atlas_access.txt)"
+  },
+  {
+   "id": "dl",
+   "text": "Download survey.dat",
+   "event": "download",
+   "server": "atlas",
+   "file": "survey.dat"
+  },
+  {
+   "id": "cool",
+   "text": "Cool the trace alert below 25%",
+   "event": "heat_below",
+   "max": 25,
+   "hint": "disconnect, wait, or use a Heat Sink / Anonymous Credential"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "atlas",
+   "path": "/jobs/crossfire/.stash_crossfire",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/crossfire"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "archer",
+    "text": "Survived. The survey mentions something called GENESIS. Know it?"
+   }
+  ],
+  "flags": {}
+ },
+ "time_limit": 330,
+ "heat_rate": 0.55
+}

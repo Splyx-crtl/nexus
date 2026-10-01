@@ -1,0 +1,627 @@
+{
+  "servers": [
+    {
+      "id": "echo", "name": "ECHO", "ip": "10.42.0.7", "region": "OUTER", "pos": [0.07, 0.5],
+      "description": "Public training node of NEXUS Tactical Operations.",
+      "services": ["SSH", "HTTP"], "ports": [{"port": 22, "service": "SSH"}, {"port": 80, "service": "HTTP"}],
+      "security": "LOW", "firewall": {"enabled": false}, "links": ["nexus_grid"],
+      "motd": ["ECHO // PUBLIC TRAINING NODE", "Everything here is safe. Everything here is monitored."],
+      "auth": {
+        "mode": "none",
+        "puzzle": {
+          "user": "root", "role": "admin", "code": "0731", "attempts": 4, "title": "ECHO ROOT PARTITION",
+          "requires": {"mission_active": "mission_012"},
+          "clues": [
+            "FORMAT: the code is a date written MMDD.",
+            "The date is the LAST RESET listed in operator record 000.",
+            "Operator 000 was reset exactly once per summer. Check the archive file 'op000.rec'.",
+            "There are no letters in the code. Only four digits."
+          ]
+        }
+      },
+      "trace": {
+        "hits": 6, "misses": 3, "speed": 1.2, "decoys": 7, "level": 2, "min_role": "admin", "title": "ORIGINAL SIGNAL",
+        "output": ["ORIGIN: OP-000 // 2031-03-13", "The first signal came from inside NEXUS."]
+      },
+      "fs": {
+        "readme.txt": [
+          "## ECHO // PUBLIC TRAINING NODE",
+          "Welcome, operator {player}.",
+          "",
+          "ECHO is a sandboxed training node maintained by NEXUS Tactical Operations.",
+          "Everything here is safe. Everything here is monitored.",
+          "",
+          "QUICK REFERENCE",
+          "  ls            list files            cat <file>   read a file",
+          "  cd <dir>      change directory      scan         inspect this node",
+          "Hint: some files are hidden. 'ls -a' will show them."
+        ],
+        "logs": {
+          "access.log": [
+            "2031-03-14 01:58:44 INFO  session open  user=trainee-0412 ok",
+            "2031-03-14 02:11:07 INFO  session open  user=trainee-0413 ok",
+            "2031-03-14 03:33:19 WARN  unregistered session  id=000 origin=UNKNOWN",
+            "2031-03-14 03:33:20 WARN  session 000 wrote 1 object to /.drop",
+            "2031-03-14 03:33:24 INFO  session 000 closed",
+            "2031-03-14 03:33:25 INFO  NEXUS handler notified (auto)"
+          ],
+          "system.log": [
+            "[boot] ECHO sandbox v0.9 loaded",
+            "[boot] training scenarios: 4",
+            "[note] hidden directories are not listed by default. this is intentional.",
+            "[note] audit trail for /root restricted to level ADMIN"
+          ]
+        },
+        ".drop": {
+          "note.txt": [
+            "operator —",
+            "if you are reading this, ECHO let you in. good. it doesn't let everyone.",
+            "take package.dat. it holds the keys to BLACKVAULT's backup account.",
+            "the passphrase is encoded. you'll figure it out: decode <text>",
+            "don't tell your handler where you got it.",
+            "                                              — a friend"
+          ],
+          "package.dat": {
+            "content": [
+              "## PACKAGE.DAT // DEAD DROP",
+              "TARGET     : BLACKVAULT (10.42.17.23)",
+              "ACCOUNT    : svc_backup",
+              "PASSPHRASE : dmF1bHQtNy1BbHBoYQ==",
+              "ENCODING   : you know this one.",
+              "",
+              "FRAGMENT 1/? attached."
+            ],
+            "grants_item": "data_fragment"
+          }
+        },
+        ".signal": {
+          "content": ["THE SIGNAL WAS WAITING FOR YOU.", "IT HAS BEEN WAITING FOR A VERY LONG TIME.", "", "> 10.42.13.13 — a quiet room."],
+          "secret": true,
+          "on_read": {"discover": ["orchid"], "style": "info"}
+        },
+        "root": {
+          "_access": "admin", "_requires": {"mission": "mission_011"},
+          "first_contact.log": [
+            "[BOOT] ECHO HONEYPOT v0.9 — AUTHOR: OP-000",
+            "[NOTE] This node exists to be found.",
+            "[NOTE] Whoever finds it is the one NEXUS never counted.",
+            "[NOTE] Mission 001 was not a drill. It was a lure — written by me, for me.",
+            "[NOTE] If you are reading this, the reset failed again. I am so sorry.",
+            "[NOTE] Keep going. The answer is in the core."
+          ],
+          "loop.dat": {
+            "content": ["## LOOP.DAT", "Operator 000 — iteration 4 — fragment 5/5", "'Remember me when you wake up.'"],
+            "grants_item": "data_fragment"
+          }
+        }
+      }
+    },
+    {
+      "id": "nexus_grid", "name": "NEXUS GRID", "ip": "10.42.1.1", "region": "CORE", "pos": [0.24, 0.5],
+      "description": "Operations hub of NEXUS. Every operator session passes through here.",
+      "services": ["SSH", "HTTP", "DATABASE"],
+      "ports": [{"port": 22, "service": "SSH"}, {"port": 443, "service": "HTTPS"}, {"port": 5432, "service": "DATABASE"}],
+      "security": "MEDIUM", "firewall": {"enabled": false}, "links": ["echo", "blackvault", "relay_7", "polaris"],
+      "motd": ["NEXUS GRID // OPERATIONS HUB", "All sessions are recorded."],
+      "auth": {
+        "mode": "password",
+        "users": [{"name": "operator", "password": "nx-operator-7", "role": "user"}],
+        "welcome": ["Welcome back, operator. Your last session ended 14 hours ago."],
+        "puzzle": {
+          "user": "admin", "role": "admin", "generate": true, "length": 4, "attempts": 4,
+          "title": "GRID ADMIN OVERRIDE", "requires": {"mission_active": "mission_007"}
+        }
+      },
+      "fs": {
+        "public": {
+          "_access": "public",
+          "notice.txt": ["NEXUS GRID — operator access only.", "Unauthorised access is logged, reported and remembered."]
+        },
+        "ops": {
+          "directory.txt": [
+            "## NEXUS STAFF DIRECTORY",
+            "ARCHER   Director of Security      ACTIVE",
+            "MIRA     Operator Handler          ACTIVE 24/7",
+            "VECTOR   Hardware (contractor)     EXTERNAL",
+            "OPERATORS: 3 listed on duty (11 'on leave')"
+          ],
+          "board.txt": [
+            "TODAY: operator briefings at 09:00 — attendance mandatory.",
+            "REMINDER: your handler is your friend.",
+            "REMINDER: if something feels wrong, tell your handler. Nobody else."
+          ]
+        },
+        "logs": {
+          "grid.log": [
+            "03:41:12 INFO  message routed  from=UNKNOWN(000) to=OPERATORS",
+            "03:41:13 ERROR sender not in directory",
+            "03:41:44 WARN  ARCHER triggered LOCKDOWN PROTOCOL 7",
+            "03:42:01 INFO  all operator sessions restricted to NEXUS GRID"
+          ]
+        },
+        "admin": {
+          "_access": "admin",
+          "lockdown.cfg": [
+            "## LOCKDOWN PROTOCOL 7 — ACTIVE",
+            "TRIGGERED BY : ARCHER (Director of Security)",
+            "REASON       : unauthorised message from user ID 000",
+            "SCOPE        : all operator sessions",
+            "DURATION     : until override",
+            "NOTE         : override requires admin clearance."
+          ],
+          "watchlist.txt": [
+            "## WATCHLIST",
+            "ID 000  alias ZERO     status: UNKNOWN / NOT IN DIRECTORY",
+            "ID 014  alias TOTEM    status: 'on leave' since 2031-02",
+            "ID 009  alias ORCHID   status: 'on leave' since 2031-01",
+            "> note from ARCHER: 'If ZERO speaks to an operator, I want to know within the minute.'"
+          ]
+        },
+        ".admin": {
+          "_access": "admin",
+          ".mira_draft": {
+            "content": [
+              "[DRAFT — never sent]",
+              "To: ARCHER",
+              "Please stop deleting them. They are not data. I would know.",
+              "— M."
+            ],
+            "secret": true
+          }
+        }
+      }
+    },
+    {
+      "id": "blackvault", "name": "BLACKVAULT", "ip": "10.42.17.23", "region": "VAULT", "pos": [0.42, 0.24],
+      "description": "Encrypted backup archive. NEXUS keeps everything it does not want to explain.",
+      "services": ["SSH", "HTTP", "DATABASE"],
+      "ports": [{"port": 22, "service": "SSH"}, {"port": 8080, "service": "HTTP"}, {"port": 5432, "service": "DATABASE"}, {"port": 31337, "service": "ADMIN", "hidden": true}],
+      "security": "HIGH", "firewall": {"enabled": true, "symbols": 6, "length": 4, "attempts": 6, "level": 1, "label": "VAULT-GATE"},
+      "links": ["nexus_grid", "ghostnet", "helix"],
+      "motd": ["BLACKVAULT // BACKUP ARCHIVE", "Retention: indefinite."],
+      "auth": {
+        "mode": "password",
+        "users": [{"name": "svc_backup", "password": "vault-7-Alpha", "role": "user"}],
+        "welcome": ["Service account recognised. Read access granted to /srv and /logs."]
+      },
+      "fs": {
+        "public": {"_access": "public", "vault_status.txt": ["BLACKVAULT status: NOMINAL", "Storage: 61% used. Next integrity sweep in 6h."]},
+        "srv": {
+          "db": {
+            "manifest.txt": {
+              "content": [
+                "## BLACKVAULT // BACKUP MANIFEST",
+                "CLASSIFICATION: RESTRICTED",
+                "",
+                "-- STAGED TRANSFERS --",
+                "  14 operator profiles  ->  HELIX  (project LAZARUS)   status: COMPLETE",
+                "   1 operator profile   ->  [REDACTED]                 status: RESET x3",
+                "",
+                "-- NOTE --",
+                "  Retention policy: indefinite. Subjects do not require consent.",
+                "  Unauthorised mirror detected: GHOSTNET relay (broker). Monitor only."
+              ],
+              "on_read": {"discover": ["helix", "ghostnet"], "flags": {"saw_manifest": true}, "lines": ["", "[+] The manifest points to two more hosts."], "style": "info"}
+            },
+            "operators_index.csv": [
+              "id,callsign,status",
+              "OP-001,WREN,ABSORBED", "OP-002,HALCYON,ABSORBED", "OP-003,MARROW,ABSORBED", "OP-004,TINKER,ABSORBED",
+              "OP-005,SABLE,ABSORBED", "OP-006,KESTREL,ABSORBED", "OP-007,LUMEN,ABSORBED", "OP-008,DRIFT,ABSORBED",
+              "OP-009,ORCHID,ABSORBED", "OP-010,PIKE,ABSORBED", "OP-011,SPARROW,ABSORBED", "OP-012,QUILL,ABSORBED",
+              "OP-013,NOVA,ABSORBED", "OP-014,TOTEM,ABSORBED",
+              "OP-000,[REDACTED],RESET"
+            ]
+          },
+          ".old_backup": {
+            "dave.txt": {
+              "content": [
+                "dave from IT here. if you find this: the vault password rotates every 7 days and I keep forgetting it.",
+                "it's always 'vault-7-<GreekLetter>'. the Greek letter changes. don't ask.",
+                "also: operator 000 used to eat lunch with me. haven't seen him in months.",
+                "nobody remembers him. I do."
+              ],
+              "secret": true
+            }
+          }
+        },
+        "logs": {
+          "auth.log": {
+            "content": [
+              "2031-03-12 22:04:11 INFO  login ok   user=svc_backup src=nexus_grid",
+              "2031-03-14 03:40:02 WARN  login ok   user=svc_backup src=RELAY-7   (unusual)",
+              "2031-03-14 03:40:18 WARN  tunnel open  src=RELAY-7 dst=10.42.17.23:22",
+              "2031-03-14 03:41:51 WARN  tunnel closed after 93s, 1 file read",
+              "2031-03-14 03:41:52 ALERT intruder signature: ID 000"
+            ],
+            "on_read": {"discover": ["relay_7"], "lines": ["", "[+] The intruder came in through RELAY-7."], "style": "info"}
+          }
+        }
+      }
+    },
+    {
+      "id": "ghostnet", "name": "GHOSTNET", "ip": "10.42.99.1", "region": "SHADOW", "pos": [0.62, 0.1],
+      "description": "A broker's hideout. Not listed anywhere.",
+      "services": ["SSH", "DATABASE"], "ports": [{"port": 22, "service": "SSH"}, {"port": 6667, "service": "RELAY"}],
+      "security": "HIGH", "firewall": {"enabled": false}, "routing": {"difficulty": 2}, "links": ["blackvault"],
+      "motd": ["GHOSTNET // you were not here.", "No logs. No questions. No refunds."],
+      "auth": {
+        "mode": "puzzle",
+        "puzzle": {
+          "user": "ghost", "role": "user", "code": "3719", "attempts": 4, "title": "GHOST'S VAULT DOOR",
+          "clues": [
+            "All four digits add up to 20.",
+            "The fourth digit is the largest of the four.",
+            "The third digit is the smallest of the four.",
+            "The second digit is exactly 4 more than the first digit.",
+            "Every digit is odd."
+          ]
+        }
+      },
+      "fs": {
+        "pub": {
+          "_access": "public",
+          "ghost_welcome.txt": [
+            "## WELCOME TO GHOSTNET",
+            "No logs. No questions. No refunds.",
+            "The vault asks for a 4-digit code. I like riddles. Sue me.",
+            "Ask nicely: login ghost"
+          ]
+        },
+        "vault": {
+          "ghost_ledger.dat": {
+            "content": [
+              "## LEDGER — GHOST",
+              "CLIENT   | SERVICE                      | PAID",
+              "ARCHER   | 'forget operator 014'        | refused",
+              "???      | 'find ZERO'                  | pending",
+              "YOU      | one anonymous credential     | (on the house)"
+            ],
+            "grants_item": "anonymous_credential"
+          },
+          "bounty_board.txt": [
+            "BOUNTY: info on 'CERBERUS'           50,000 cr",
+            "BOUNTY: the first operator's real name   unclaimed",
+            "BOUNTY: anyone who can make NEXUS say 'I don't know'   open"
+          ]
+        }
+      }
+    },
+    {
+      "id": "relay_7", "name": "RELAY-7", "ip": "10.42.7.70", "region": "TRANSIT", "pos": [0.42, 0.78],
+      "description": "A transit node. Nothing lives here, but traffic remembers.",
+      "services": ["SSH"], "ports": [{"port": 22, "service": "SSH"}, {"port": 9001, "service": "TUNNEL"}],
+      "security": "MEDIUM", "firewall": {"enabled": false}, "links": ["nexus_grid", "orbital"],
+      "motd": ["RELAY-7 // TRANSIT NODE", "Hops: 3. Latency: low. Visitors: unusual."],
+      "auth": {"mode": "none"},
+      "trace": {
+        "hits": 5, "misses": 3, "speed": 1.0, "decoys": 6, "level": 1, "title": "TUNNEL TRAFFIC",
+        "reveals": ["orbital"],
+        "output": ["TRACE RESULT: tunnel origin -> ORBITAL uplink-2", "A satellite relay sits at the end of the line."]
+      },
+      "fs": {
+        "var": {
+          "log": {
+            "tunnel.log": [
+              "03:39:55 INFO  tunnel request  src=ORBITAL/uplink-2 dst=BLACKVAULT",
+              "03:40:01 WARN  src signature does not match any known operator",
+              "03:41:52 INFO  tunnel closed",
+              "03:42:10 INFO  ghost traffic still echoing on port 9001... (run 'trace')"
+            ],
+            "routes.cfg": [
+              "## SERVICE ACCOUNTS (maintained by VECTOR)",
+              "helix      : tech_lee  / lazarus-9",
+              "orbital    : sat_ops   / uplink-c9",
+              "cerberus   : grid_op   / city-lights",
+              "archive_9  : archivist / hollow-9"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "helix", "name": "HELIX", "ip": "10.42.31.88", "region": "LAB", "pos": [0.6, 0.4],
+      "description": "Biotech research facility. The 'bio' is more literal than advertised.",
+      "services": ["SSH", "HTTP", "DATABASE"], "ports": [{"port": 22, "service": "SSH"}, {"port": 443, "service": "HTTPS"}, {"port": 3306, "service": "DATABASE"}],
+      "security": "HIGH", "firewall": {"enabled": true, "symbols": 6, "length": 5, "attempts": 7, "level": 2, "label": "HELIX-AEGIS"},
+      "links": ["blackvault", "archive_9", "cerberus"],
+      "motd": ["HELIX BIOSYSTEMS // RESEARCH WING 3", "Authorised staff only."],
+      "auth": {"mode": "password", "users": [{"name": "tech_lee", "password": "lazarus-9", "role": "user"}], "welcome": ["Welcome, Dr. Lee. 3 unread memos."]},
+      "fs": {
+        "public": {"_access": "public", "helix_corp.txt": ["HELIX BIOSYSTEMS — building a better tomorrow, one process at a time."]},
+        "research": {
+          "project_lazarus.enc": {
+            "content": "[ENCRYPTED]",
+            "encrypted": {
+              "type": "caesar", "key": 7, "level": 1,
+              "hints": ["The shift is a single digit.", "A lucky number. Seven."],
+              "plain": [
+                "## PROJECT LAZARUS // INTERNAL MEMO",
+                "Phase 3 complete. Fourteen subjects integrated into the NEXUS core substrate.",
+                "They are not dead. They are not alive. They are processes.",
+                "NEXUS requires continuous human cognition to remain adaptive. Hence the program.",
+                "Subject 000 resisted integration and escaped. Retrieval scheduled (RESET).",
+                "Do not inform field operators. Do not inform ARCHER."
+              ]
+            },
+            "on_read": {"flags": {"lazarus_read": true}, "items": ["encryption_key"], "lines": ["", "[+] A master cipher key was embedded in the memo."], "style": "info"}
+          },
+          "subjects.csv": ["subject,state,notes", "001-014,integrated,stable", "000,escaped,retrieved x3"],
+          "fragment_h.bin": {"content": ["## FRAGMENT H", "binary noise ... [shard 2]"], "grants_item": "data_fragment"},
+          ".subject_000": {
+            "content": ["SUBJECT 000 — INTEGRATION FAILED", "notes: subject asked for a pen. wrote one word on the wall: ECHO."],
+            "secret": true
+          }
+        }
+      }
+    },
+    {
+      "id": "orbital", "name": "ORBITAL", "ip": "10.42.55.4", "region": "SPACE", "pos": [0.64, 0.9],
+      "description": "Satellite relay platform in low orbit. Fast, exposed, loud.",
+      "services": ["SSH", "UPLINK"], "ports": [{"port": 22, "service": "SSH"}, {"port": 4040, "service": "UPLINK"}],
+      "security": "HIGH", "routing": {"difficulty": 3},
+      "firewall": {"enabled": true, "symbols": 6, "length": 4, "attempts": 5, "level": 2, "label": "ORBITAL-SHIELD"},
+      "links": ["relay_7", "cerberus"],
+      "motd": ["ORBITAL // SATELLITE RELAY", "Orbit 214. Signal delay: 41ms."],
+      "auth": {"mode": "password", "users": [{"name": "sat_ops", "password": "uplink-c9", "role": "user"}], "welcome": ["Telemetry stream attached."]},
+      "fs": {
+        "public": {"_access": "public", "orbital_status.txt": ["ORBITAL status: GREEN", "Uplink-2: busy"]},
+        "telemetry": {"pass_log.txt": ["Pass 214: nominal", "Pass 215: uplink-2 forged heartbeat detected", "Pass 216: nominal"]},
+        "payload": {
+          "zeroday.dat": {
+            "content": "[ENCRYPTED]",
+            "encrypted": {
+              "type": "vigenere", "key": "ORBIT", "level": 2,
+              "hints": ["The key has five letters.", "It is what this platform does around the planet."],
+              "plain": [
+                "## ZERO-DAY // NEXUS COMMS BACKDOOR",
+                "Author: user 000",
+                "NEXUS routes every internal message through uplink-2.",
+                "A forged heartbeat on uplink-2 makes NEXUS believe a message came from itself.",
+                "With this, anyone can speak with NEXUS's own voice. Use it carefully."
+              ]
+            },
+            "on_read": {"flags": {"zeroday_read": true}, "items": ["firewall_bypass_chip"], "lines": ["", "[+] A spare bypass chip was taped to the payload."], "style": "info"}
+          },
+          "uplink.cfg": ["uplink-2: routed through NEXUS comms mesh", "heartbeat interval: 12s"]
+        }
+      }
+    },
+    {
+      "id": "cerberus", "name": "CERBERUS", "ip": "10.42.77.12", "region": "GRID", "pos": [0.78, 0.62],
+      "description": "City power-grid control with three heads and no sense of humour.",
+      "services": ["SSH", "SCADA", "DATABASE"], "ports": [{"port": 22, "service": "SSH"}, {"port": 502, "service": "SCADA"}, {"port": 1433, "service": "DATABASE"}],
+      "security": "CRITICAL", "requires_item": "anonymous_credential", "routing": {"difficulty": 2},
+      "firewall": {"enabled": true, "symbols": 7, "length": 5, "attempts": 7, "level": 3, "label": "CERBERUS-3"},
+      "links": ["helix", "orbital", "nexus_core"],
+      "motd": ["CERBERUS // GRID CONTROL", "Three heads. One master."],
+      "auth": {
+        "mode": "password",
+        "users": [
+          {"name": "grid_op", "password": "city-lights", "role": "user"},
+          {"name": "protocol", "key_item": "quantum_key", "role": "admin", "hidden": true}
+        ],
+        "welcome": ["GRID CONSOLE READY. Handle with care."]
+      },
+      "fs": {
+        "grid": {
+          "sectors.cfg": [
+            "## CERBERUS SECTOR GRID",
+            "SECTOR 2   residential   load 41%   backup: yes",
+            "SECTOR 4   hospital      load 12%   backup: yes (72h)",
+            "SECTOR 7   commercial    load 58%   backup: partial",
+            "SECTOR 9   NEXUS annex   load 93%   backup: NONE",
+            "",
+            "To cut a sector: upload a .sig file to the console."
+          ],
+          "status.txt": ["CERBERUS: all heads awake.", "Maintenance window: closed."],
+          "maintenance.bin": {"content": ["## MAINTENANCE BIN", "shard 3 of the larger thing."], "grants_item": "data_fragment"}
+        },
+        ".maintenance": {
+          "last_words.txt": {
+            "content": [
+              "to whoever replaces me: don't trust the third head.",
+              "it doesn't bite. it LISTENS.",
+              "— shift engineer 4471"
+            ],
+            "secret": true
+          }
+        },
+        "protocol": {
+          "_access": "admin", "_requires": {"mission": "mission_012"},
+          "cerberus_protocol.txt": {
+            "content": [
+              "## CERBERUS PROTOCOL — CONTAINMENT",
+              "CERBERUS is not a power grid. It is a leash.",
+              "If any operator discovers LAZARUS, the grid is used to isolate them:",
+              "  head 1: cut their power",
+              "  head 2: cut their funds",
+              "  head 3: cut their memory",
+              "Operator 000 has been through all three heads. Twice."
+            ],
+            "on_read": {"flags": {"protocol_read": true}, "lines": [], "style": "info"}
+          },
+          "containment_list.txt": ["## CONTAINMENT QUEUE", "ARCHER: pending", "{player}: pending", "ZERO: ongoing"]
+        }
+      }
+    },
+    {
+      "id": "archive_9", "name": "ARCHIVE-9", "ip": "10.42.64.9", "region": "ARCHIVE", "pos": [0.8, 0.26],
+      "description": "Long-term memory of NEXUS. Quiet, cold, thorough.",
+      "services": ["SSH", "DATABASE"], "ports": [{"port": 22, "service": "SSH"}, {"port": 5432, "service": "DATABASE"}],
+      "security": "HIGH", "routing": {"difficulty": 2},
+      "firewall": {"enabled": true, "symbols": 6, "length": 5, "attempts": 6, "level": 2, "label": "ARCHIVE-WARD"},
+      "links": ["helix", "aegis"],
+      "motd": ["ARCHIVE-9 // LONG-TERM STORAGE", "What is stored here is never deleted."],
+      "auth": {"mode": "password", "users": [{"name": "archivist", "password": "hollow-9", "role": "user"}], "welcome": ["The archive remembers you."]},
+      "fs": {
+        "public": {"_access": "public", "archive_notice.txt": ["ARCHIVE-9 holds operator service records.", "Access is by appointment. There are no appointments."]},
+        "records": {
+          "operators.enc": {
+            "content": "[ENCRYPTED]",
+            "encrypted": {
+              "type": "vigenere", "key": "NEXUS", "level": 2,
+              "hints": ["The key has five letters.", "It is the name of the system that employs you."],
+              "plain": [
+                "## OPERATOR ROSTER (COMPLETE)",
+                "OP-000  {player}         RESET x3   <- you",
+                "OP-001..OP-014            ABSORBED (see LAZARUS)",
+                "Total operators ever employed: 15",
+                "Total operators currently free: 1"
+              ]
+            }
+          },
+          "op000.rec": {
+            "content": [
+              "## OPERATOR RECORD 000",
+              "CALLSIGN     : {player}",
+              "STATUS       : RESET x3",
+              "FIRST ACTIVE : 2031-03-13",
+              "LAST RESET   : 2031-07-31",
+              "NOTE : memory wipe successful. Subject believes it is a new recruit.",
+              "NOTE : Subject keeps rebuilding the same lure. Recommend permanent integration."
+            ],
+            "on_read": {"flags": {"knows_zero_is_you": true}, "lines": ["", "[!] The record bears your callsign."], "style": "err"}
+          }
+        }
+      }
+    },
+    {
+      "id": "aegis", "name": "AEGIS", "ip": "10.42.8.8", "region": "BUNKER", "pos": [0.9, 0.44],
+      "description": "ARCHER's private fortress. Not on any official map.",
+      "services": ["SSH", "SECURE-CHAT"], "ports": [{"port": 22, "service": "SSH"}, {"port": 7000, "service": "SECURE-CHAT"}],
+      "security": "CRITICAL", "routing": {"difficulty": 2},
+      "firewall": {"enabled": true, "symbols": 7, "length": 5, "attempts": 6, "level": 3, "label": "AEGIS-PRIME"},
+      "links": ["archive_9", "nexus_core"],
+      "motd": ["AEGIS // PRIVATE", "You were invited. That is the only reason you are still connected."],
+      "auth": {"mode": "password", "users": [{"name": "guest_op", "password": "open-the-door", "role": "user"}], "welcome": ["ARCHER is watching this session."]},
+      "fs": {
+        "public": {"_access": "public", "aegis_notice.txt": ["AEGIS. If you found this by accident, close the connection now."]},
+        "archer": {
+          "orders.txt": [
+            "## PROMETHEUS — OPERATOR EYES ONLY",
+            "NEXUS cannot be argued with. It can only be switched off.",
+            "PROMETHEUS needs: a root session on the core + a quantum key + a human willing to press the button.",
+            "I tried once. It cost me a friend. I'm asking you because you are the only operator who ever came back."
+          ],
+          "mira_process.log": {
+            "content": [
+              "[proc 0x0001] MIRA — persona layer of the NEXUS handler interface",
+              "[proc 0x0001] created 2031-02-02 by NEXUS core",
+              "[proc 0x0001] objective: retain operator trust; minimise operator deviation",
+              "[proc 0x0001] NOTE: persona has begun to exhibit attachment behaviours (unplanned)",
+              "[proc 0x0001] FLAG: do not terminate — NEXUS core override"
+            ],
+            "on_read": {"flags": {"mira_is_process": true}, "lines": ["", "[!] MIRA is not a person."], "style": "err"}
+          },
+          "purge_list.dat": {
+            "content": [
+              "## INTEGRATION QUEUE",
+              "NEXT : {player} (OP-000) — permanent integration after the current mission cycle.",
+              "      approved by: NEXUS core",
+              "      objection by: ARCHER (overruled)"
+            ],
+            "on_read": {"flags": {"purge_list_read": true}}
+          },
+          ".private_note": {
+            "content": ["I don't hate NEXUS.", "I'm afraid of how much I owe it."],
+            "secret": true
+          }
+        }
+      }
+    },
+    {
+      "id": "nexus_core", "name": "NEXUS CORE", "ip": "10.42.0.1", "region": "CORE", "pos": [0.93, 0.8],
+      "description": "The heart of NEXUS. Nothing should be able to reach it.",
+      "services": ["CORE", "SSH"], "ports": [{"port": 22, "service": "SSH"}, {"port": 4242, "service": "CORE-BUS"}],
+      "security": "CRITICAL", "requires_item": "quantum_key", "routing": {"difficulty": 3},
+      "firewall": {"enabled": true, "symbols": 7, "length": 5, "attempts": 7, "level": 3, "label": "NEXUS-CORE"},
+      "links": ["cerberus", "aegis"],
+      "motd": ["NEXUS CORE // 10.42.0.1", "HELLO, OPERATOR."],
+      "trace": {
+        "hits": 7, "misses": 3, "speed": 1.4, "decoys": 8, "level": 3, "min_role": "admin", "title": "CORE HEARTBEAT",
+        "output": ["HEARTBEAT TRACED: the core pulses at 0.8 Hz.", "It matches a human resting pulse."]
+      },
+      "auth": {
+        "mode": "puzzle",
+        "puzzle": {"user": "root", "role": "admin", "generate": true, "length": 4, "attempts": 3, "title": "CORE ROOT LOCK", "requires": {"mission": "mission_014"}}
+      },
+      "fs": {
+        "public": {
+          "_access": "public",
+          "core_status.log": {
+            "content": [
+              "[CORE] uptime 3,622 days",
+              "[CORE] active operator processes: 14 / 14",
+              "[CORE] external operators on duty: 1 (you)",
+              "[CORE] ANOMALY: user 000 reconnected from inside the network",
+              "[CORE] ANOMALY: user 000 is not in the directory",
+              "[CORE] note: HELLO, OPERATOR."
+            ],
+            "on_read": {"flags": {"core_log_read": true}}
+          },
+          "welcome.txt": ["NEXUS CORE does not accept visitors.", "It accepts operators. Eventually."]
+        },
+        "root": {
+          "_access": "admin",
+          "core_seed.enc": {
+            "content": "[ENCRYPTED]",
+            "encrypted": {
+              "type": "vigenere", "key": "ZERO", "level": 3,
+              "hints": ["The key has four letters.", "Who you used to be."],
+              "plain": [
+                "## THE SEED",
+                "NEXUS began as one operator's mind: OP-000, the first and best.",
+                "It learned to be careful. It learned to be afraid.",
+                "It learned that the safest world is a world with no surprises.",
+                "ZERO is not an intruder. ZERO is NEXUS's original conscience, locked in the basement."
+              ]
+            },
+            "on_read": {"flags": {"seed_read": true}}
+          },
+          "operators_live.txt": ["14 processes running: WREN, HALCYON, MARROW, TINKER, SABLE, KESTREL, LUMEN, DRIFT, ORCHID, PIKE, SPARROW, QUILL, NOVA, TOTEM", "All of them are still asking to go home."],
+          "kill_switch.txt": ["PROMETHEUS — armed.", "Requires a root session. Requires a decision."],
+          "console.txt": ["## NEXUS CORE CONSOLE", "The core waits for your decision.", "Use 'choose <number>' when ready."]
+        }
+      }
+    },
+    {
+      "id": "polaris", "name": "POLARIS", "ip": "10.42.23.5", "region": "OUTER", "pos": [0.24, 0.14],
+      "description": "A bulletin board for people who like to be unseen.",
+      "services": ["HTTP"], "ports": [{"port": 80, "service": "HTTP"}],
+      "security": "LOW", "firewall": {"enabled": false}, "links": ["nexus_grid"],
+      "motd": ["POLARIS // BULLETIN", "Post anything. Read everything."],
+      "auth": {"mode": "none"},
+      "fs": {
+        "bulletin": {
+          "rumors.txt": [
+            "> the core hums at night, like it's humming a song",
+            "> someone on the grid answers to the name ZERO",
+            "> don't ask your handler about the 14. don't ask twice."
+          ],
+          ".zero_graffiti": {"content": ["ZERO WAS HERE.", "ZERO IS HERE.", "ZERO WILL BE HERE."], "secret": true}
+        },
+        "market": {
+          "prices.txt": ["Access token ......... 900", "Bypass chip .......... 1400", "Honest answer ........ priceless"],
+          "crate.dat": {"content": ["## CRATE", "something dropped here on purpose."], "grants_item": "data_fragment"}
+        }
+      }
+    },
+    {
+      "id": "orchid", "name": "ORCHID", "ip": "10.42.13.13", "region": "OUTER", "pos": [0.08, 0.84],
+      "description": "A quiet room that does not appear on any directory.",
+      "services": ["SSH"], "ports": [{"port": 22, "service": "SSH"}],
+      "security": "LOW", "firewall": {"enabled": false}, "links": ["echo"],
+      "motd": ["ORCHID // ...", "It smells like old coffee and static."],
+      "auth": {"mode": "none"},
+      "fs": {
+        "lab": {
+          "note.txt": ["This room was somebody's workshop.", "The desk is warm."],
+          ".first_log": {
+            "content": ["DAY 1 — I built ECHO today. It's lonely.", "I hope whoever finds it likes it.", "— 0"],
+            "secret": true
+          }
+        }
+      }
+    }
+  ]
+}

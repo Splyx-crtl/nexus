@@ -1,0 +1,52 @@
+{
+  "chapters": [
+    {"id": 1, "title": "FIRST CONTACT", "summary": "A training node, a dead drop and a name that should not exist.",
+     "missions": ["mission_001", "mission_002"],
+     "complete": {
+       "lines": ["CHAPTER 1 COMPLETE — FIRST CONTACT", "STORY EVENT: an unregistered user left a message in your inbox.", "NEW MECHANIC: LOADOUT — DECRYPT/FIREWALL/TRACE gear can now be equipped.", "NEW AREA: NEXUS GRID and the outer grid are on your map."],
+       "items": ["heat_sink", "heat_sink"], "discover": ["nexus_grid", "polaris"],
+       "flags": {"chapter_1_done": true}, "message": {"from": "zero", "text": "> you opened the first door. there are more. keep reading the logs."},
+       "xp": 200, "credits": 500,
+       "mechanic": "LOADOUT: equip gear from the market in the TRACE and FIREWALL slots.", "banner": {"kind": "complete", "lines": ["CHAPTER 1 COMPLETE", "FIRST CONTACT", "NEW: LOADOUT"]}}},
+    {"id": 2, "title": "THE GRID", "summary": "Vaults, ghosts and the first real intrusion.",
+     "missions": ["mission_003", "mission_004", "mission_005"],
+     "complete": {
+       "lines": ["CHAPTER 2 COMPLETE — THE GRID", "STORY EVENT: VECTOR joins your channel and opens the black market.", "NEW MECHANIC: DECRYPT slot unlocked — cipher gear and the DECRYPTION track pay off.", "NEW ITEM: Cipher Lens."],
+       "items": ["cipher_lens"], "discover": ["relay_7"],
+       "flags": {"chapter_2_done": true, "slot_decrypt": true}, "message": {"from": "vector", "text": "Chapter two's done, {player}. Cipher Lens in your inventory — equip it in the DECRYPT slot. Don't thank me."},
+       "xp": 400, "credits": 1000,
+       "mechanic": "DECRYPT slot unlocked.", "banner": {"kind": "complete", "lines": ["CHAPTER 2 COMPLETE", "THE GRID", "NEW SLOT: DECRYPT"]}}},
+    {"id": 3, "title": "BLACKVAULT", "summary": "What NEXUS buries, and who it buries.",
+     "missions": ["mission_006", "mission_007", "mission_008", "mission_009"],
+     "complete": {
+       "lines": ["CHAPTER 3 COMPLETE — BLACKVAULT", "STORY EVENT: Project LAZARUS is real; the fourteen are processes.", "NEW MECHANIC: NETWORK slot unlocked — relay gear widens your routing budget.", "NEW ITEM: Route Amplifier."],
+       "items": ["route_amplifier"], "discover": ["orbital", "cerberus"],
+       "flags": {"chapter_3_done": true, "slot_network": true}, "message": {"from": "ghost", "text": "You pulled the vault's teeth, kid. The deep grid will start noticing you. Gear up."},
+       "xp": 800, "credits": 2000,
+       "mechanic": "NETWORK slot unlocked.", "banner": {"kind": "complete", "lines": ["CHAPTER 3 COMPLETE", "BLACKVAULT", "NEW SLOT: NETWORK"]}}},
+    {"id": 4, "title": "ZERO", "summary": "The core's outer ring, a missing operator and your own name.",
+     "missions": ["mission_010", "mission_011", "mission_012"],
+     "complete": {
+       "lines": ["CHAPTER 4 COMPLETE — ZERO", "STORY EVENT: ZERO has a face. It is yours.", "NEW MECHANIC: UTILITY slot unlocked — passive rig upgrades.", "NEW ITEM: Stealth Cloak."],
+       "items": ["stealth_cloak"], "discover": ["archive_9"],
+       "flags": {"chapter_4_done": true, "slot_utility": true}, "message": {"from": "zero", "text": "> half of the truth is in your hands. the other half is in the core."},
+       "xp": 1200, "credits": 3000,
+       "mechanic": "UTILITY slot unlocked.", "banner": {"kind": "zero", "lines": ["CHAPTER 4 COMPLETE", "ZERO", "NEW SLOT: UTILITY"]}}},
+    {"id": 5, "title": "THE ARCHITECT", "summary": "The leash, the list and the person who built both.",
+     "missions": ["mission_013", "mission_014"],
+     "complete": {
+       "lines": ["CHAPTER 5 COMPLETE — THE ARCHITECT", "STORY EVENT: the architect of NEXUS is not who you thought.", "NEW AREA: AEGIS and the core approaches are open.", "NEW ITEM: Trace Booster."],
+       "items": ["trace_booster"], "discover": ["aegis", "nexus_core"],
+       "flags": {"chapter_5_done": true}, "message": {"from": "mira", "text": "Chapter five. We're close now, {player}. Stay with me."},
+       "xp": 2000, "credits": 5000,
+       "mechanic": "Core approaches revealed.", "banner": {"kind": "alert", "lines": ["CHAPTER 5 COMPLETE", "THE ARCHITECT", "NEW AREA: CORE APPROACH"]}}},
+    {"id": 6, "title": "NEXUS", "summary": "Root. Decision. Ending.",
+     "missions": ["mission_015", "mission_016"],
+     "complete": {
+       "lines": ["CHAPTER 6 COMPLETE — NEXUS", "STORY EVENT: the campaign ends. The network does not.", "NEW: the NEXUS theme is yours.", "FREE PLAY: contracts, secrets and the endless grind to NEXUS PRIME."],
+       "items": [], "discover": [], "unlock": ["theme:nexus"],
+       "flags": {"chapter_6_done": true}, "message": {"from": "zero", "text": "> now the real game starts."},
+       "xp": 5000, "credits": 10000,
+       "mechanic": "NEXUS theme unlocked.", "banner": {"kind": "complete", "lines": ["CHAPTER 6 COMPLETE", "NEXUS", "CAMPAIGN FINISHED"]}}}
+  ]
+}

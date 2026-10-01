@@ -1,0 +1,123 @@
+{
+ "id": "mission_010",
+ "number": 10,
+ "title": "NEXUS",
+ "difficulty": 4,
+ "description": "The outer ring of the NEXUS core. Nothing should be able to reach it. You are about to prove otherwise.",
+ "goal": "Reach the NEXUS core's public layer and read its status log.",
+ "reward": {
+  "xp": 1600,
+  "credits": 4200,
+  "reputation": 5
+ },
+ "requires": [
+  "mission_009"
+ ],
+ "hint": "route nexus_core -> firewall -> read /public/core_status.log (use 'cd /public').",
+ "on_start": {
+  "discover": [
+   "nexus_core"
+  ]
+ },
+ "story_start": [
+  "MIRA: \"This is the core, {player}. The one place I'm not allowed to take you.\"",
+  "GHOST: \"I'll be quiet now. I'd like to see how this ends.\"",
+  "The relays hum. The firewall is seven symbols deep. You are at the door of NEXUS itself."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to the NEXUS CORE",
+   "event": "route",
+   "server": "nexus_core",
+   "hint": "Level 3 routing. Check each relay's risk."
+  },
+  {
+   "id": "connect",
+   "text": "Connect to the NEXUS CORE",
+   "event": "connect",
+   "server": "nexus_core"
+  },
+  {
+   "id": "fw",
+   "text": "Breach NEXUS-CORE firewall",
+   "event": "firewall",
+   "server": "nexus_core",
+   "hint": "Seven symbols, five slots, seven guesses."
+  },
+  {
+   "id": "log",
+   "text": "Read /public/core_status.log",
+   "event": "read",
+   "server": "nexus_core",
+   "path": "/public/core_status.log",
+   "hint": "cd /public then cat core_status.log"
+  }
+ ],
+ "moments": [
+  {
+   "when": "objective:log",
+   "banner": {
+    "kind": "zero",
+    "lines": [
+     "UNKNOWN USER CONNECTED",
+     "> ZERO has joined the network."
+    ],
+    "block": true
+   }
+  },
+  {
+   "when": "objective:log",
+   "message": {
+    "from": "zero",
+    "text": "> you made it. finally. we need to talk. i'll find you."
+   }
+  }
+ ],
+ "story_end": [
+  "ZERO speaks to you live for the first time. His words are short. His voice is yours."
+ ],
+ "on_complete": {
+  "flags": {
+   "zero_live": true
+  },
+  "trust": {
+   "zero": 6
+  },
+  "messages": [
+   {
+    "from": "mira",
+    "text": "Whatever ZERO says, remember who stayed with you from the beginning. Me."
+   },
+   {
+    "from": "archer",
+    "text": "You reached the core. I have questions. Not yet. Soon. — ARCHER"
+   }
+  ]
+ },
+ "type": "STORY",
+ "chapter": 4,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 160,
+    "credits": 420
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 480 seconds",
+   "cond": "time_under",
+   "value": 480,
+   "reward": {
+    "xp": 128,
+    "credits": 336
+   }
+  }
+ ],
+ "required_level": 1
+}

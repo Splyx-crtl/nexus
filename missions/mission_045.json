@@ -1,0 +1,173 @@
+{
+ "id": "mission_045",
+ "number": 45,
+ "title": "SPECTER II: HOLLOW",
+ "type": "DECRYPTION",
+ "difficulty": 4,
+ "chapter": 3,
+ "main": false,
+ "required_level": 34,
+ "min_reputation": 20,
+ "requires": [
+  "mission_044"
+ ],
+ "description": "GHOST's second act: a hollow archive guarded by a keyword cipher.",
+ "goal": "decrypt hollow.enc.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/shadow_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "shadow"
+  ],
+  "files": {
+   "shadow_access.txt": [
+    "SHADOW",
+    "user: specter",
+    "pass: ghost-key",
+    "task: SPECTER II: HOLLOW"
+   ]
+  }
+ },
+ "story_start": [
+  "GHOST: \"The archive is hollow. The key is who I used to be.\""
+ ],
+ "story_end": [
+  "The archive was hollow on purpose. The weight is in the key."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to SHADOW",
+   "event": "route",
+   "server": "shadow"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to SHADOW",
+   "event": "connect",
+   "server": "shadow",
+   "hint": "connect shadow"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the SHADOW-VEIL firewall",
+   "event": "firewall",
+   "server": "shadow",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as specter",
+   "event": "login",
+   "server": "shadow",
+   "user": "specter",
+   "hint": "login specter ghost-key  (see ~/shadow_access.txt)"
+  },
+  {
+   "id": "decrypt",
+   "text": "Decrypt hollow.enc",
+   "event": "decrypt",
+   "server": "shadow",
+   "path": "/jobs/specter_ii/hollow.enc",
+   "hint": "decrypt /jobs/specter_ii/hollow.enc"
+  },
+  {
+   "id": "read",
+   "text": "Read the decrypted hollow.enc",
+   "event": "read",
+   "server": "shadow",
+   "path": "/jobs/specter_ii/hollow.enc"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "shadow",
+   "path": "/jobs/specter_ii/.stash_specter_ii",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/specter_ii"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "Now you know. I was one of them. I ran before they could add my name to the fourteen."
+   }
+  ],
+  "flags": {}
+ },
+ "requires_items": [
+  "ghost_token"
+ ],
+ "secret": true,
+ "choice": {
+  "key": "specter_ii",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

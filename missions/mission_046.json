@@ -1,0 +1,181 @@
+{
+ "id": "mission_046",
+ "number": 46,
+ "title": "SPECTER III: WHISPERS",
+ "type": "INTELLIGENCE",
+ "difficulty": 4,
+ "chapter": 3,
+ "main": false,
+ "required_level": 38,
+ "min_reputation": 25,
+ "requires": [
+  "mission_045"
+ ],
+ "description": "GHOST wants a favour: trade rumours with MIRA and ZERO, then decode what they say.",
+ "goal": "ask ZERO who he is, read the whisper log, decode the line.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/shadow_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "shadow"
+  ],
+  "files": {
+   "shadow_access.txt": [
+    "SHADOW",
+    "user: specter",
+    "pass: ghost-key",
+    "task: SPECTER III: WHISPERS"
+   ]
+  }
+ },
+ "story_start": [
+  "GHOST: \"Ask them both. Compare. Where the stories disagree, the truth lives.\""
+ ],
+ "story_end": [
+  "Where the stories disagree is exactly where GHOST said it would be."
+ ],
+ "objectives": [
+  {
+   "id": "topic",
+   "text": "Ask ZERO about it ('msg zero who')",
+   "event": "topic",
+   "contact": "zero",
+   "topic": "who",
+   "hint": "msg zero who"
+  },
+  {
+   "id": "route",
+   "text": "Build a relay route to SHADOW",
+   "event": "route",
+   "server": "shadow"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to SHADOW",
+   "event": "connect",
+   "server": "shadow",
+   "hint": "connect shadow"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the SHADOW-VEIL firewall",
+   "event": "firewall",
+   "server": "shadow",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as specter",
+   "event": "login",
+   "server": "shadow",
+   "user": "specter",
+   "hint": "login specter ghost-key  (see ~/shadow_access.txt)"
+  },
+  {
+   "id": "notes",
+   "text": "Read notes.txt",
+   "event": "read",
+   "server": "shadow",
+   "path": "/jobs/specter_iii/notes.txt"
+  },
+  {
+   "id": "decode",
+   "text": "Decode the hidden line",
+   "event": "decode",
+   "contains_result": "THE TWELFTH FLOOR",
+   "hint": "decode VEhFIFRXRUxGVEggRkxPT1I="
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "shadow",
+   "path": "/jobs/specter_iii/.stash_specter_iii",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/specter_iii"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 410 seconds",
+   "cond": "time_under",
+   "value": 410,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "The twelfth floor... they always lie about numbers, kid."
+   }
+  ],
+  "flags": {}
+ },
+ "requires_items": [
+  "ghost_token"
+ ],
+ "secret": true,
+ "choice": {
+  "key": "specter_iii",
+  "prompt": "How do you close the operation?",
+  "options": [
+   {
+    "id": "clean",
+    "text": "Wipe your traces carefully and leave no footprint.",
+    "trust": {
+     "mira": 3
+    },
+    "reward": {
+     "reputation": 2
+    },
+    "result": ""
+   },
+   {
+    "id": "loud",
+    "text": "Leave a calling card. Let them know someone was here.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": -2
+    },
+    "result": ""
+   },
+   {
+    "id": "share",
+    "text": "Share the file with every contact you trust.",
+    "trust": {
+     "ghost": 2,
+     "vector": 2
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

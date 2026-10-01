@@ -1,0 +1,124 @@
+{
+ "id": "mission_019",
+ "number": 19,
+ "title": "SIGNAL CHECK",
+ "type": "TRACE",
+ "difficulty": 1,
+ "chapter": 1,
+ "main": false,
+ "required_level": 4,
+ "min_reputation": 0,
+ "requires": [
+  "mission_002"
+ ],
+ "description": "Something on the telecom backbone is repeating itself. Trace the echo to its source.",
+ "goal": "trace the repeating packet.",
+ "reward": {
+  "xp": 500,
+  "credits": 600,
+  "reputation": 2,
+  "items": []
+ },
+ "hint": "Credentials are in ~/tidal_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "tidal"
+  ],
+  "files": {
+   "tidal_access.txt": [
+    "TIDAL",
+    "user: line_ops",
+    "pass: wave-9",
+    "task: SIGNAL CHECK"
+   ]
+  }
+ },
+ "story_start": [
+  "MIRA: \"TIDAL logged the same packet 400 times. Somebody is testing us. Find the sender.\"",
+  "MIRA: \"The trace probe needs a steady hand.\""
+ ],
+ "story_end": [
+  "The sender was inside NEXUS' own address range. Of course it was."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to TIDAL",
+   "event": "connect",
+   "server": "tidal",
+   "hint": "connect tidal"
+  },
+  {
+   "id": "login",
+   "text": "Log in as line_ops",
+   "event": "login",
+   "server": "tidal",
+   "user": "line_ops",
+   "hint": "login line_ops wave-9  (see ~/tidal_access.txt)"
+  },
+  {
+   "id": "alert",
+   "text": "Read alert.log",
+   "event": "read",
+   "server": "tidal",
+   "path": "/jobs/signal_check/alert.log"
+  },
+  {
+   "id": "trace",
+   "text": "Trace the signal on TIDAL",
+   "event": "trace",
+   "server": "tidal",
+   "hint": "trace"
+  },
+  {
+   "id": "origin",
+   "text": "Read the origin report",
+   "event": "read",
+   "server": "tidal",
+   "path": "/jobs/signal_check/origin.txt"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "tidal",
+   "path": "/jobs/signal_check/.stash_signal_check",
+   "optional": true,
+   "bonus": {
+    "xp": 40,
+    "credits": 48
+   },
+   "hint": "ls -a /jobs/signal_check"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 60,
+    "credits": 72
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 330 seconds",
+   "cond": "time_under",
+   "value": 330,
+   "reward": {
+    "xp": 50,
+    "credits": 60
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "Maintenance key... I'll look into it. Don't mention it to ARCHER, please."
+   }
+  ],
+  "flags": {}
+ }
+}

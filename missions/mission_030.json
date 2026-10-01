@@ -1,0 +1,162 @@
+{
+ "id": "mission_030",
+ "number": 30,
+ "title": "HOT WIRE",
+ "type": "ESCAPE",
+ "difficulty": 3,
+ "chapter": 3,
+ "main": false,
+ "required_level": 18,
+ "min_reputation": 15,
+ "requires": [
+  "mission_007"
+ ],
+ "description": "LUMEN has noticed you. Grab the grid keys and get out before the trace completes.",
+ "goal": "download grid_keys.dat, then disconnect.",
+ "reward": {
+  "xp": 2400,
+  "credits": 2800,
+  "reputation": 4,
+  "items": []
+ },
+ "hint": "Credentials are in ~/lumen_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "lumen"
+  ],
+  "files": {
+   "lumen_access.txt": [
+    "LUMEN",
+    "user: grid_tech",
+    "pass: ohm-law",
+    "task: HOT WIRE"
+   ]
+  }
+ },
+ "story_start": [
+  "GHOST: \"This one's a sprint. The alert rises on its own. Grab the keys and run.\""
+ ],
+ "story_end": [
+  "You slipped out with the keys while LUMEN was still counting."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to LUMEN",
+   "event": "connect",
+   "server": "lumen",
+   "hint": "connect lumen"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the LUMEN-GATE firewall",
+   "event": "firewall",
+   "server": "lumen",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as grid_tech",
+   "event": "login",
+   "server": "lumen",
+   "user": "grid_tech",
+   "hint": "login grid_tech ohm-law  (see ~/lumen_access.txt)"
+  },
+  {
+   "id": "dl",
+   "text": "Download grid_keys.dat",
+   "event": "download",
+   "server": "lumen",
+   "file": "grid_keys.dat"
+  },
+  {
+   "id": "leave",
+   "text": "Disconnect before NEXUS catches you",
+   "event": "disconnect"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "lumen",
+   "path": "/jobs/hot_wire/.stash_hot_wire",
+   "optional": true,
+   "bonus": {
+    "xp": 192,
+    "credits": 224
+   },
+   "hint": "ls -a /jobs/hot_wire"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 288,
+    "credits": 336
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 330 seconds",
+   "cond": "time_under",
+   "value": 330,
+   "reward": {
+    "xp": 240,
+    "credits": 280
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "Cutting it close. I like that in a customer."
+   }
+  ],
+  "flags": {}
+ },
+ "time_limit": 240,
+ "heat_rate": 0.55,
+ "choice": {
+  "key": "hot_wire",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Build output
+build/
+dist/
+*.spec
+
+# Runtime data (player saves, settings, generated sounds)
+saves/*
+!saves/.gitkeep
+assets/sounds/*.wav
+!assets/sounds/.gitkeep
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Test artefacts
+.pytest_cache/
+tests/__pycache__/

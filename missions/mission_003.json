@@ -1,0 +1,129 @@
+{
+ "id": "mission_003",
+ "number": 3,
+ "title": "BLACKVAULT",
+ "difficulty": 2,
+ "description": "BLACKVAULT is the archive where NEXUS keeps what it does not want to explain. The dead drop gave you a key.",
+ "goal": "Breach BLACKVAULT and retrieve the backup manifest.",
+ "reward": {
+  "xp": 500,
+  "credits": 1200,
+  "reputation": 4
+ },
+ "requires": [
+  "mission_002"
+ ],
+ "hint": "scan first, then 'firewall', then login with the credentials from package.dat.",
+ "on_start": {
+  "discover": [
+   "nexus_grid",
+   "blackvault"
+  ]
+ },
+ "story_start": [
+  "MIRA: \"BLACKVAULT is rated HIGH. Its firewall will fight back — every wrong guess raises your trace alert.\"",
+  "MIRA: \"The package gave you a service account. Use it quietly.\""
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to BLACKVAULT",
+   "event": "connect",
+   "server": "blackvault",
+   "hint": "connect blackvault"
+  },
+  {
+   "id": "scan",
+   "text": "Scan BLACKVAULT",
+   "event": "scan",
+   "server": "blackvault"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the firewall",
+   "event": "firewall",
+   "server": "blackvault",
+   "hint": "Type: firewall — then deduce the symbol combination."
+  },
+  {
+   "id": "login",
+   "text": "Log in as svc_backup",
+   "event": "login",
+   "server": "blackvault",
+   "user": "svc_backup",
+   "hint": "login svc_backup  (the password is the decoded passphrase from package.dat)"
+  },
+  {
+   "id": "read",
+   "text": "Read /srv/db/manifest.txt",
+   "event": "read",
+   "server": "blackvault",
+   "path": "/srv/db/manifest.txt",
+   "hint": "cd /srv/db  then  cat manifest.txt"
+  },
+  {
+   "id": "dl",
+   "text": "Download the manifest",
+   "event": "download",
+   "server": "blackvault",
+   "file": "manifest.txt"
+  },
+  {
+   "id": "dave",
+   "text": "Find Dave's forgotten note",
+   "event": "read",
+   "server": "blackvault",
+   "path": "/srv/.old_backup/dave.txt",
+   "optional": true,
+   "bonus": {
+    "xp": 120,
+    "credits": 250
+   },
+   "hint": "ls -a /srv"
+  }
+ ],
+ "story_end": [
+  "Fourteen operator profiles, 'ABSORBED'. One 'RESET x3'. This was never a backup vault."
+ ],
+ "on_complete": {
+  "discover": [
+   "helix",
+   "ghostnet"
+  ],
+  "messages": [
+   {
+    "from": "mira",
+    "text": "Fourteen operators... I need time to look into this. Don't tell anyone else, {player}. Not yet."
+   },
+   {
+    "from": "ghost",
+    "text": "Heard you cracked the vault, kid. GHOSTNET. Come find me. Bring questions, not friends."
+   }
+  ]
+ },
+ "type": "INFILTRATION",
+ "chapter": 2,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 50,
+    "credits": 120
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 300 seconds",
+   "cond": "time_under",
+   "value": 300,
+   "reward": {
+    "xp": 40,
+    "credits": 96
+   }
+  }
+ ],
+ "required_level": 1
+}

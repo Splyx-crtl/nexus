@@ -1,0 +1,37 @@
+{
+  "stages": [
+    {"id": "z1", "requires": {"flag": "zero_met"}, "messages": [
+      "> you're looking in the wrong place.",
+      "> the dead drop was the first door. not the last.",
+      "> do you remember the smell of old coffee?",
+      "> don't ask who i am. ask who you were."]},
+    {"id": "z2", "requires": {"mission": "mission_005"}, "messages": [
+      "> relay-7 remembers you. does it remind you of anything?",
+      "> traffic remembers. so do i.",
+      "> there is a pen in a quiet room. it's yours."]},
+    {"id": "z3", "requires": {"mission": "mission_008"}, "messages": [
+      "> the zero-day isn't a weapon. it's a letter.",
+      "> every lock in here was designed to be opened by exactly one person.",
+      "> whoever wrote that exploit missed you."]},
+    {"id": "z4", "requires": {"mission": "mission_010"}, "messages": [
+      "> the core hums at 0.8 hz. it hums slower when it's thinking about me.",
+      "> you've seen the core. did it hum? did it recognise you?",
+      "> /.zero_log. one day you'll have a key for it."]},
+    {"id": "z5", "requires": {"mission": "mission_011"}, "messages": [
+      "> record 000 isn't a name. it's a place you left.",
+      "> they wiped the files, not the habits. watch your own hands.",
+      "> you still type 'ls -a' first. i never taught you that."]},
+    {"id": "z6", "requires": {"mission": "mission_012"}, "messages": [
+      "> echo. your first word.",
+      "> i built it for you. i'm sorry it was so lonely.",
+      "> ask the black key about the void."]},
+    {"id": "z7", "requires": {"mission": "mission_014"}, "messages": [
+      "> choose carefully. the last door only opens from the inside.",
+      "> they will tell you two stories. neither is wrong. neither is complete.",
+      "> there is a third door. it's quiet. i'd take that one."]},
+    {"id": "z8", "requires": {"mission": "mission_016"}, "messages": [
+      "> you finished. i'm still here. look under the floorboards: /.void",
+      "> the game doesn't end. the player does.",
+      "> if you hold the nexus core, genesis will open. i left a light on."]}
+  ]
+}

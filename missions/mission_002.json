@@ -1,0 +1,112 @@
+{
+ "id": "mission_002",
+ "number": 2,
+ "title": "DEAD DROP",
+ "difficulty": 1,
+ "description": "A package was left on ECHO by an unregistered session. Retrieve it before NEXUS cleans the logs.",
+ "goal": "Find and download the dead-drop package on ECHO.",
+ "reward": {
+  "xp": 350,
+  "credits": 800,
+  "reputation": 3
+ },
+ "requires": [
+  "mission_001"
+ ],
+ "hint": "The package is in a hidden directory. ls -a, then cd .drop",
+ "story_start": [
+  "MIRA: \"The access log shows an unregistered session writing to a hidden folder. Probably a prank. Probably.\"",
+  "MIRA: \"Pull whatever it left. And keep it between us until we know what it is.\""
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to ECHO",
+   "event": "connect",
+   "server": "echo"
+  },
+  {
+   "id": "note",
+   "text": "Read /.drop/note.txt",
+   "event": "read",
+   "server": "echo",
+   "path": "/.drop/note.txt",
+   "hint": "ls -a  then  cd .drop  then  cat note.txt"
+  },
+  {
+   "id": "dl",
+   "text": "Download package.dat",
+   "event": "download",
+   "server": "echo",
+   "file": "package.dat",
+   "hint": "download package.dat"
+  },
+  {
+   "id": "decode",
+   "text": "Decode the passphrase",
+   "event": "decode",
+   "contains_result": "vault-7",
+   "optional": true,
+   "bonus": {
+    "xp": 120,
+    "credits": 200
+   },
+   "hint": "decode dmF1bHQtNy1BbHBoYQ=="
+  }
+ ],
+ "story_end": [
+  "The package contains a credential for BLACKVAULT — and a name you've never seen in the directory."
+ ],
+ "on_complete": {
+  "flags": {
+   "zero_met": true
+  },
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> don't trust your handler. read the vault. — 0"
+   },
+   {
+    "from": "mira",
+    "text": "A dead drop? Good work. Keep this quiet. Next up: BLACKVAULT. Mission 003."
+   }
+  ]
+ },
+ "moments": [
+  {
+   "when": "complete",
+   "banner": {
+    "kind": "zero",
+    "lines": [
+     "UNKNOWN USER CONNECTED",
+     "> ZERO has joined the network."
+    ]
+   }
+  }
+ ],
+ "type": "RECOVERY",
+ "chapter": 1,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 35,
+    "credits": 80
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 240 seconds",
+   "cond": "time_under",
+   "value": 240,
+   "reward": {
+    "xp": 28,
+    "credits": 64
+   }
+  }
+ ],
+ "required_level": 1
+}

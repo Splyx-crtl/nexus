@@ -1,0 +1,164 @@
+{
+ "id": "mission_020",
+ "number": 20,
+ "title": "PAPER TRAIL",
+ "type": "INTELLIGENCE",
+ "difficulty": 1,
+ "chapter": 1,
+ "main": false,
+ "required_level": 5,
+ "min_reputation": 0,
+ "requires": [
+  "mission_002"
+ ],
+ "description": "Piece together a picture from a handler's tips and the HARBOR freight notes.",
+ "goal": "ask MIRA about NEXUS, read the freight notes, decode the rumour.",
+ "reward": {
+  "xp": 500,
+  "credits": 600,
+  "reputation": 2,
+  "items": []
+ },
+ "hint": "Credentials are in ~/harbor_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "harbor"
+  ],
+  "files": {
+   "harbor_access.txt": [
+    "HARBOR",
+    "user: dockhand",
+    "pass: crane-41",
+    "task: PAPER TRAIL"
+   ]
+  }
+ },
+ "story_start": [
+  "MIRA: \"Intelligence work is conversation. Ask me what I know, then check it against the freight notes.\"",
+  "MIRA: \"The rumour file is encoded.\""
+ ],
+ "story_end": [
+  "You now know more than you were meant to. That's usually how it starts."
+ ],
+ "objectives": [
+  {
+   "id": "topic",
+   "text": "Ask MIRA about it ('msg mira nexus')",
+   "event": "topic",
+   "contact": "mira",
+   "topic": "nexus",
+   "hint": "msg mira nexus"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to HARBOR",
+   "event": "connect",
+   "server": "harbor",
+   "hint": "connect harbor"
+  },
+  {
+   "id": "login",
+   "text": "Log in as dockhand",
+   "event": "login",
+   "server": "harbor",
+   "user": "dockhand",
+   "hint": "login dockhand crane-41  (see ~/harbor_access.txt)"
+  },
+  {
+   "id": "notes",
+   "text": "Read notes.txt",
+   "event": "read",
+   "server": "harbor",
+   "path": "/jobs/paper_trail/notes.txt"
+  },
+  {
+   "id": "decode",
+   "text": "Decode the hidden line",
+   "event": "decode",
+   "contains_result": "FLOOR FOURTEEN",
+   "hint": "decode RkxPT1IgRk9VUlRFRU4="
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "harbor",
+   "path": "/jobs/paper_trail/.stash_paper_trail",
+   "optional": true,
+   "bonus": {
+    "xp": 40,
+    "credits": 48
+   },
+   "hint": "ls -a /jobs/paper_trail"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 60,
+    "credits": 72
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 330 seconds",
+   "cond": "time_under",
+   "value": 330,
+   "reward": {
+    "xp": 50,
+    "credits": 60
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "Careful with rumours, {player}. Even true ones bite."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "paper_trail",
+  "prompt": "Someone asks who authorised this job...",
+  "options": [
+   {
+    "id": "mira",
+    "text": "'MIRA did.' Hand the responsibility to your handler.",
+    "trust": {
+     "mira": -2
+    },
+    "reward": {
+     "reputation": 0
+    },
+    "result": ""
+   },
+   {
+    "id": "self",
+    "text": "'I did.' Take the credit and the risk.",
+    "trust": {
+     "archer": 2
+    },
+    "reward": {
+     "reputation": 2
+    },
+    "result": ""
+   },
+   {
+    "id": "zero",
+    "text": "'A friend.' Say nothing more.",
+    "trust": {
+     "zero": 4
+    },
+    "reward": {
+     "reputation": 0
+    },
+    "result": ""
+   }
+  ]
+ }
+}

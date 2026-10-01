@@ -1,0 +1,170 @@
+{
+ "id": "mission_042",
+ "number": 42,
+ "title": "CORE SIEGE",
+ "type": "DEFENSE",
+ "difficulty": 5,
+ "chapter": 6,
+ "main": false,
+ "required_level": 42,
+ "min_reputation": 30,
+ "requires": [
+  "mission_015"
+ ],
+ "description": "Hold ATLAS open long enough to copy the core's blueprint, then cool down before NEXUS locks you out.",
+ "goal": "download blueprint.dat then cool the alert below 25%.",
+ "reward": {
+  "xp": 9000,
+  "credits": 11000,
+  "reputation": 6,
+  "items": []
+ },
+ "hint": "Credentials are in ~/atlas_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "atlas"
+  ],
+  "files": {
+   "atlas_access.txt": [
+    "ATLAS",
+    "user: surveyor",
+    "pass: true-north",
+    "task: CORE SIEGE"
+   ]
+  }
+ },
+ "story_start": [
+  "ARCHER: \"This is the siege. Copy the blueprint. Then survive.\""
+ ],
+ "story_end": [
+  "The blueprint is yours, and so is the knowledge of where NEXUS is weakest."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to ATLAS",
+   "event": "route",
+   "server": "atlas"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to ATLAS",
+   "event": "connect",
+   "server": "atlas",
+   "hint": "connect atlas"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the ATLAS-AEGIS firewall",
+   "event": "firewall",
+   "server": "atlas",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as surveyor",
+   "event": "login",
+   "server": "atlas",
+   "user": "surveyor",
+   "hint": "login surveyor true-north  (see ~/atlas_access.txt)"
+  },
+  {
+   "id": "dl",
+   "text": "Download blueprint.dat",
+   "event": "download",
+   "server": "atlas",
+   "file": "blueprint.dat"
+  },
+  {
+   "id": "cool",
+   "text": "Cool the trace alert below 25%",
+   "event": "heat_below",
+   "max": 25,
+   "hint": "disconnect, wait, or use a Heat Sink / Anonymous Credential"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "atlas",
+   "path": "/jobs/core_siege/.stash_core_siege",
+   "optional": true,
+   "bonus": {
+    "xp": 720,
+    "credits": 880
+   },
+   "hint": "ls -a /jobs/core_siege"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 1080,
+    "credits": 1320
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 900,
+    "credits": 1100
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "archer",
+    "text": "Blueprint received. Do you understand what the heartbeat is?"
+   }
+  ],
+  "flags": {}
+ },
+ "time_limit": 360,
+ "heat_rate": 0.8,
+ "choice": {
+  "key": "core_siege",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

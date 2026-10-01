@@ -1,0 +1,201 @@
+{
+ "id": "mission_009",
+ "number": 9,
+ "title": "BLACKOUT",
+ "difficulty": 4,
+ "description": "CERBERUS controls the power grid. A single signed command can cut a sector. The question is which.",
+ "goal": "Break into CERBERUS and upload the blackout signature.",
+ "reward": {
+  "xp": 1400,
+  "credits": 3600,
+  "reputation": 3
+ },
+ "requires": [
+  "mission_008"
+ ],
+ "hint": "CERBERUS needs your Anonymous Credential in the inventory. Upload ~/blackout.sig once logged in.",
+ "on_start": {
+  "discover": [
+   "cerberus"
+  ],
+  "files": {
+   "cerberus_access.txt": [
+    "CERBERUS",
+    "user: grid_op",
+    "pass: city-lights",
+    "requires: anonymous credential in your inventory"
+   ],
+   "blackout.sig": [
+    "SIGNATURE: SECTOR-CUT",
+    "AUTHOR: VECTOR",
+    "PAYLOAD: [SIMULATED] 0x00 0xFF 0x42"
+   ]
+  },
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Signature's in ~/blackout.sig. Pick your sector carefully — you can't un-cut a city."
+   }
+  ]
+ },
+ "story_start": [
+  "ARCHER: \"A power cut would blind NEXUS's annex for a few minutes. Minutes are all we need.\"",
+  "MIRA: \"Please be careful, {player}. People live in those sectors.\""
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to CERBERUS",
+   "event": "route",
+   "server": "cerberus"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to CERBERUS",
+   "event": "connect",
+   "server": "cerberus"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the CERBERUS-3 firewall",
+   "event": "firewall",
+   "server": "cerberus",
+   "hint": "Seven symbols, five slots. Use the feedback."
+  },
+  {
+   "id": "login",
+   "text": "Log in as grid_op",
+   "event": "login",
+   "server": "cerberus",
+   "user": "grid_op",
+   "hint": "You need the Anonymous Credential (from GHOST's ledger) in your inventory."
+  },
+  {
+   "id": "sectors",
+   "text": "Read /grid/sectors.cfg",
+   "event": "read",
+   "server": "cerberus",
+   "path": "/grid/sectors.cfg"
+  },
+  {
+   "id": "upload",
+   "text": "Upload blackout.sig",
+   "event": "upload",
+   "server": "cerberus",
+   "file": "blackout.sig",
+   "hint": "upload blackout.sig"
+  },
+  {
+   "id": "frag",
+   "text": "Take maintenance.bin",
+   "event": "download",
+   "server": "cerberus",
+   "file": "maintenance.bin",
+   "optional": true,
+   "bonus": {
+    "xp": 150,
+    "credits": 300
+   }
+  }
+ ],
+ "choice": {
+  "key": "blackout_sector",
+  "prompt": "The console blinks: WHICH SECTOR LOSES POWER?",
+  "options": [
+   {
+    "id": "nexus_annex",
+    "text": "SECTOR 9 — the NEXUS annex (93% load, no backup). Maximum damage to NEXUS.",
+    "trust": {
+     "zero": 5,
+     "archer": 3
+    },
+    "flags": {
+     "cut_sector_9": true
+    },
+    "reward": {
+     "xp": 300,
+     "credits": 500,
+     "reputation": 2
+    },
+    "banner": {
+     "kind": "blackout",
+     "lines": [
+      "BLACKOUT",
+      "SECTOR 9 — NEXUS ANNEX",
+      "POWER: 0%"
+     ]
+    },
+    "result": "The NEXUS annex goes dark. Somewhere, a very patient machine notices."
+   },
+   {
+    "id": "commercial",
+    "text": "SECTOR 7 — commercial (backup: partial). A safer, smaller cut.",
+    "trust": {
+     "mira": 4
+    },
+    "flags": {
+     "cut_sector_7": true
+    },
+    "banner": {
+     "kind": "blackout",
+     "lines": [
+      "BLACKOUT",
+      "SECTOR 7 — COMMERCIAL",
+      "POWER: 0%"
+     ]
+    },
+    "result": "Offices and shops fall dark. Nobody gets hurt. Nobody learns anything either."
+   },
+   {
+    "id": "abort",
+    "text": "Abort. Leave the grid untouched.",
+    "reward": {
+     "reputation": 4
+    },
+    "trust": {
+     "mira": 6
+    },
+    "flags": {
+     "blackout_aborted": true
+    },
+    "result": "You pull the signature before it fires. The city never knew how close it was."
+   }
+  ]
+ },
+ "story_end": [
+  "CERBERUS's three heads watch you leave. The third one seems to follow you out."
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "Whatever you did to the grid, NEXUS is furious. Be ready: next stop is the core's outer ring."
+   }
+  ]
+ },
+ "type": "INFILTRATION",
+ "chapter": 3,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 140,
+    "credits": 360
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 480 seconds",
+   "cond": "time_under",
+   "value": 480,
+   "reward": {
+    "xp": 112,
+    "credits": 288
+   }
+  }
+ ],
+ "required_level": 1
+}

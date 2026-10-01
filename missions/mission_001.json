@@ -1,0 +1,103 @@
+{
+ "id": "mission_001",
+ "number": 1,
+ "title": "FIRST CONTACT",
+ "difficulty": 1,
+ "description": "Your first day as a NEXUS operator. Learn the terminal by visiting the public training node ECHO.",
+ "goal": "Connect to the virtual server ECHO and inspect it.",
+ "reward": {
+  "xp": 250,
+  "credits": 600,
+  "reputation": 2
+ },
+ "requires": [],
+ "hint": "Type: connect echo",
+ "story_start": [
+  "MIRA: \"Welcome aboard, {player}. NEXUS is the network that watches over the other networks, and you are its newest pair of eyes.\"",
+  "MIRA: \"Let's start gently. ECHO is a training node — safe, sandboxed, a little lonely. Say hello.\"",
+  "MIRA: \"Everything you see is a simulation inside NEXUS. Nothing out there can be hurt by what you type here.\""
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to ECHO",
+   "event": "connect",
+   "server": "echo",
+   "hint": "Type: connect echo"
+  },
+  {
+   "id": "scan",
+   "text": "Scan the node",
+   "event": "scan",
+   "server": "echo",
+   "hint": "Type: scan"
+  },
+  {
+   "id": "ls",
+   "text": "List the files",
+   "event": "ls",
+   "server": "echo",
+   "hint": "Type: ls  (try 'ls -a' for hidden files)"
+  },
+  {
+   "id": "read",
+   "text": "Read readme.txt",
+   "event": "read",
+   "server": "echo",
+   "path": "/readme.txt",
+   "hint": "Type: cat readme.txt"
+  },
+  {
+   "id": "secret",
+   "text": "Find the hidden signal file",
+   "event": "read",
+   "server": "echo",
+   "path": "/.signal",
+   "optional": true,
+   "bonus": {
+    "xp": 100,
+    "credits": 150
+   },
+   "hint": "Hidden files start with a dot: ls -a, then cat .signal"
+  }
+ ],
+ "story_end": [
+  "MIRA: \"Clean. Quick. Exactly the way I like it. ECHO has been quiet for years — I'm glad you made it talk.\""
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "Nicely done, {player}. Something was left on ECHO for the next operator. Mission 002 is ready when you are: 'mission start 2'."
+   }
+  ],
+  "trust": {
+   "mira": 3
+  }
+ },
+ "type": "INVESTIGATION",
+ "chapter": 1,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 25,
+    "credits": 60
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 240 seconds",
+   "cond": "time_under",
+   "value": 240,
+   "reward": {
+    "xp": 20,
+    "credits": 48
+   }
+  }
+ ],
+ "required_level": 1
+}

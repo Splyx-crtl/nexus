@@ -1,0 +1,124 @@
+{
+ "id": "mission_023",
+ "number": 23,
+ "title": "GRID NOISE",
+ "type": "TRACE",
+ "difficulty": 2,
+ "chapter": 2,
+ "main": false,
+ "required_level": 9,
+ "min_reputation": 0,
+ "requires": [
+  "mission_005"
+ ],
+ "description": "Interference on the TIDAL backbone has a pattern. Trace the noise to its transmitter.",
+ "goal": "trace the interference source on TIDAL.",
+ "reward": {
+  "xp": 1100,
+  "credits": 1300,
+  "reputation": 3,
+  "items": []
+ },
+ "hint": "Credentials are in ~/tidal_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "tidal"
+  ],
+  "files": {
+   "tidal_access.txt": [
+    "TIDAL",
+    "user: line_ops",
+    "pass: wave-9",
+    "task: GRID NOISE"
+   ]
+  }
+ },
+ "story_start": [
+  "MIRA: \"Noise is just information that hasn't introduced itself yet.\"",
+  "MIRA: \"Trace it. Two clean hits in a row if you can.\""
+ ],
+ "story_end": [
+  "The noise is a heartbeat. Too slow for a machine, too regular for a person."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to TIDAL",
+   "event": "connect",
+   "server": "tidal",
+   "hint": "connect tidal"
+  },
+  {
+   "id": "login",
+   "text": "Log in as line_ops",
+   "event": "login",
+   "server": "tidal",
+   "user": "line_ops",
+   "hint": "login line_ops wave-9  (see ~/tidal_access.txt)"
+  },
+  {
+   "id": "alert",
+   "text": "Read alert.log",
+   "event": "read",
+   "server": "tidal",
+   "path": "/jobs/grid_noise/alert.log"
+  },
+  {
+   "id": "trace",
+   "text": "Trace the signal on TIDAL",
+   "event": "trace",
+   "server": "tidal",
+   "hint": "trace"
+  },
+  {
+   "id": "origin",
+   "text": "Read the origin report",
+   "event": "read",
+   "server": "tidal",
+   "path": "/jobs/grid_noise/origin.txt"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "tidal",
+   "path": "/jobs/grid_noise/.stash_grid_noise",
+   "optional": true,
+   "bonus": {
+    "xp": 88,
+    "credits": 104
+   },
+   "hint": "ls -a /jobs/grid_noise"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 132,
+    "credits": 156
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 330 seconds",
+   "cond": "time_under",
+   "value": 330,
+   "reward": {
+    "xp": 110,
+    "credits": 130
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "0.8 Hz... I'd like you to forget that number, {player}. I'd also like you to remember it."
+   }
+  ],
+  "flags": {}
+ }
+}

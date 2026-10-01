@@ -1,0 +1,134 @@
+{
+ "id": "mission_049",
+ "number": 49,
+ "title": "VOID II: NULL",
+ "type": "DECRYPTION",
+ "difficulty": 4,
+ "chapter": 4,
+ "main": false,
+ "required_level": 38,
+ "min_reputation": 20,
+ "requires": [
+  "mission_048"
+ ],
+ "description": "The second VOID room hides a message in a shift cipher.",
+ "goal": "decrypt null.enc.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/void_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "void"
+  ],
+  "files": {
+   "void_access.txt": [
+    "VOID",
+    "user: walker",
+    "pass: null-ptr",
+    "task: VOID II: NULL"
+   ]
+  }
+ },
+ "story_start": [
+  "ZERO: \"> a plain cipher. i was young and optimistic.\""
+ ],
+ "story_end": [
+  "The message was a promise to a stranger — you."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to VOID",
+   "event": "route",
+   "server": "void"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to VOID",
+   "event": "connect",
+   "server": "void",
+   "hint": "connect void"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the VOID-NULL firewall",
+   "event": "firewall",
+   "server": "void",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as walker",
+   "event": "login",
+   "server": "void",
+   "user": "walker",
+   "hint": "login walker null-ptr  (see ~/void_access.txt)"
+  },
+  {
+   "id": "decrypt",
+   "text": "Decrypt null.enc",
+   "event": "decrypt",
+   "server": "void",
+   "path": "/jobs/void_ii/null.enc",
+   "hint": "decrypt /jobs/void_ii/null.enc"
+  },
+  {
+   "id": "read",
+   "text": "Read the decrypted null.enc",
+   "event": "read",
+   "server": "void",
+   "path": "/jobs/void_ii/null.enc"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "void",
+   "path": "/jobs/void_ii/.stash_void_ii",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/void_ii"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> i was optimistic once. don't be like me."
+   }
+  ],
+  "flags": {}
+ },
+ "requires_items": [
+  "black_key"
+ ],
+ "secret": true
+}

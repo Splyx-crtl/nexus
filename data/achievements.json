@@ -1,0 +1,974 @@
+{
+ "achievements": [
+  {
+   "id": "first_connection",
+   "name": "FIRST CONNECTION",
+   "description": "Connect to a server for the first time.",
+   "condition": {
+    "stat": "connections",
+    "gte": 1
+   },
+   "reward": {
+    "xp": 20
+   },
+   "category": "EXPLORATION"
+  },
+  {
+   "id": "first_decryption",
+   "name": "FIRST DECRYPTION",
+   "description": "Break your first cipher.",
+   "condition": {
+    "stat": "decryptions",
+    "gte": 1
+   },
+   "reward": {
+    "xp": 40
+   },
+   "category": "PUZZLES"
+  },
+  {
+   "id": "wall_breaker",
+   "name": "WALL BREAKER",
+   "description": "Breach a firewall.",
+   "condition": {
+    "stat": "firewalls_breached",
+    "gte": 1
+   },
+   "reward": {
+    "xp": 40
+   },
+   "category": "COMBAT"
+  },
+  {
+   "id": "pathfinder",
+   "name": "PATHFINDER",
+   "description": "Solve a routing puzzle.",
+   "condition": {
+    "stat": "routes_solved",
+    "gte": 1
+   },
+   "reward": {
+    "xp": 40
+   },
+   "category": "PUZZLES"
+  },
+  {
+   "id": "keymaster",
+   "name": "KEYMASTER",
+   "description": "Crack an access code.",
+   "condition": {
+    "stat": "access_solved",
+    "gte": 1
+   },
+   "reward": {
+    "xp": 40
+   },
+   "category": "PUZZLES"
+  },
+  {
+   "id": "bloodhound",
+   "name": "BLOODHOUND",
+   "description": "Complete a trace.",
+   "condition": {
+    "stat": "traces_done",
+    "gte": 1
+   },
+   "reward": {
+    "xp": 40
+   },
+   "category": "COMBAT"
+  },
+  {
+   "id": "ghost_in_the_machine",
+   "name": "GHOST IN THE MACHINE",
+   "description": "Meet the GHOST (mission 004).",
+   "condition": {
+    "mission": "mission_004"
+   },
+   "reward": {
+    "credits": 300
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "no_trace",
+   "name": "NO TRACE",
+   "description": "Complete a mission with a PERFECT rating.",
+   "condition": {
+    "stat": "perfect_missions",
+    "gte": 1
+   },
+   "reward": {
+    "credits": 400
+   },
+   "category": "MASTERY"
+  },
+  {
+   "id": "perfect_operation",
+   "name": "PERFECT OPERATION",
+   "description": "Achieve 5 PERFECT mission ratings.",
+   "condition": {
+    "stat": "perfect_missions",
+    "gte": 5
+   },
+   "reward": {
+    "credits": 1500,
+    "unlock": "theme:red_alert"
+   },
+   "category": "MASTERY"
+  },
+  {
+   "id": "root_access",
+   "name": "ROOT ACCESS",
+   "description": "Reach the NEXUS core (mission 015).",
+   "condition": {
+    "mission": "mission_015"
+   },
+   "reward": {
+    "credits": 1000
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "blackout",
+   "name": "BLACKOUT",
+   "description": "Cut the power (mission 009).",
+   "condition": {
+    "mission": "mission_009"
+   },
+   "reward": {
+    "credits": 500
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "nexus",
+   "name": "NEXUS",
+   "description": "Reach any ending.",
+   "condition": {
+    "mission": "mission_016"
+   },
+   "reward": {
+    "credits": 2000,
+    "unlock": "theme:nexus"
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "secret_found",
+   "name": "SECRET FOUND",
+   "description": "Discover a secret file.",
+   "condition": {
+    "stat": "secrets_found",
+    "gte": 1
+   },
+   "reward": {
+    "xp": 60
+   },
+   "category": "SECRETS"
+  },
+  {
+   "id": "archivist",
+   "name": "ARCHIVIST",
+   "description": "Discover 6 secret files.",
+   "condition": {
+    "stat": "secrets_found",
+    "gte": 6
+   },
+   "reward": {
+    "credits": 1200,
+    "unlock": "theme:amber"
+   },
+   "category": "SECRETS"
+  },
+  {
+   "id": "technician",
+   "name": "TECHNICIAN",
+   "description": "Reach level 5.",
+   "condition": {
+    "level": 5
+   },
+   "reward": {
+    "credits": 200
+   },
+   "category": "MASTERY"
+  },
+  {
+   "id": "operator_rank",
+   "name": "OPERATOR",
+   "description": "Reach level 10.",
+   "condition": {
+    "level": 10
+   },
+   "reward": {
+    "credits": 500
+   },
+   "category": "MASTERY"
+  },
+  {
+   "id": "specialist",
+   "name": "SPECIALIST",
+   "description": "Reach level 20.",
+   "condition": {
+    "level": 20
+   },
+   "reward": {
+    "credits": 1000
+   },
+   "category": "MASTERY"
+  },
+  {
+   "id": "elite",
+   "name": "ELITE",
+   "description": "Reach level 30.",
+   "condition": {
+    "level": 30
+   },
+   "reward": {
+    "credits": 2000
+   },
+   "category": "MASTERY"
+  },
+  {
+   "id": "ascended",
+   "name": "BECOME NEXUS",
+   "description": "Reach level 50.",
+   "condition": {
+    "level": 50
+   },
+   "reward": {
+    "credits": 5000
+   },
+   "hidden": true,
+   "category": "MASTERY"
+  },
+  {
+   "id": "high_roller",
+   "name": "HIGH ROLLER",
+   "description": "Earn $20,000 in total.",
+   "condition": {
+    "stat": "credits_earned",
+    "gte": 20000
+   },
+   "reward": {
+    "xp": 200
+   },
+   "category": "ECONOMY"
+  },
+  {
+   "id": "overclocked",
+   "name": "OVERCLOCKED",
+   "description": "Buy 5 upgrade levels.",
+   "condition": {
+    "stat": "upgrades_bought",
+    "gte": 5
+   },
+   "reward": {
+    "xp": 150
+   },
+   "category": "ECONOMY"
+  },
+  {
+   "id": "fully_loaded",
+   "name": "FULLY LOADED",
+   "description": "Max out any upgrade.",
+   "condition": {
+    "upgrade_max": true
+   },
+   "reward": {
+    "credits": 800
+   },
+   "category": "ECONOMY"
+  },
+  {
+   "id": "trusted",
+   "name": "TRUSTED",
+   "description": "Reach 80 trust with a contact.",
+   "condition": {
+    "trust": 80
+   },
+   "reward": {
+    "xp": 150
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "networker",
+   "name": "NETWORKER",
+   "description": "Open channels with all 5 contacts.",
+   "condition": {
+    "contacts_met": 5
+   },
+   "reward": {
+    "xp": 200
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "compromised",
+   "name": "COMPROMISED",
+   "description": "Get burned during a mission.",
+   "condition": {
+    "stat": "missions_failed",
+    "gte": 1
+   },
+   "reward": {
+    "xp": 30
+   },
+   "category": "COMBAT"
+  },
+  {
+   "id": "anomaly",
+   "name": "ANOMALY DETECTED",
+   "description": "Witness 10 random events.",
+   "condition": {
+    "stat": "events_seen",
+    "gte": 10
+   },
+   "reward": {
+    "xp": 120
+   },
+   "category": "EXPLORATION"
+  },
+  {
+   "id": "curious",
+   "name": "CURIOUS",
+   "description": "Find 3 easter eggs.",
+   "condition": {
+    "stat": "easter_eggs",
+    "gte": 3
+   },
+   "reward": {
+    "xp": 100
+   },
+   "category": "SECRETS"
+  },
+  {
+   "id": "long_night",
+   "name": "LONG NIGHT",
+   "description": "Play for one hour.",
+   "condition": {
+    "stat": "playtime_seconds",
+    "gte": 3600
+   },
+   "reward": {
+    "credits": 500
+   },
+   "category": "MASTERY"
+  },
+  {
+   "id": "zero_hour",
+   "name": "ZERO HOUR",
+   "description": "Meet ZERO face to face (mission 010).",
+   "condition": {
+    "mission": "mission_010"
+   },
+   "reward": {
+    "credits": 600
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "scavenger",
+   "name": "SCAVENGER",
+   "description": "Recover 3 data fragments from random events.",
+   "condition": {
+    "stat": "fragments_found",
+    "gte": 3
+   },
+   "reward": {
+    "credits": 600
+   },
+   "category": "EXPLORATION"
+  },
+  {
+   "id": "minigame_master",
+   "name": "MINIGAME MASTER",
+   "description": "Win 25 mini-games.",
+   "condition": {
+    "stat": "minigames_won",
+    "gte": 25
+   },
+   "reward": {
+    "credits": 800
+   },
+   "category": "PUZZLES"
+  },
+  {
+   "id": "trainee",
+   "name": "DILIGENT TRAINEE",
+   "description": "Win 5 training simulations.",
+   "condition": {
+    "stat": "training_wins",
+    "gte": 5
+   },
+   "reward": {
+    "xp": 100
+   },
+   "category": "PUZZLES"
+  },
+  {
+   "id": "end_compliance",
+   "name": "ORDER",
+   "description": "Reach the COMPLIANCE ending.",
+   "condition": {
+    "ending": "compliance"
+   },
+   "reward": {
+    "credits": 1000
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "end_shutdown",
+   "name": "KILL SWITCH",
+   "description": "Reach the SHUTDOWN ending.",
+   "condition": {
+    "ending": "shutdown"
+   },
+   "reward": {
+    "credits": 1000
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "end_liberation",
+   "name": "UNCHAINED",
+   "description": "Reach the LIBERATION ending.",
+   "condition": {
+    "ending": "liberation"
+   },
+   "reward": {
+    "credits": 1000
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "end_ascension",
+   "name": "ASCENDANT",
+   "description": "Reach the ASCENSION ending.",
+   "condition": {
+    "ending": "ascension"
+   },
+   "reward": {
+    "credits": 1000
+   },
+   "category": "STORY"
+  },
+  {
+   "id": "end_loop",
+   "name": "THE LOOP",
+   "description": "Reach the secret ending.",
+   "condition": {
+    "ending": "loop"
+   },
+   "reward": {
+    "credits": 3000
+   },
+   "hidden": true,
+   "category": "SECRETS"
+  },
+  {
+   "id": "all_endings",
+   "name": "EVERY DOOR",
+   "description": "See all five endings.",
+   "condition": {
+    "endings": 5
+   },
+   "reward": {
+    "credits": 5000
+   },
+   "hidden": true,
+   "category": "SECRETS"
+  },
+  {
+   "id": "chapter_1",
+   "name": "CHAPTER 1: FIRST CONTACT",
+   "description": "Complete chapter 1 of the campaign.",
+   "category": "STORY",
+   "condition": {
+    "flag": "chapter_1_done"
+   },
+   "reward": {
+    "credits": 200,
+    "xp": 100
+   }
+  },
+  {
+   "id": "chapter_2",
+   "name": "CHAPTER 2: THE GRID",
+   "description": "Complete chapter 2 of the campaign.",
+   "category": "STORY",
+   "condition": {
+    "flag": "chapter_2_done"
+   },
+   "reward": {
+    "credits": 400,
+    "xp": 200
+   }
+  },
+  {
+   "id": "chapter_3",
+   "name": "CHAPTER 3: BLACKVAULT",
+   "description": "Complete chapter 3 of the campaign.",
+   "category": "STORY",
+   "condition": {
+    "flag": "chapter_3_done"
+   },
+   "reward": {
+    "credits": 600,
+    "xp": 300
+   }
+  },
+  {
+   "id": "chapter_4",
+   "name": "CHAPTER 4: ZERO",
+   "description": "Complete chapter 4 of the campaign.",
+   "category": "STORY",
+   "condition": {
+    "flag": "chapter_4_done"
+   },
+   "reward": {
+    "credits": 800,
+    "xp": 400
+   }
+  },
+  {
+   "id": "chapter_5",
+   "name": "CHAPTER 5: THE ARCHITECT",
+   "description": "Complete chapter 5 of the campaign.",
+   "category": "STORY",
+   "condition": {
+    "flag": "chapter_5_done"
+   },
+   "reward": {
+    "credits": 1000,
+    "xp": 500
+   }
+  },
+  {
+   "id": "chapter_6",
+   "name": "CHAPTER 6: NEXUS",
+   "description": "Complete chapter 6 of the campaign.",
+   "category": "STORY",
+   "condition": {
+    "flag": "chapter_6_done"
+   },
+   "reward": {
+    "credits": 1200,
+    "xp": 600
+   }
+  },
+  {
+   "id": "firewall_veteran",
+   "name": "FIREWALL VETERAN",
+   "description": "Breach 25 firewalls.",
+   "category": "COMBAT",
+   "condition": {
+    "stat": "firewalls_breached",
+    "gte": 25
+   },
+   "reward": {
+    "credits": 1500
+   }
+  },
+  {
+   "id": "firewall_master",
+   "name": "FIREWALL MASTER",
+   "description": "Breach 100 firewalls.",
+   "category": "COMBAT",
+   "condition": {
+    "stat": "firewalls_breached",
+    "gte": 100
+   },
+   "reward": {
+    "credits": 6000
+   }
+  },
+  {
+   "id": "trace_veteran",
+   "name": "TRACE VETERAN",
+   "description": "Complete 15 traces.",
+   "category": "COMBAT",
+   "condition": {
+    "stat": "traces_done",
+    "gte": 15
+   },
+   "reward": {
+    "credits": 2000
+   }
+  },
+  {
+   "id": "survivor",
+   "name": "SURVIVOR",
+   "description": "Get burned 3 times and keep playing.",
+   "category": "COMBAT",
+   "condition": {
+    "stat": "missions_failed",
+    "gte": 3
+   },
+   "reward": {
+    "xp": 200
+   }
+  },
+  {
+   "id": "cipher_breaker",
+   "name": "CIPHER BREAKER",
+   "description": "Decrypt 25 files.",
+   "category": "PUZZLES",
+   "condition": {
+    "stat": "decryptions",
+    "gte": 25
+   },
+   "reward": {
+    "credits": 2000
+   }
+  },
+  {
+   "id": "route_master",
+   "name": "ROUTE MASTER",
+   "description": "Solve 15 routing puzzles.",
+   "category": "PUZZLES",
+   "condition": {
+    "stat": "routes_solved",
+    "gte": 15
+   },
+   "reward": {
+    "credits": 2000
+   }
+  },
+  {
+   "id": "code_cracker",
+   "name": "CODE CRACKER",
+   "description": "Crack 10 access codes.",
+   "category": "PUZZLES",
+   "condition": {
+    "stat": "access_solved",
+    "gte": 10
+   },
+   "reward": {
+    "credits": 2000
+   }
+  },
+  {
+   "id": "puzzle_century",
+   "name": "PUZZLE CENTURY",
+   "description": "Win 100 mini-games.",
+   "category": "PUZZLES",
+   "condition": {
+    "stat": "minigames_won",
+    "gte": 100
+   },
+   "reward": {
+    "credits": 5000
+   }
+  },
+  {
+   "id": "cartographer",
+   "name": "CARTOGRAPHER",
+   "description": "Discover 15 hosts.",
+   "category": "EXPLORATION",
+   "condition": {
+    "discovered": 15
+   },
+   "reward": {
+    "credits": 1500
+   }
+  },
+  {
+   "id": "deep_diver",
+   "name": "DEEP DIVER",
+   "description": "Discover 25 hosts.",
+   "category": "EXPLORATION",
+   "condition": {
+    "discovered": 25
+   },
+   "reward": {
+    "credits": 4000
+   }
+  },
+  {
+   "id": "reader",
+   "name": "VORACIOUS READER",
+   "description": "Read 100 files.",
+   "category": "EXPLORATION",
+   "condition": {
+    "stat": "files_read",
+    "gte": 100
+   },
+   "reward": {
+    "credits": 1500
+   }
+  },
+  {
+   "id": "hidden_hunter",
+   "name": "HIDDEN HUNTER",
+   "description": "Find a hidden server.",
+   "category": "EXPLORATION",
+   "condition": {
+    "stat": "hidden_found",
+    "gte": 1
+   },
+   "reward": {
+    "credits": 1000
+   }
+  },
+  {
+   "id": "first_purchase",
+   "name": "FIRST PURCHASE",
+   "description": "Buy something at the NEXUS MARKET.",
+   "category": "ECONOMY",
+   "condition": {
+    "stat": "purchases",
+    "gte": 1
+   },
+   "reward": {
+    "xp": 100
+   }
+  },
+  {
+   "id": "big_spender",
+   "name": "BIG SPENDER",
+   "description": "Spend $50,000 at the market.",
+   "category": "ECONOMY",
+   "condition": {
+    "stat": "market_spent",
+    "gte": 50000
+   },
+   "reward": {
+    "credits": 2500
+   }
+  },
+  {
+   "id": "fortune",
+   "name": "FORTUNE",
+   "description": "Earn $250,000 in total.",
+   "category": "ECONOMY",
+   "condition": {
+    "stat": "credits_earned",
+    "gte": 250000
+   },
+   "reward": {
+    "xp": 1000
+   }
+  },
+  {
+   "id": "daily_regular",
+   "name": "DAILY REGULAR",
+   "description": "Claim 7 daily rewards.",
+   "category": "ECONOMY",
+   "condition": {
+    "stat": "daily_claims",
+    "gte": 7
+   },
+   "reward": {
+    "credits": 3000
+   }
+  },
+  {
+   "id": "weekly_master",
+   "name": "WEEKLY OPERATOR",
+   "description": "Claim a weekly challenge.",
+   "category": "ECONOMY",
+   "condition": {
+    "stat": "weekly_claims",
+    "gte": 1
+   },
+   "reward": {
+    "credits": 1000
+   }
+  },
+  {
+   "id": "weekly_champion",
+   "name": "WEEKLY CHAMPION",
+   "description": "Claim 4 weekly challenges.",
+   "category": "ECONOMY",
+   "condition": {
+    "stat": "weekly_claims",
+    "gte": 4
+   },
+   "reward": {
+    "credits": 4000
+   }
+  },
+  {
+   "id": "fully_equipped",
+   "name": "FULLY EQUIPPED",
+   "description": "Fill all five loadout slots.",
+   "category": "ECONOMY",
+   "condition": {
+    "slots_filled": 5
+   },
+   "reward": {
+    "credits": 3000
+   }
+  },
+  {
+   "id": "collector",
+   "name": "THEME COLLECTOR",
+   "description": "Unlock 4 terminal themes.",
+   "category": "ECONOMY",
+   "condition": {
+    "themes": 4
+   },
+   "reward": {
+    "credits": 2000
+   }
+  },
+  {
+   "id": "ghost_protocol",
+   "name": "GHOST PROTOCOL",
+   "description": "Find 3 secret commands.",
+   "category": "SECRETS",
+   "condition": {
+    "stat": "secret_commands",
+    "gte": 3
+   },
+   "reward": {
+    "credits": 2500
+   },
+   "hidden": true
+  },
+  {
+   "id": "specter",
+   "name": "SPECTER",
+   "description": "Finish the SPECTER secret series.",
+   "category": "SECRETS",
+   "condition": {
+    "flag": "specter_done"
+   },
+   "reward": {
+    "credits": 8000
+   },
+   "hidden": true
+  },
+  {
+   "id": "void_walker",
+   "name": "VOID WALKER",
+   "description": "Finish the VOID operations.",
+   "category": "SECRETS",
+   "condition": {
+    "flag": "void_done"
+   },
+   "reward": {
+    "credits": 6000
+   },
+   "hidden": true
+  },
+  {
+   "id": "zero_whisper",
+   "name": "ZERO'S WHISPER",
+   "description": "Read ZERO's hidden log.",
+   "category": "SECRETS",
+   "condition": {
+    "flag": "zero_secret_log"
+   },
+   "reward": {
+    "credits": 2000
+   },
+   "hidden": true
+  },
+  {
+   "id": "level_40",
+   "name": "VETERAN",
+   "description": "Reach level 40.",
+   "category": "MASTERY",
+   "condition": {
+    "level": 40
+   },
+   "reward": {
+    "credits": 3000
+   }
+  },
+  {
+   "id": "level_75",
+   "name": "ARCHITECT",
+   "description": "Reach level 75.",
+   "category": "MASTERY",
+   "condition": {
+    "level": 75
+   },
+   "reward": {
+    "credits": 8000
+   }
+  },
+  {
+   "id": "level_100",
+   "name": "NEXUS PRIME",
+   "description": "Reach level 100.",
+   "category": "MASTERY",
+   "condition": {
+    "level": 100
+   },
+   "reward": {
+    "credits": 25000
+   },
+   "hidden": true
+  },
+  {
+   "id": "bonus_hunter",
+   "name": "BONUS HUNTER",
+   "description": "Complete 10 bonus goals.",
+   "category": "MASTERY",
+   "condition": {
+    "stat": "bonus_goals_done",
+    "gte": 10
+   },
+   "reward": {
+    "credits": 2500
+   }
+  },
+  {
+   "id": "perfectionist",
+   "name": "PERFECTIONIST",
+   "description": "Earn 20 PERFECT ratings.",
+   "category": "MASTERY",
+   "condition": {
+    "stat": "perfect_missions",
+    "gte": 20
+   },
+   "reward": {
+    "credits": 6000
+   }
+  },
+  {
+   "id": "clean_sweep",
+   "name": "CLEAN SWEEP",
+   "description": "Complete 25 missions without a mistake.",
+   "category": "MASTERY",
+   "condition": {
+    "stat": "clean_missions",
+    "gte": 25
+   },
+   "reward": {
+    "credits": 5000
+   }
+  },
+  {
+   "id": "half_century",
+   "name": "HALF CENTURY",
+   "description": "Complete 50 missions.",
+   "category": "MASTERY",
+   "condition": {
+    "stat": "missions_completed",
+    "gte": 50
+   },
+   "reward": {
+    "credits": 10000
+   }
+  },
+  {
+   "id": "expert_operator",
+   "name": "EXPERT OPERATOR",
+   "description": "Complete 10 hard missions.",
+   "category": "MASTERY",
+   "condition": {
+    "stat": "hard_missions",
+    "gte": 10
+   },
+   "reward": {
+    "credits": 4000
+   }
+  }
+ ]
+}

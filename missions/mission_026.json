@@ -1,0 +1,126 @@
+{
+ "id": "mission_026",
+ "number": 26,
+ "title": "NIGHT SHIFT",
+ "type": "DEFENSE",
+ "difficulty": 3,
+ "chapter": 3,
+ "main": false,
+ "required_level": 13,
+ "min_reputation": 15,
+ "requires": [
+  "mission_006"
+ ],
+ "description": "NEXUS knows you're on FOUNDRY. Grab the schematics while the alert climbs — then cool down.",
+ "goal": "download schematics.dat, then cool the trace alert below 25%.",
+ "reward": {
+  "xp": 2400,
+  "credits": 2800,
+  "reputation": 4,
+  "items": []
+ },
+ "hint": "Credentials are in ~/foundry_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "foundry"
+  ],
+  "files": {
+   "foundry_access.txt": [
+    "FOUNDRY",
+    "user: smith",
+    "pass: anvil-7",
+    "task: NIGHT SHIFT"
+   ]
+  }
+ },
+ "story_start": [
+  "ARCHER: \"Defensive security is trading time for information. You have five minutes.\"",
+  "ARCHER: \"Take what you need. Then get your alert under control, or we'll do it for you.\""
+ ],
+ "story_end": [
+  "You walked out with the schematics and an alert bar that finally went quiet."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to FOUNDRY",
+   "event": "connect",
+   "server": "foundry",
+   "hint": "connect foundry"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the FOUNDRY-WALL firewall",
+   "event": "firewall",
+   "server": "foundry",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as smith",
+   "event": "login",
+   "server": "foundry",
+   "user": "smith",
+   "hint": "login smith anvil-7  (see ~/foundry_access.txt)"
+  },
+  {
+   "id": "dl",
+   "text": "Download schematics.dat",
+   "event": "download",
+   "server": "foundry",
+   "file": "schematics.dat"
+  },
+  {
+   "id": "cool",
+   "text": "Cool the trace alert below 25%",
+   "event": "heat_below",
+   "max": 25,
+   "hint": "disconnect, wait, or use a Heat Sink / Anonymous Credential"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "foundry",
+   "path": "/jobs/night_shift/.stash_night_shift",
+   "optional": true,
+   "bonus": {
+    "xp": 192,
+    "credits": 224
+   },
+   "hint": "ls -a /jobs/night_shift"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 288,
+    "credits": 336
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 330 seconds",
+   "cond": "time_under",
+   "value": 330,
+   "reward": {
+    "xp": 240,
+    "credits": 280
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "archer",
+    "text": "Acceptable. Don't make me regret trusting your judgement."
+   }
+  ],
+  "flags": {}
+ },
+ "time_limit": 300,
+ "heat_rate": 0.45
+}

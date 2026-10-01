@@ -1,0 +1,431 @@
+{
+ "commands": [
+  {
+   "name": "help",
+   "usage": "help [command]",
+   "description": "Show this index or details for one command",
+   "category": "system"
+  },
+  {
+   "name": "clear",
+   "usage": "clear",
+   "description": "Clear the terminal",
+   "category": "system",
+   "aliases": [
+    "cls"
+   ]
+  },
+  {
+   "name": "status",
+   "usage": "status",
+   "description": "Operator status, connection and trace alert",
+   "category": "system",
+   "aliases": [
+    "st"
+   ]
+  },
+  {
+   "name": "whoami",
+   "usage": "whoami",
+   "description": "Show your identity",
+   "category": "system"
+  },
+  {
+   "name": "history",
+   "usage": "history",
+   "description": "Recent commands",
+   "category": "system"
+  },
+  {
+   "name": "tutorial",
+   "usage": "tutorial",
+   "description": "Field manual for new operators",
+   "category": "system"
+  },
+  {
+   "name": "save",
+   "usage": "save [1-3]",
+   "description": "Save into a manual slot (autosave is always on)",
+   "category": "system"
+  },
+  {
+   "name": "load",
+   "usage": "load",
+   "description": "Open the load menu",
+   "category": "system"
+  },
+  {
+   "name": "menu",
+   "usage": "menu",
+   "description": "Open the pause menu",
+   "category": "system"
+  },
+  {
+   "name": "settings",
+   "usage": "settings",
+   "description": "Open the settings screen",
+   "category": "system"
+  },
+  {
+   "name": "exit",
+   "usage": "exit",
+   "description": "Disconnect, or return to the main menu",
+   "category": "system",
+   "aliases": [
+    "quit"
+   ]
+  },
+  {
+   "name": "pwd",
+   "usage": "pwd",
+   "description": "Print working directory",
+   "category": "files"
+  },
+  {
+   "name": "ls",
+   "usage": "ls [-a] [path]",
+   "description": "List files (-a shows hidden files)",
+   "category": "files",
+   "aliases": [
+    "dir",
+    "ll"
+   ]
+  },
+  {
+   "name": "cd",
+   "usage": "cd <path>",
+   "description": "Change directory",
+   "category": "files"
+  },
+  {
+   "name": "cat",
+   "usage": "cat <file>",
+   "description": "Read a file",
+   "category": "files"
+  },
+  {
+   "name": "open",
+   "usage": "open <file>",
+   "description": "Open a file (same as cat)",
+   "category": "files"
+  },
+  {
+   "name": "rm",
+   "usage": "rm <local file>",
+   "description": "Delete a file on your local node",
+   "category": "files"
+  },
+  {
+   "name": "download",
+   "usage": "download <file>",
+   "description": "Copy a remote file to ~/downloads",
+   "category": "files",
+   "aliases": [
+    "dl"
+   ]
+  },
+  {
+   "name": "upload",
+   "usage": "upload <local file>",
+   "description": "Send a local file to the connected server",
+   "category": "files",
+   "aliases": [
+    "ul"
+   ]
+  },
+  {
+   "name": "map",
+   "usage": "map",
+   "description": "Show the discovered network",
+   "category": "network"
+  },
+  {
+   "name": "ping",
+   "usage": "ping <host>",
+   "description": "Check latency of a simulated host",
+   "category": "network"
+  },
+  {
+   "name": "scan",
+   "usage": "scan [host]",
+   "description": "Scan a node: ports, security, linked nodes",
+   "category": "network"
+  },
+  {
+   "name": "route",
+   "usage": "route <host>",
+   "description": "Build a relay route to a shielded host",
+   "category": "network"
+  },
+  {
+   "name": "connect",
+   "usage": "connect <host|ip>",
+   "description": "Connect to a simulated server",
+   "category": "network",
+   "aliases": [
+    "conn"
+   ]
+  },
+  {
+   "name": "disconnect",
+   "usage": "disconnect",
+   "description": "Close the current connection",
+   "category": "network",
+   "aliases": [
+    "dc"
+   ]
+  },
+  {
+   "name": "login",
+   "usage": "login <user> [password]",
+   "description": "Authenticate on the connected server",
+   "category": "intrusion"
+  },
+  {
+   "name": "logout",
+   "usage": "logout",
+   "description": "End your session on the server",
+   "category": "intrusion"
+  },
+  {
+   "name": "firewall",
+   "usage": "firewall [bypass]",
+   "description": "Breach the firewall (mini-game)",
+   "category": "intrusion",
+   "aliases": [
+    "fw"
+   ]
+  },
+  {
+   "name": "trace",
+   "usage": "trace",
+   "description": "Trace a hostile data stream (mini-game)",
+   "category": "intrusion"
+  },
+  {
+   "name": "decrypt",
+   "usage": "decrypt <file>",
+   "description": "Break the cipher of an encrypted file (mini-game)",
+   "category": "intrusion"
+  },
+  {
+   "name": "decode",
+   "usage": "decode <text> [-t b64|hex|bin|rot13|rev|caesar:N]",
+   "description": "Decode base64, hex, binary, rot13...",
+   "category": "intrusion"
+  },
+  {
+   "name": "mission",
+   "usage": "mission [list|start N|abort|info N]",
+   "description": "Mission control",
+   "category": "operations",
+   "aliases": [
+    "m"
+   ]
+  },
+  {
+   "name": "choose",
+   "usage": "choose <number>",
+   "description": "Answer a pending mission decision",
+   "category": "operations"
+  },
+  {
+   "name": "hint",
+   "usage": "hint",
+   "description": "Get a hint for your current objective",
+   "category": "operations"
+  },
+  {
+   "name": "train",
+   "usage": "train <firewall|decrypt|route|access|trace>",
+   "description": "Practice mini-games for small rewards",
+   "category": "operations"
+  },
+  {
+   "name": "inventory",
+   "usage": "inventory",
+   "description": "Items and local files",
+   "category": "operator",
+   "aliases": [
+    "inv",
+    "i"
+   ]
+  },
+  {
+   "name": "use",
+   "usage": "use <item>",
+   "description": "Use an inventory item",
+   "category": "operator"
+  },
+  {
+   "name": "contacts",
+   "usage": "contacts",
+   "description": "People you can message",
+   "category": "operator"
+  },
+  {
+   "name": "msg",
+   "usage": "msg <contact> [topic#]",
+   "description": "Open a channel and talk",
+   "category": "operator",
+   "aliases": [
+    "message"
+   ]
+  },
+  {
+   "name": "upgrades",
+   "usage": "upgrades",
+   "description": "Show available upgrades",
+   "category": "operator"
+  },
+  {
+   "name": "upgrade",
+   "usage": "upgrade <number|name>",
+   "description": "Buy an upgrade level",
+   "category": "operator"
+  },
+  {
+   "name": "shop",
+   "usage": "shop",
+   "description": "Alias of market",
+   "category": "market"
+  },
+  {
+   "name": "buy",
+   "usage": "buy <item id>",
+   "description": "Buy something from the market",
+   "category": "market"
+  },
+  {
+   "name": "achievements",
+   "usage": "achievements",
+   "description": "Your achievements",
+   "category": "operator",
+   "aliases": [
+    "ach"
+   ]
+  },
+  {
+   "name": "stats",
+   "usage": "stats",
+   "description": "Operator statistics",
+   "category": "operator"
+  },
+  {
+   "name": "missions",
+   "usage": "missions",
+   "description": "List all operations by chapter",
+   "category": "operations"
+  },
+  {
+   "name": "market",
+   "usage": "market [category|info <id>]",
+   "description": "NEXUS MARKET: tools, upgrades, cosmetics, access, intel",
+   "category": "market",
+   "aliases": [
+    "mkt"
+   ]
+  },
+  {
+   "name": "loadout",
+   "usage": "loadout",
+   "description": "Show your equipped gear slots",
+   "category": "market"
+  },
+  {
+   "name": "equip",
+   "usage": "equip <item id>",
+   "description": "Equip a gear item into its slot",
+   "category": "market"
+  },
+  {
+   "name": "unequip",
+   "usage": "unequip <slot>",
+   "description": "Clear a loadout slot",
+   "category": "market"
+  },
+  {
+   "name": "profile",
+   "usage": "profile",
+   "description": "Operator profile and statistics",
+   "category": "operator"
+  },
+  {
+   "name": "network",
+   "usage": "network",
+   "description": "Network overview by region plus the map",
+   "category": "network"
+  },
+  {
+   "name": "daily",
+   "usage": "daily [claim]",
+   "description": "Daily operations and login streak",
+   "category": "operations"
+  },
+  {
+   "name": "weekly",
+   "usage": "weekly [claim]",
+   "description": "Weekly challenges",
+   "category": "operations"
+  },
+  {
+   "name": "theme",
+   "usage": "theme [id]",
+   "description": "List or switch terminal themes",
+   "category": "system"
+  },
+  {
+   "name": "contract",
+   "usage": "contract [new|start]",
+   "description": "Endless procedural contracts (after mission 003)",
+   "category": "operations",
+   "aliases": [
+    "contracts"
+   ]
+  },
+  {
+   "name": "difficulty",
+   "usage": "difficulty [easy|normal|hard]",
+   "description": "Show or change the difficulty",
+   "category": "system"
+  },
+  {
+   "name": "newgameplus",
+   "usage": "newgameplus",
+   "description": "Restart the story keeping level, items and achievements",
+   "category": "system",
+   "aliases": [
+    "ng+"
+   ]
+  },
+  {
+   "name": "about",
+   "usage": "about",
+   "description": "Version, author and community links",
+   "category": "system"
+  }
+ ],
+ "tutorial": [
+  "# 1. THE TERMINAL",
+  "You work in the terminal. Type a command and press ENTER. TAB completes, UP/DOWN browse history.",
+  "# 2. THE LOOP",
+  "  scan  inspect a server     connect <host>  open a connection",
+  "  firewall  breach defences  login <user>  authenticate",
+  "  ls / cd / cat  explore     download  take what you need",
+  "# 3. TRACE ALERT",
+  "Every mistake raises the TRACE ALERT bar. At 100% you are burned and the mission fails. Disconnecting cools it down fast.",
+  "# 4. MISSIONS",
+  "'mission' shows your objectives, 'missions' lists every operation by chapter. Bonus goals pay extra.",
+  "# 5. THE MARKET",
+  "'market' sells tools, upgrades, themes, access and intel. Better reputation = cheaper prices.",
+  "# 6. LOADOUT",
+  "'loadout' shows five gear slots (TRACE, DECRYPT, FIREWALL, NETWORK, UTILITY). 'equip <id>' boosts your stats.",
+  "# 7. DAILY & WEEKLY",
+  "'daily claim' and 'weekly claim' pay credits, XP and rare items. Come back every day for the streak.",
+  "# 8. HIDDEN THINGS",
+  "'ls -a' reveals hidden files. Some commands and servers are secret. ZERO leaves hints.",
+  "# 9. EVERYTHING IS A SIMULATION",
+  "All servers, IPs and files exist only inside NEXUS. Nothing real is ever touched.",
+  "Shortcuts: ESC pause · F5 quick save · F11 fullscreen · Ctrl+L clear"
+ ]
+}

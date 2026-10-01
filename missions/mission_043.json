@@ -1,0 +1,169 @@
+{
+ "id": "mission_043",
+ "number": 43,
+ "title": "THE ARCHITECT'S DOOR",
+ "type": "STORY",
+ "difficulty": 5,
+ "chapter": 6,
+ "main": false,
+ "required_level": 50,
+ "min_reputation": 30,
+ "requires": [
+  "mission_016"
+ ],
+ "description": "A door in WREN only opens for someone who finished the campaign. Open it.",
+ "goal": "read the architect's note and the final ward log.",
+ "reward": {
+  "xp": 9000,
+  "credits": 11000,
+  "reputation": 6,
+  "items": []
+ },
+ "hint": "Credentials are in ~/wren_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "wren"
+  ],
+  "files": {
+   "wren_access.txt": [
+    "WREN",
+    "user: nurse",
+    "pass: night-ward",
+    "task: THE ARCHITECT'S DOOR"
+   ]
+  }
+ },
+ "story_start": [
+  "ZERO: \"> you're still here. good. there's a room past the quiet ward. it's yours.\""
+ ],
+ "story_end": [
+  "Behind the door is a desk, a pen, and a note: 'build it better this time'."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to WREN",
+   "event": "route",
+   "server": "wren"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to WREN",
+   "event": "connect",
+   "server": "wren",
+   "hint": "connect wren"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the WREN-WARD firewall",
+   "event": "firewall",
+   "server": "wren",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as nurse",
+   "event": "login",
+   "server": "wren",
+   "user": "nurse",
+   "hint": "login nurse night-ward  (see ~/wren_access.txt)"
+  },
+  {
+   "id": "note",
+   "text": "Read note.txt",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/architects_door/note.txt"
+  },
+  {
+   "id": "log",
+   "text": "Read ward_log.txt",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/architects_door/ward_log.txt"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/architects_door/.stash_architects_door",
+   "optional": true,
+   "bonus": {
+    "xp": 720,
+    "credits": 880
+   },
+   "hint": "ls -a /jobs/architects_door"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 1080,
+    "credits": 1320
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 900,
+    "credits": 1100
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> now you understand. the rest is yours."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "architects_door",
+  "prompt": "How do you close the operation?",
+  "options": [
+   {
+    "id": "clean",
+    "text": "Wipe your traces carefully and leave no footprint.",
+    "trust": {
+     "mira": 3
+    },
+    "reward": {
+     "reputation": 2
+    },
+    "result": ""
+   },
+   {
+    "id": "loud",
+    "text": "Leave a calling card. Let them know someone was here.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": -2
+    },
+    "result": ""
+   },
+   {
+    "id": "share",
+    "text": "Share the file with every contact you trust.",
+    "trust": {
+     "ghost": 2,
+     "vector": 2
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

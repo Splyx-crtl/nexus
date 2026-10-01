@@ -1,0 +1,133 @@
+{
+ "id": "mission_015",
+ "number": 15,
+ "title": "ROOT ACCESS",
+ "difficulty": 5,
+ "description": "Everything you've learned in one run: the NEXUS core's root partition. Break every lock on the way in.",
+ "goal": "Gain root access to the NEXUS core and read its seed.",
+ "reward": {
+  "xp": 3500,
+  "credits": 8000,
+  "reputation": 6
+ },
+ "requires": [
+  "mission_014"
+ ],
+ "hint": "connect nexus_core -> firewall -> login root (access code) -> decrypt core_seed.enc (key: who you used to be) -> trace",
+ "story_start": [
+  "ZERO: \"> one more time. everything you've learned. i'll hold the door.\"",
+  "The core's firewall, the root lock, the seed cipher, the heartbeat: four locks, one chance."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to the NEXUS CORE",
+   "event": "connect",
+   "server": "nexus_core"
+  },
+  {
+   "id": "fw",
+   "text": "Breach NEXUS-CORE (if re-armed)",
+   "event": "firewall",
+   "server": "nexus_core"
+  },
+  {
+   "id": "root",
+   "text": "Gain root access",
+   "event": "login",
+   "server": "nexus_core",
+   "role": "admin",
+   "hint": "login root — solve the access code. You need the Quantum Key in your inventory."
+  },
+  {
+   "id": "decrypt",
+   "text": "Decrypt /root/core_seed.enc",
+   "event": "decrypt",
+   "server": "nexus_core",
+   "path": "/root/core_seed.enc",
+   "hint": "The key has four letters: who you used to be."
+  },
+  {
+   "id": "seed",
+   "text": "Read the core seed",
+   "event": "read",
+   "server": "nexus_core",
+   "path": "/root/core_seed.enc"
+  },
+  {
+   "id": "trace",
+   "text": "Trace the core heartbeat",
+   "event": "trace",
+   "server": "nexus_core",
+   "hint": "Type: trace"
+  },
+  {
+   "id": "ops",
+   "text": "Read /root/operators_live.txt",
+   "event": "read",
+   "server": "nexus_core",
+   "path": "/root/operators_live.txt",
+   "optional": true,
+   "bonus": {
+    "xp": 200,
+    "credits": 400
+   }
+  }
+ ],
+ "moments": [
+  {
+   "when": "complete",
+   "banner": {
+    "kind": "critical",
+    "lines": [
+     "CRITICAL SYSTEM FAILURE",
+     "NEXUS CORE:",
+     "[████████████████████] 100%"
+    ]
+   }
+  }
+ ],
+ "story_end": [
+  "The seed explains everything: NEXUS began as one operator's mind. Yours."
+ ],
+ "on_complete": {
+  "flags": {
+   "root_access": true
+  },
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> it's time. whatever you choose, choose it as yourself."
+   },
+   {
+    "from": "mira",
+    "text": "I'm still here. Whatever you decide... I was glad to know you."
+   }
+  ]
+ },
+ "type": "STORY",
+ "chapter": 6,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 350,
+    "credits": 800
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 600 seconds",
+   "cond": "time_under",
+   "value": 600,
+   "reward": {
+    "xp": 280,
+    "credits": 640
+   }
+  }
+ ],
+ "required_level": 1
+}

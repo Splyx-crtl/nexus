@@ -1,0 +1,136 @@
+{
+ "id": "mission_037",
+ "number": 37,
+ "title": "COLD CALL",
+ "type": "TRACE",
+ "difficulty": 4,
+ "chapter": 4,
+ "main": false,
+ "required_level": 30,
+ "min_reputation": 30,
+ "requires": [
+  "mission_011"
+ ],
+ "description": "WREN's ward telemetry carries a call that originates inside NEXUS. Trace it.",
+ "goal": "trace the ward telemetry.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/wren_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "wren"
+  ],
+  "files": {
+   "wren_access.txt": [
+    "WREN",
+    "user: nurse",
+    "pass: night-ward",
+    "task: COLD CALL"
+   ]
+  }
+ },
+ "story_start": [
+  "MIRA: \"A call from the quiet ward to the core. Trace it. Please.\""
+ ],
+ "story_end": [
+  "The call is a lullaby. Played to a process that doesn't sleep."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to WREN",
+   "event": "route",
+   "server": "wren"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to WREN",
+   "event": "connect",
+   "server": "wren",
+   "hint": "connect wren"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the WREN-WARD firewall",
+   "event": "firewall",
+   "server": "wren",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as nurse",
+   "event": "login",
+   "server": "wren",
+   "user": "nurse",
+   "hint": "login nurse night-ward  (see ~/wren_access.txt)"
+  },
+  {
+   "id": "alert",
+   "text": "Read alert.log",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/cold_call/alert.log"
+  },
+  {
+   "id": "trace",
+   "text": "Trace the signal on WREN",
+   "event": "trace",
+   "server": "wren",
+   "hint": "trace"
+  },
+  {
+   "id": "origin",
+   "text": "Read the origin report",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/cold_call/origin.txt"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/cold_call/.stash_cold_call",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/cold_call"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 410 seconds",
+   "cond": "time_under",
+   "value": 410,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "You found the lullaby. I... would rather we didn't discuss it."
+   }
+  ],
+  "flags": {}
+ }
+}

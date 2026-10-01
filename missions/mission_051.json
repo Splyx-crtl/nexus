@@ -1,0 +1,174 @@
+{
+ "id": "mission_051",
+ "number": 51,
+ "title": "THE FIRST OPERATOR",
+ "type": "STORY",
+ "difficulty": 5,
+ "chapter": 6,
+ "main": false,
+ "required_level": 70,
+ "min_reputation": 40,
+ "requires": [
+  "mission_016"
+ ],
+ "description": "With the NEXUS Core in your rig, the first machine opens. Meet the first operator's memory.",
+ "goal": "read first_log.txt and the closing note.",
+ "reward": {
+  "xp": 12600,
+  "credits": 15399,
+  "reputation": 6,
+  "items": []
+ },
+ "hint": "Credentials are in ~/genesis_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "genesis"
+  ],
+  "files": {
+   "genesis_access.txt": [
+    "GENESIS",
+    "user: first",
+    "pass: hello-world",
+    "task: THE FIRST OPERATOR"
+   ]
+  }
+ },
+ "story_start": [
+  "ZERO: \"> the nexus core is a key. genesis is the lock. it's the first room in the world.\""
+ ],
+ "story_end": [
+  "You read the first operator's final log. It ends with your name."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to GENESIS",
+   "event": "route",
+   "server": "genesis"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to GENESIS",
+   "event": "connect",
+   "server": "genesis",
+   "hint": "connect genesis"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the GENESIS-ROOT firewall",
+   "event": "firewall",
+   "server": "genesis",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as first",
+   "event": "login",
+   "server": "genesis",
+   "user": "first",
+   "hint": "login first hello-world  (see ~/genesis_access.txt)"
+  },
+  {
+   "id": "note",
+   "text": "Read first_log.txt",
+   "event": "read",
+   "server": "genesis",
+   "path": "/jobs/genesis/first_log.txt"
+  },
+  {
+   "id": "log",
+   "text": "Read ward_log.txt",
+   "event": "read",
+   "server": "genesis",
+   "path": "/jobs/genesis/ward_log.txt"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "genesis",
+   "path": "/jobs/genesis/.stash_genesis",
+   "optional": true,
+   "bonus": {
+    "xp": 720,
+    "credits": 880
+   },
+   "hint": "ls -a /jobs/genesis"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 1512,
+    "credits": 1847
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 1260,
+    "credits": 1539
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> now you've read it. nothing is hidden from you anymore."
+   }
+  ],
+  "flags": {
+   "zero_secret_log": true
+  }
+ },
+ "requires_items": [
+  "nexus_core"
+ ],
+ "secret": true,
+ "choice": {
+  "key": "genesis",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

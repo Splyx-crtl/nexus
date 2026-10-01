@@ -1,0 +1,170 @@
+{
+ "id": "mission_018",
+ "number": 18,
+ "title": "COLD STORAGE",
+ "type": "RECOVERY",
+ "difficulty": 1,
+ "chapter": 1,
+ "main": false,
+ "required_level": 3,
+ "min_reputation": 0,
+ "requires": [
+  "mission_002"
+ ],
+ "description": "LUMEN's backup archive holds a drive someone wants back. Recover the two data files.",
+ "goal": "recover part_a.dat and part_b.dat from the cold-storage rack.",
+ "reward": {
+  "xp": 500,
+  "credits": 600,
+  "reputation": 2,
+  "items": []
+ },
+ "hint": "Credentials are in ~/lumen_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "lumen"
+  ],
+  "files": {
+   "lumen_access.txt": [
+    "LUMEN",
+    "user: grid_tech",
+    "pass: ohm-law",
+    "task: COLD STORAGE"
+   ]
+  }
+ },
+ "story_start": [
+  "VECTOR: \"Backup drive on LUMEN. Two files. In and out, nobody gets hurt.\"",
+  "VECTOR: \"The gate has a firewall. A small one. Don't get cocky.\""
+ ],
+ "story_end": [
+  "Two files recovered. One of them keeps humming, even offline."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to LUMEN",
+   "event": "connect",
+   "server": "lumen",
+   "hint": "connect lumen"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the LUMEN-GATE firewall",
+   "event": "firewall",
+   "server": "lumen",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as grid_tech",
+   "event": "login",
+   "server": "lumen",
+   "user": "grid_tech",
+   "hint": "login grid_tech ohm-law  (see ~/lumen_access.txt)"
+  },
+  {
+   "id": "manifest",
+   "text": "Read manifest.txt",
+   "event": "read",
+   "server": "lumen",
+   "path": "/jobs/cold_storage/manifest.txt"
+  },
+  {
+   "id": "dl_a",
+   "text": "Download part_a.dat",
+   "event": "download",
+   "server": "lumen",
+   "file": "part_a.dat"
+  },
+  {
+   "id": "dl_b",
+   "text": "Download part_b.dat",
+   "event": "download",
+   "server": "lumen",
+   "file": "part_b.dat"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "lumen",
+   "path": "/jobs/cold_storage/.stash_cold_storage",
+   "optional": true,
+   "bonus": {
+    "xp": 40,
+    "credits": 48
+   },
+   "hint": "ls -a /jobs/cold_storage"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 60,
+    "credits": 72
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 50,
+    "credits": 60
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Good haul. The drive was warm, by the way. Backups shouldn't be warm."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "cold_storage",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

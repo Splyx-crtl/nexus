@@ -1,0 +1,170 @@
+{
+ "id": "mission_007",
+ "number": 7,
+ "title": "LOCKDOWN",
+ "difficulty": 3,
+ "description": "ARCHER has triggered Lockdown Protocol 7 after an unregistered message hit every operator. You have minutes before your own access is revoked.",
+ "goal": "Reach admin level on NEXUS GRID and read the lockdown records before time runs out.",
+ "reward": {
+  "xp": 1000,
+  "credits": 2400,
+  "reputation": 4
+ },
+ "requires": [
+  "mission_006"
+ ],
+ "time_limit": 480,
+ "heat_rate": 0.12,
+ "hint": "login operator (see ~/credentials.txt), then 'login admin' and crack the access code.",
+ "on_start": {
+  "discover": [
+   "nexus_grid"
+  ],
+  "files": {
+   "credentials.txt": [
+    "OPERATOR ACCOUNT // NEXUS GRID",
+    "user: operator",
+    "pass: nx-operator-7"
+   ]
+  },
+  "messages": [
+   {
+    "from": "archer",
+    "text": "LOCKDOWN. All operators confined to the grid. This is not a drill. — ARCHER"
+   }
+  ]
+ },
+ "story_start": [
+  "ARCHER: \"All operators. A user with no record just spoke to you. If that was you, speak now. Otherwise: be quiet.\"",
+  "MIRA: \"I can't stop the lockdown, {player}. But there's an override on the grid admin account — if you're fast.\"",
+  "The clock is running. You have 8 minutes."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to NEXUS GRID",
+   "event": "connect",
+   "server": "nexus_grid"
+  },
+  {
+   "id": "login",
+   "text": "Log in as operator",
+   "event": "login",
+   "server": "nexus_grid",
+   "user": "operator",
+   "hint": "Your credentials are in ~/credentials.txt (cat it)."
+  },
+  {
+   "id": "admin",
+   "text": "Seize admin access",
+   "event": "login",
+   "server": "nexus_grid",
+   "role": "admin",
+   "hint": "login admin — solve the access code from its clues."
+  },
+  {
+   "id": "cfg",
+   "text": "Read /admin/lockdown.cfg",
+   "event": "read",
+   "server": "nexus_grid",
+   "path": "/admin/lockdown.cfg"
+  },
+  {
+   "id": "watch",
+   "text": "Read /admin/watchlist.txt",
+   "event": "read",
+   "server": "nexus_grid",
+   "path": "/admin/watchlist.txt"
+  },
+  {
+   "id": "mira",
+   "text": "Find MIRA's unsent draft",
+   "event": "read",
+   "server": "nexus_grid",
+   "path": "/.admin/.mira_draft",
+   "optional": true,
+   "bonus": {
+    "xp": 150,
+    "credits": 300
+   },
+   "hint": "ls -a /  — a hidden admin directory."
+  }
+ ],
+ "choice": {
+  "key": "zero_report",
+  "prompt": "ARCHER's channel opens: \"The watchlist names a user: ZERO. Did it reach you? Tell me the truth, operator.\"",
+  "options": [
+   {
+    "id": "report",
+    "text": "Report it. ZERO did contact you.",
+    "trust": {
+     "archer": 10,
+     "zero": -6
+    },
+    "flags": {
+     "reported_zero": true
+    },
+    "result": "\"Good,\" says ARCHER. \"Loyalty is rarer than talent.\""
+   },
+   {
+    "id": "hide",
+    "text": "Say nothing. Delete the traces.",
+    "trust": {
+     "zero": 8,
+     "archer": -6
+    },
+    "flags": {
+     "hid_zero": true
+    },
+    "result": "A pause. Then, quietly in your terminal: > thank you."
+   },
+   {
+    "id": "mira",
+    "text": "Tell MIRA instead. Let your handler decide.",
+    "trust": {
+     "mira": 6
+    },
+    "flags": {
+     "told_mira_zero": true
+    },
+    "result": "MIRA: \"I... thank you. You can trust me.\""
+   }
+  ]
+ },
+ "story_end": [
+  "The lockdown lifts. Your hands are shaking."
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "Archer's lockdown didn't catch you. Impressive. Next time he won't be so polite. Orbital next? The relay leads there."
+   }
+  ]
+ },
+ "type": "ESCAPE",
+ "chapter": 3,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 100,
+    "credits": 240
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 300 seconds",
+   "cond": "time_under",
+   "value": 300,
+   "reward": {
+    "xp": 80,
+    "credits": 192
+   }
+  }
+ ],
+ "required_level": 1
+}

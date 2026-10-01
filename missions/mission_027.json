@@ -1,0 +1,176 @@
+{
+ "id": "mission_027",
+ "number": 27,
+ "title": "WHISPER NET",
+ "type": "INTELLIGENCE",
+ "difficulty": 3,
+ "chapter": 3,
+ "main": false,
+ "required_level": 14,
+ "min_reputation": 15,
+ "requires": [
+  "mission_004"
+ ],
+ "description": "Collect rumours from GHOST, cross-check them against the PIKE evidence index.",
+ "goal": "ask GHOST for rumours, read the evidence index, decode the case number.",
+ "reward": {
+  "xp": 2400,
+  "credits": 2800,
+  "reputation": 4,
+  "items": []
+ },
+ "hint": "Credentials are in ~/pike_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "pike"
+  ],
+  "files": {
+   "pike_access.txt": [
+    "PIKE",
+    "user: clerk",
+    "pass: case-closed",
+    "task: WHISPER NET"
+   ]
+  }
+ },
+ "story_start": [
+  "GHOST: \"Rumours are my currency. Ask me for a few, then check them against PIKE's evidence index.\""
+ ],
+ "story_end": [
+  "Three rumours, one confirmation. It turns out 'the 14th floor' has a filing system."
+ ],
+ "objectives": [
+  {
+   "id": "topic",
+   "text": "Ask GHOST about it ('msg ghost rumors')",
+   "event": "topic",
+   "contact": "ghost",
+   "topic": "rumors",
+   "hint": "msg ghost rumors"
+  },
+  {
+   "id": "route",
+   "text": "Build a relay route to PIKE",
+   "event": "route",
+   "server": "pike"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to PIKE",
+   "event": "connect",
+   "server": "pike",
+   "hint": "connect pike"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the PIKE-LOCK firewall",
+   "event": "firewall",
+   "server": "pike",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as clerk",
+   "event": "login",
+   "server": "pike",
+   "user": "clerk",
+   "hint": "login clerk case-closed  (see ~/pike_access.txt)"
+  },
+  {
+   "id": "notes",
+   "text": "Read notes.txt",
+   "event": "read",
+   "server": "pike",
+   "path": "/jobs/whisper_net/notes.txt"
+  },
+  {
+   "id": "decode",
+   "text": "Decode the hidden line",
+   "event": "decode",
+   "contains_result": "CASE FOURTEEN",
+   "hint": "decode Q0FTRSBGT1VSVEVFTg=="
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "pike",
+   "path": "/jobs/whisper_net/.stash_whisper_net",
+   "optional": true,
+   "bonus": {
+    "xp": 192,
+    "credits": 224
+   },
+   "hint": "ls -a /jobs/whisper_net"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 288,
+    "credits": 336
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 410 seconds",
+   "cond": "time_under",
+   "value": 410,
+   "reward": {
+    "xp": 240,
+    "credits": 280
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "ghost",
+    "text": "One rumour confirmed. That's one more than I'm comfortable with."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "whisper_net",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

@@ -1,0 +1,129 @@
+{
+ "id": "mission_040",
+ "number": 40,
+ "title": "VANISHING ACT",
+ "type": "ESCAPE",
+ "difficulty": 4,
+ "chapter": 5,
+ "main": false,
+ "required_level": 36,
+ "min_reputation": 30,
+ "requires": [
+  "mission_014"
+ ],
+ "description": "Leave WREN with the patient records before the ward locks you in.",
+ "goal": "download records.dat, then disconnect.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/wren_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "wren"
+  ],
+  "files": {
+   "wren_access.txt": [
+    "WREN",
+    "user: nurse",
+    "pass: night-ward",
+    "task: VANISHING ACT"
+   ]
+  }
+ },
+ "story_start": [
+  "ZERO: \"> they'll seal the ward when you pull the files. be quick. the door opens from the inside.\""
+ ],
+ "story_end": [
+  "You walked out of a sealed ward. The door opens from the inside."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to WREN",
+   "event": "route",
+   "server": "wren"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to WREN",
+   "event": "connect",
+   "server": "wren",
+   "hint": "connect wren"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the WREN-WARD firewall",
+   "event": "firewall",
+   "server": "wren",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as nurse",
+   "event": "login",
+   "server": "wren",
+   "user": "nurse",
+   "hint": "login nurse night-ward  (see ~/wren_access.txt)"
+  },
+  {
+   "id": "dl",
+   "text": "Download records.dat",
+   "event": "download",
+   "server": "wren",
+   "file": "records.dat"
+  },
+  {
+   "id": "leave",
+   "text": "Disconnect before NEXUS catches you",
+   "event": "disconnect"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/vanishing_act/.stash_vanishing_act",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/vanishing_act"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> good. remembering is a form of escaping."
+   }
+  ],
+  "flags": {}
+ },
+ "time_limit": 270,
+ "heat_rate": 0.7
+}

@@ -1,0 +1,144 @@
+{
+ "id": "mission_004",
+ "number": 4,
+ "title": "THE GHOST",
+ "difficulty": 2,
+ "description": "A broker named GHOST hides behind a relay chain. Reach GHOSTNET and earn their trust.",
+ "goal": "Route to GHOSTNET, solve the vault riddle and retrieve the ledger.",
+ "reward": {
+  "xp": 650,
+  "credits": 1500,
+  "reputation": 4
+ },
+ "requires": [
+  "mission_003"
+ ],
+ "hint": "GHOSTNET has no direct route: type 'route ghostnet' or just 'connect ghostnet'.",
+ "on_start": {
+  "discover": [
+   "ghostnet"
+  ]
+ },
+ "story_start": [
+  "GHOST: \"You found me. Good. Not many do. The road to my door is a maze of relays — pick the quiet ones.\"",
+  "GHOST: \"My vault asks for a code. I like riddles.\""
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to GHOSTNET",
+   "event": "route",
+   "server": "ghostnet",
+   "hint": "Click the nodes to build a path from YOU to GHOSTNET. Keep risk low!"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to GHOSTNET",
+   "event": "connect",
+   "server": "ghostnet"
+  },
+  {
+   "id": "welcome",
+   "text": "Read ghost_welcome.txt",
+   "event": "read",
+   "server": "ghostnet",
+   "path": "/pub/ghost_welcome.txt",
+   "hint": "cd /pub  then  cat ghost_welcome.txt"
+  },
+  {
+   "id": "login",
+   "text": "Open the vault (login ghost)",
+   "event": "login",
+   "server": "ghostnet",
+   "user": "ghost",
+   "hint": "login ghost — then solve the access code puzzle using the clues."
+  },
+  {
+   "id": "dl",
+   "text": "Download ghost_ledger.dat",
+   "event": "download",
+   "server": "ghostnet",
+   "file": "ghost_ledger.dat",
+   "hint": "cd /vault  then  download ghost_ledger.dat"
+  }
+ ],
+ "choice": {
+  "key": "ghost_deal",
+  "prompt": "GHOST: \"Now that you've seen my ledger — what do you want to do with what you know about the fourteen?\"",
+  "options": [
+   {
+    "id": "ally",
+    "text": "Share everything with GHOST. Two heads are better than one.",
+    "trust": {
+     "ghost": 10
+    },
+    "flags": {
+     "ghost_ally": true
+    },
+    "result": "GHOST nods once. \"Partners, then. Don't make me regret it.\""
+   },
+   {
+    "id": "silent",
+    "text": "Keep it to yourself. Trust nobody yet.",
+    "trust": {
+     "ghost": 2
+    },
+    "reward": {
+     "reputation": 2
+    },
+    "flags": {
+     "ghost_distant": true
+    },
+    "result": "GHOST shrugs. \"Smart. Boring, but smart.\""
+   },
+   {
+    "id": "report",
+    "text": "Tell MIRA about GHOST. She is your handler, after all.",
+    "trust": {
+     "ghost": -10,
+     "mira": 6
+    },
+    "flags": {
+     "ghost_reported": true
+    },
+    "result": "GHOST's channel flickers. \"...I see. Well. That's a choice.\""
+   }
+  ]
+ },
+ "story_end": [
+  "The ledger contains a credential that belongs to nobody. GHOST calls it 'a gift'. You suspect it is a leash."
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "mira",
+    "text": "Someone is tunnelling into BLACKVAULT from outside. Find where the intruder came from: RELAY-7. Mission 005."
+   }
+  ]
+ },
+ "type": "INTELLIGENCE",
+ "chapter": 2,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 65,
+    "credits": 150
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 360 seconds",
+   "cond": "time_under",
+   "value": 360,
+   "reward": {
+    "xp": 52,
+    "credits": 120
+   }
+  }
+ ],
+ "required_level": 1
+}

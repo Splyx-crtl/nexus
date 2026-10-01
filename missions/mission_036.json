@@ -1,0 +1,169 @@
+{
+ "id": "mission_036",
+ "number": 36,
+ "title": "THE QUIET ROOM",
+ "type": "STORY",
+ "difficulty": 4,
+ "chapter": 4,
+ "main": false,
+ "required_level": 28,
+ "min_reputation": 30,
+ "requires": [
+  "mission_012"
+ ],
+ "description": "The quiet ward of WREN holds a patient file that should not exist. Read it and decide what to do.",
+ "goal": "read patient_000.txt and the ward log.",
+ "reward": {
+  "xp": 4800,
+  "credits": 5500,
+  "reputation": 5,
+  "items": []
+ },
+ "hint": "Credentials are in ~/wren_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "wren"
+  ],
+  "files": {
+   "wren_access.txt": [
+    "WREN",
+    "user: nurse",
+    "pass: night-ward",
+    "task: THE QUIET ROOM"
+   ]
+  }
+ },
+ "story_start": [
+  "ZERO: \"> room 14. read it. you'll recognise the handwriting.\"",
+  "The firewall of WREN is a seven-symbol maze. The ward behind it is silent."
+ ],
+ "story_end": [
+  "The patient file is yours. The handwriting is yours. The room is empty."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to WREN",
+   "event": "route",
+   "server": "wren"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to WREN",
+   "event": "connect",
+   "server": "wren",
+   "hint": "connect wren"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the WREN-WARD firewall",
+   "event": "firewall",
+   "server": "wren",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as nurse",
+   "event": "login",
+   "server": "wren",
+   "user": "nurse",
+   "hint": "login nurse night-ward  (see ~/wren_access.txt)"
+  },
+  {
+   "id": "note",
+   "text": "Read patient_000.txt",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/quiet_room/patient_000.txt"
+  },
+  {
+   "id": "log",
+   "text": "Read ward_log.txt",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/quiet_room/ward_log.txt"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "wren",
+   "path": "/jobs/quiet_room/.stash_quiet_room",
+   "optional": true,
+   "bonus": {
+    "xp": 384,
+    "credits": 440
+   },
+   "hint": "ls -a /jobs/quiet_room"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 576,
+    "credits": 660
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 480,
+    "credits": 550
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> you read it. good. now you're not alone in knowing."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "quiet_room",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

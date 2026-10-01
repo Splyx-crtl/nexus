@@ -1,0 +1,129 @@
+{
+ "id": "mission_032",
+ "number": 32,
+ "title": "BLACK ICE",
+ "type": "INFILTRATION",
+ "difficulty": 3,
+ "chapter": 3,
+ "main": false,
+ "required_level": 20,
+ "min_reputation": 15,
+ "requires": [
+  "mission_009"
+ ],
+ "description": "KESTREL's flight recorder contains proof of a drone strike that never officially happened.",
+ "goal": "pull flight_recorder.dat.",
+ "reward": {
+  "xp": 2400,
+  "credits": 2800,
+  "reputation": 4,
+  "items": []
+ },
+ "hint": "Credentials are in ~/kestrel_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "kestrel"
+  ],
+  "files": {
+   "kestrel_access.txt": [
+    "KESTREL",
+    "user: pilot",
+    "pass: talon-5",
+    "task: BLACK ICE"
+   ]
+  }
+ },
+ "story_start": [
+  "ARCHER: \"One recording. One strike nobody admits to. Get it.\""
+ ],
+ "story_end": [
+  "The recording is damning. ARCHER takes it without a word."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to KESTREL",
+   "event": "route",
+   "server": "kestrel"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to KESTREL",
+   "event": "connect",
+   "server": "kestrel",
+   "hint": "connect kestrel"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the KESTREL-PRIME firewall",
+   "event": "firewall",
+   "server": "kestrel",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as pilot",
+   "event": "login",
+   "server": "kestrel",
+   "user": "pilot",
+   "hint": "login pilot talon-5  (see ~/kestrel_access.txt)"
+  },
+  {
+   "id": "read",
+   "text": "Read flight_recorder.dat",
+   "event": "read",
+   "server": "kestrel",
+   "path": "/jobs/black_ice/flight_recorder.dat"
+  },
+  {
+   "id": "dl",
+   "text": "Download flight_recorder.dat",
+   "event": "download",
+   "server": "kestrel",
+   "file": "flight_recorder.dat"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "kestrel",
+   "path": "/jobs/black_ice/.stash_black_ice",
+   "optional": true,
+   "bonus": {
+    "xp": 192,
+    "credits": 224
+   },
+   "hint": "ls -a /jobs/black_ice"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 288,
+    "credits": 336
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 240,
+    "credits": 280
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "archer",
+    "text": "Noted. This is going into my files, not NEXUS'."
+   }
+  ],
+  "flags": {}
+ }
+}

@@ -1,0 +1,152 @@
+{
+ "id": "mission_011",
+ "number": 11,
+ "title": "MISSING",
+ "difficulty": 4,
+ "description": "ARCHIVE-9 stores the service records of every operator NEXUS ever employed. ZERO wants you to read one of them.",
+ "goal": "Breach ARCHIVE-9, decrypt the roster and read operator record 000.",
+ "reward": {
+  "xp": 1800,
+  "credits": 4500,
+  "reputation": 4
+ },
+ "requires": [
+  "mission_010"
+ ],
+ "hint": "route archive_9 -> firewall -> login archivist -> decrypt operators.enc (the key is the name of your employer).",
+ "on_start": {
+  "discover": [
+   "archive_9"
+  ],
+  "files": {
+   "archive_access.txt": [
+    "ARCHIVE-9",
+    "user: archivist",
+    "pass: hollow-9",
+    "(from ZERO — he knew the password. he always did.)"
+   ]
+  }
+ },
+ "story_start": [
+  "ZERO: \"> there's a record in the archive with a number you won't like. read it. then decide whether to hate me.\"",
+  "The archive's firewall has five slots. The roster is encrypted with a single word: the name of the system that employs you."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to ARCHIVE-9",
+   "event": "route",
+   "server": "archive_9"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to ARCHIVE-9",
+   "event": "connect",
+   "server": "archive_9"
+  },
+  {
+   "id": "fw",
+   "text": "Breach ARCHIVE-WARD",
+   "event": "firewall",
+   "server": "archive_9"
+  },
+  {
+   "id": "login",
+   "text": "Log in as archivist",
+   "event": "login",
+   "server": "archive_9",
+   "user": "archivist",
+   "hint": "cat ~/archive_access.txt"
+  },
+  {
+   "id": "decrypt",
+   "text": "Decrypt operators.enc",
+   "event": "decrypt",
+   "server": "archive_9",
+   "path": "/records/operators.enc",
+   "hint": "The key has five letters: the name of the system you work for."
+  },
+  {
+   "id": "roster",
+   "text": "Read the operator roster",
+   "event": "read",
+   "server": "archive_9",
+   "path": "/records/operators.enc"
+  },
+  {
+   "id": "rec",
+   "text": "Read op000.rec",
+   "event": "read",
+   "server": "archive_9",
+   "path": "/records/op000.rec",
+   "hint": "cd /records then cat op000.rec"
+  },
+  {
+   "id": "dl",
+   "text": "Download op000.rec",
+   "event": "download",
+   "server": "archive_9",
+   "file": "op000.rec",
+   "optional": true,
+   "bonus": {
+    "xp": 150,
+    "credits": 300
+   }
+  }
+ ],
+ "story_end": [
+  "Your own callsign sits in the record. RESET x3. Last reset: 2031-07-31."
+ ],
+ "on_complete": {
+  "trust": {
+   "zero": 5
+  },
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> now you know. i'm not a stranger. i'm you, one iteration earlier. go to ECHO. the old partition is open."
+   },
+   {
+    "from": "mira",
+    "text": "That record could be forged. Please, {player} — talk to me before you believe it."
+   }
+  ]
+ },
+ "moments": [
+  {
+   "when": "objective:rec",
+   "lines": [
+    "",
+    "[!] OPERATOR 000 — CALLSIGN: {player}",
+    "[!] That is YOUR name.",
+    ""
+   ],
+   "style": "err"
+  }
+ ],
+ "type": "INVESTIGATION",
+ "chapter": 4,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 180,
+    "credits": 450
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 540 seconds",
+   "cond": "time_under",
+   "value": 540,
+   "reward": {
+    "xp": 144,
+    "credits": 360
+   }
+  }
+ ],
+ "required_level": 1
+}

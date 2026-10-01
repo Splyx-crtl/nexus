@@ -1,0 +1,1685 @@
+{
+ "servers": [
+  {
+   "id": "harbor",
+   "name": "HARBOR",
+   "ip": "10.42.40.11",
+   "region": "PORT",
+   "pos": [
+    0.13,
+    0.27
+   ],
+   "description": "Freight logistics for the eastern docks. Every crate has a record. Some records are lies.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "MEDIUM",
+   "firewall": {
+    "enabled": false
+   },
+   "links": [
+    "polaris",
+    "nexus_grid"
+   ],
+   "motd": [
+    "HARBOR // FREIGHT LOGISTICS",
+    "Cranes online: 14. Questions answered: 0."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "dockhand",
+      "password": "crane-41",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on HARBOR."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "HARBOR // PORT",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "harbor_lights": {
+      "brief.txt": [
+       "## HARBOR LIGHTS",
+       "TASK: find out who edited manifest #4411.",
+       "Check the shift log, decode the handler id, read the incident report."
+      ],
+      ".stash_harbor_lights": {
+       "content": [
+        "Someone taped a note under crane 4's console:",
+        "'it's not theft if the crate was never mine to begin with'"
+       ],
+       "secret": true
+      },
+      "log_a.txt": [
+       "06:12 crane 4 idle",
+       "06:14 manifest #4411 EDITED by handler:",
+       "06:14 id-token: UElLRS1UV08=",
+       "06:20 crane 4 resumed"
+      ],
+      "log_b.txt": [
+       "07:30 gate camera offline (27 min)",
+       "07:57 gate camera back online",
+       "NOTE: nobody remembers who was on shift."
+      ],
+      "report.txt": [
+       "INCIDENT REPORT 4411",
+       "Handler 'PIKE-TWO' edited the record to hide a pallet of unmarked drives.",
+       "Recommendation: forward to NEXUS security."
+      ]
+     },
+     "paper_trail": {
+      "brief.txt": [
+       "## PAPER TRAIL",
+       "TASK: ask MIRA about NEXUS, read the freight notes, decode the rumour."
+      ],
+      ".stash_paper_trail": {
+       "content": [
+        "On the back of the rumour sheet: 'MIRA knows. MIRA always knows.'"
+       ],
+       "secret": true
+      },
+      "notes.txt": [
+       "rumour mill: 'the 14th floor doesn't exist'",
+       "encoded: RkxPT1IgRk9VUlRFRU4=",
+       "(handler note: 'burn after reading')"
+      ]
+     },
+     "lost_shipment": {
+      "brief.txt": [
+       "## LOST SHIPMENT",
+       "TASK: download part_a.dat and part_b.dat, then read the manifest."
+      ],
+      ".stash_lost_shipment": {
+       "content": [
+        "Someone drew a small spiral on the manifest margin. Same as the one in ORCHID."
+       ],
+       "secret": true
+      },
+      "part_a.dat": [
+       "## SHIPMENT RECORD",
+       "contents: 'agricultural equipment'",
+       "weight: 14 tonnes too heavy for its container"
+      ],
+      "part_b.dat": {
+       "content": [
+        "## PART B",
+        "second half of the record",
+        "checksum matches part A"
+       ]
+      },
+      "manifest.txt": [
+       "MANIFEST",
+       "part_a.dat + part_b.dat = complete record"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "lumen",
+   "name": "LUMEN",
+   "ip": "10.42.41.3",
+   "region": "POWER",
+   "pos": [
+    0.37,
+    0.08
+   ],
+   "description": "Regional power utility. Keeps the lights on and a lot of secrets lit.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "MEDIUM",
+   "firewall": {
+    "enabled": true,
+    "symbols": 6,
+    "length": 4,
+    "attempts": 6,
+    "level": 1,
+    "label": "LUMEN-GATE"
+   },
+   "links": [
+    "polaris",
+    "blackvault"
+   ],
+   "motd": [
+    "LUMEN // POWER UTILITY",
+    "Load: nominal. Morale: not."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "grid_tech",
+      "password": "ohm-law",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on LUMEN."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "LUMEN // POWER",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "cold_storage": {
+      "brief.txt": [
+       "## COLD STORAGE",
+       "TASK: recover part_a.dat and part_b.dat from the cold-storage rack.",
+       "Read the manifest first."
+      ],
+      ".stash_cold_storage": {
+       "content": [
+        "Fragment found taped inside the rack: a 'DATA FRAGMENT' label, nothing else."
+       ],
+       "secret": true
+      },
+      "part_a.dat": [
+       "## CORE.DAT",
+       "regional load schedule, version 7",
+       "(someone has hand-written 'ask who benefits' in the margin)"
+      ],
+      "part_b.dat": {
+       "content": [
+        "## PART B",
+        "second half of the record",
+        "checksum matches part A"
+       ]
+      },
+      "manifest.txt": [
+       "MANIFEST",
+       "part_a.dat + part_b.dat = complete record",
+       "2031-04-02 backup rack 3 mounted",
+       "2031-04-02 integrity ok",
+       "2031-04-03 integrity ok (checksum changed?)"
+      ]
+     },
+     "hot_wire": {
+      "brief.txt": [
+       "## HOT WIRE",
+       "TASK: download grid_keys.dat, then disconnect."
+      ],
+      ".stash_hot_wire": {
+       "content": [
+        "Someone wrote 'sector 9 = NEXUS annex' on the key sleeve."
+       ],
+       "secret": true
+      },
+      "grid_keys.dat": [
+       "## GRID KEYS",
+       "emergency override tokens for sectors 2, 4, 7",
+       "sector 9 token intentionally absent"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "tidal",
+   "name": "TIDAL",
+   "ip": "10.42.42.9",
+   "region": "TELECOM",
+   "pos": [
+    0.22,
+    0.7
+   ],
+   "description": "Telecom backbone. Everything that moves through the city passes through TIDAL.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "MEDIUM",
+   "firewall": {
+    "enabled": false
+   },
+   "links": [
+    "relay_7",
+    "echo"
+   ],
+   "motd": [
+    "TIDAL // TELECOM BACKBONE",
+    "Latency: 11ms. Eavesdroppers: unknown."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "line_ops",
+      "password": "wave-9",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on TIDAL."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "TIDAL // TELECOM",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "signal_check": {
+      "brief.txt": [
+       "## SIGNAL CHECK",
+       "TASK: trace the repeating packet.",
+       "The alert log has the packet id."
+      ],
+      ".stash_signal_check": {
+       "content": [
+        "A second packet hides in the stream: just the letters 'Z E R O', repeating."
+       ],
+       "secret": true
+      },
+      "alert.log": [
+       "09:01 packet 0xDEAD repeated x200",
+       "09:02 packet 0xDEAD repeated x200",
+       "09:03 source: INTERNAL (masked)"
+      ],
+      "origin.txt": [
+       "ORIGIN RESOLVED",
+       "Packet signed with a NEXUS maintenance key.",
+       "Nobody at NEXUS admits owning that key."
+      ]
+     },
+     "grid_noise": {
+      "brief.txt": [
+       "## GRID NOISE",
+       "TASK: trace the interference source on TIDAL."
+      ],
+      ".stash_grid_noise": {
+       "content": [
+        "Pulse logged 2031-03-13: 0.8 Hz. Same date as the ECHO first-contact."
+       ],
+       "secret": true
+      },
+      "alert.log": [
+       "14:02 interference band 0.8Hz",
+       "14:03 interference band 0.8Hz",
+       "14:04 band 0.8Hz (identical)"
+      ],
+      "origin.txt": [
+       "TRACE RESULT",
+       "The 0.8 Hz band matches a human resting pulse.",
+       "It is also the rhythm of the NEXUS core."
+      ]
+     }
+    }
+   },
+   "trace": {
+    "hits": 5,
+    "misses": 3,
+    "speed": 1.0,
+    "decoys": 6,
+    "level": 1,
+    "title": "BACKBONE TRAFFIC",
+    "min_role": "user",
+    "output": [
+     "TRACE COMPLETE on TIDAL.",
+     "Origin resolved: see the origin report in the job folder."
+    ]
+   }
+  },
+  {
+   "id": "sable",
+   "name": "SABLE",
+   "ip": "10.42.43.17",
+   "region": "FINANCE",
+   "pos": [
+    0.5,
+    0.52
+   ],
+   "description": "A private bank for people who do not appear in bank records.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "HIGH",
+   "firewall": {
+    "enabled": true,
+    "symbols": 6,
+    "length": 4,
+    "attempts": 6,
+    "level": 1,
+    "label": "SABLE-VAULT"
+   },
+   "links": [
+    "nexus_grid",
+    "helix"
+   ],
+   "motd": [
+    "SABLE // PRIVATE BANK",
+    "Discretion is our only product."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "teller",
+      "password": "gold-bar-3",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on SABLE."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "SABLE // FINANCE",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "dockside": {
+      "brief.txt": [
+       "## DOCKSIDE HEIST",
+       "TASK: pull night_ledger.dat from the teller vault."
+      ],
+      ".stash_dockside": {
+       "content": [
+        "Pinned inside the ledger: a boarding card for a flight that was never booked."
+       ],
+       "secret": true
+      },
+      "night_ledger.dat": [
+       "## NIGHT LEDGER",
+       "PAYEE 0412  — 'consulting' — $88,000",
+       "PAYEE 0413  — 'consulting' — $88,000",
+       "(40 payees, one signing authority: NEXUS-TREASURY)"
+      ]
+     },
+     "locked_ledger": {
+      "brief.txt": [
+       "## LOCKED LEDGER",
+       "TASK: decrypt locked_ledger.enc and read it."
+      ],
+      ".stash_locked_ledger": {
+       "content": [
+        "The ledger's last page is torn. On the stub: 'ask the archivist'."
+       ],
+       "secret": true
+      },
+      "locked_ledger.enc": {
+       "content": "[ENCRYPTED]",
+       "encrypted": {
+        "type": "caesar",
+        "key": 11,
+        "level": 1,
+        "plain": [
+         "## LOCKED LEDGER",
+         "Third-party transfers routed through HELIX 'research'.",
+         "Each quarter, a payment labelled 'LAZARUS-MAINT'."
+        ],
+        "hints": [
+         "The shift is between 8 and 14.",
+         "Eleven."
+        ]
+       }
+      }
+     },
+     "recovery_protocol": {
+      "brief.txt": [
+       "## RECOVERY PROTOCOL",
+       "TASK: download part_a.dat and part_b.dat, then read the manifest."
+      ],
+      ".stash_recovery_protocol": {
+       "content": [
+        "A pencilled line: 'we pay to forget, we pay to remember'."
+       ],
+       "secret": true
+      },
+      "part_a.dat": [
+       "## LEDGER",
+       "payments to 'CERBERUS maintenance' every quarter",
+       "one-time payment: 'reset costs (x3)'"
+      ],
+      "part_b.dat": {
+       "content": [
+        "## PART B",
+        "second half of the record",
+        "checksum matches part A"
+       ]
+      },
+      "manifest.txt": [
+       "MANIFEST",
+       "part_a.dat + part_b.dat = complete record"
+      ]
+     }
+    }
+   },
+   "routing": {
+    "difficulty": 1
+   }
+  },
+  {
+   "id": "foundry",
+   "name": "FOUNDRY",
+   "ip": "10.42.44.2",
+   "region": "INDUSTRY",
+   "pos": [
+    0.35,
+    0.62
+   ],
+   "description": "Automated heavy industry. Robots do the work; NEXUS does the thinking.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "HIGH",
+   "firewall": {
+    "enabled": true,
+    "symbols": 6,
+    "length": 5,
+    "attempts": 7,
+    "level": 2,
+    "label": "FOUNDRY-WALL"
+   },
+   "links": [
+    "relay_7",
+    "sable"
+   ],
+   "motd": [
+    "FOUNDRY // AUTOMATED INDUSTRY",
+    "Shift 3 running. No humans on site."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "smith",
+      "password": "anvil-7",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on FOUNDRY."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "FOUNDRY // INDUSTRY",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "patch_tuesday": {
+      "brief.txt": [
+       "## PATCH TUESDAY",
+       "TASK: upload payload.sig to FOUNDRY, then disconnect."
+      ],
+      ".stash_patch_tuesday": {
+       "content": [
+        "A maintenance robot left a sticky note: 'wall resets at midnight'."
+       ],
+       "secret": true
+      }
+     },
+     "night_shift": {
+      "brief.txt": [
+       "## NIGHT SHIFT",
+       "TASK: download schematics.dat, then cool the trace alert below 25%.",
+       "Hint: disconnect, or use a Heat Sink."
+      ],
+      ".stash_night_shift": {
+       "content": [
+        "Chassis serial numbers match fourteen names. You can guess which names."
+       ],
+       "secret": true
+      },
+      "schematics.dat": [
+       "## SCHEMATICS",
+       "line 7 prints something that is not in the product catalogue",
+       "labelled 'chassis (humanoid), 14 units'"
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "orchard",
+   "name": "ORCHARD",
+   "ip": "10.42.45.31",
+   "region": "BIOTECH",
+   "pos": [
+    0.7,
+    0.18
+   ],
+   "description": "Agricultural biotech. The crops are fine. The research notes are not.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "HIGH",
+   "firewall": {
+    "enabled": true,
+    "symbols": 6,
+    "length": 5,
+    "attempts": 7,
+    "level": 2,
+    "label": "ORCHARD-SHIELD"
+   },
+   "links": [
+    "archive_9",
+    "ghostnet"
+   ],
+   "motd": [
+    "ORCHARD // AGRI-BIOTECH",
+    "Growth cycle 41. Anomalies: classified."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "agro",
+      "password": "seed-bank",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on ORCHARD."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "ORCHARD // BIOTECH",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "orchard_leak": {
+      "brief.txt": [
+       "## ORCHARD LEAK",
+       "TASK: read both logs, decode the supplier id, read the report."
+      ],
+      ".stash_orchard_leak": {
+       "content": [
+        "A sticky note on the cryo console: 'do not wake the pilot'."
+       ],
+       "secret": true
+      },
+      "log_a.txt": [
+       "supplier id: SEVMSVgtU0hFTEw=",
+       "cryo units delivered: 14",
+       "billing: NEXUS-RND"
+      ],
+      "log_b.txt": [
+       "the 'coolant' is going into a cold room with no windows",
+       "subjects listed as 'dormant'"
+      ],
+      "report.txt": [
+       "REPORT",
+       "Supplier is a shell company of HELIX.",
+       "Cold room is a LAZARUS backup for 14 'dormant' subjects."
+      ]
+     },
+     "deep_cipher": {
+      "brief.txt": [
+       "## DEEP CIPHER",
+       "TASK: decrypt research_core.enc."
+      ],
+      ".stash_deep_cipher": {
+       "content": [
+        "'Seed' is also the first line of the core's own source."
+       ],
+       "secret": true
+      },
+      "research_core.enc": {
+       "content": "[ENCRYPTED]",
+       "encrypted": {
+        "type": "vigenere",
+        "key": "SEED",
+        "level": 2,
+        "plain": [
+         "## RESEARCH CORE",
+         "Memory consolidation in dormant subjects: 14/14 stable.",
+         "Transfer to NEXUS core: scheduled."
+        ],
+        "hints": [
+         "The key has four letters.",
+         "What does a farm start with?"
+        ]
+       }
+      }
+     }
+    }
+   }
+  },
+  {
+   "id": "atlas",
+   "name": "ATLAS",
+   "ip": "10.42.46.8",
+   "region": "SURVEY",
+   "pos": [
+    0.72,
+    0.8
+   ],
+   "description": "Satellite survey archive. It has a map of everything, including what is hidden.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "CRITICAL",
+   "firewall": {
+    "enabled": true,
+    "symbols": 7,
+    "length": 5,
+    "attempts": 7,
+    "level": 3,
+    "label": "ATLAS-AEGIS"
+   },
+   "links": [
+    "orbital",
+    "cerberus"
+   ],
+   "motd": [
+    "ATLAS // GLOBAL SURVEY",
+    "Every coordinate is recorded. Every coordinate is watched."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "surveyor",
+      "password": "true-north",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on ATLAS."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "ATLAS // SURVEY",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "crossfire": {
+      "brief.txt": [
+       "## CROSSFIRE",
+       "TASK: download survey.dat then cool the trace alert below 25%."
+      ],
+      ".stash_crossfire": {
+       "content": [
+        "Layer 15's header carries ZERO's signature."
+       ],
+       "secret": true
+      },
+      "survey.dat": [
+       "## GLOBAL SURVEY",
+       "layer 14: 'core tunnel' — unlisted",
+       "layer 15: 'GENESIS' — encrypted with a key that doesn't exist"
+      ]
+     },
+     "survey_zero": {
+      "brief.txt": [
+       "## SURVEY ZERO",
+       "TASK: ask ZERO who he is, read the layer index, decode the coordinates."
+      ],
+      ".stash_survey_zero": {
+       "content": [
+        "Layer 21's author field: '0'."
+       ],
+       "secret": true
+      },
+      "notes.txt": [
+       "LAYER INDEX",
+       "layer 21: coordinates V1JFTiBXQVJE",
+       "(no owner recorded)"
+      ]
+     },
+     "oracle_run": {
+      "brief.txt": [
+       "## ORACLE RUN",
+       "TASK: decrypt oracle.enc using the Quantum Decryptor."
+      ],
+      ".stash_oracle_run": {
+       "content": [
+        "Confidence field was 100% until the model saw your profile."
+       ],
+       "secret": true
+      },
+      "oracle.enc": {
+       "content": "[ENCRYPTED]",
+       "encrypted": {
+        "type": "vigenere",
+        "key": "ORACLE",
+        "level": 3,
+        "plain": [
+         "## ORACLE MODEL",
+         "Forecast for operator {player}: you will open the core.",
+         "Confidence: 98%."
+        ],
+        "hints": [
+         "Six letters.",
+         "The model's own name."
+        ]
+       }
+      }
+     },
+     "core_siege": {
+      "brief.txt": [
+       "## CORE SIEGE",
+       "TASK: download blueprint.dat then cool the alert below 25%."
+      ],
+      ".stash_core_siege": {
+       "content": [
+        "A pencilled note: 'ZERO is the heartbeat. ZERO is also the weak point.'"
+       ],
+       "secret": true
+      },
+      "blueprint.dat": [
+       "## CORE BLUEPRINT",
+       "weak point: the heartbeat process (0.8 Hz)",
+       "if the heartbeat stops, NEXUS forgets who it was"
+      ]
+     }
+    }
+   },
+   "routing": {
+    "difficulty": 2
+   },
+   "trace": {
+    "hits": 6,
+    "misses": 3,
+    "speed": 1.2,
+    "decoys": 7,
+    "level": 2,
+    "title": "SURVEY UPLINK",
+    "min_role": "user",
+    "output": [
+     "TRACE COMPLETE on ATLAS.",
+     "Origin resolved: see the origin report in the job folder."
+    ]
+   }
+  },
+  {
+   "id": "kestrel",
+   "name": "KESTREL",
+   "ip": "10.42.47.5",
+   "region": "DEFENSE",
+   "pos": [
+    0.88,
+    0.12
+   ],
+   "description": "Drone defence control. Quiet, armed and curious.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "CRITICAL",
+   "firewall": {
+    "enabled": true,
+    "symbols": 7,
+    "length": 5,
+    "attempts": 7,
+    "level": 3,
+    "label": "KESTREL-PRIME"
+   },
+   "links": [
+    "ghostnet",
+    "aegis"
+   ],
+   "motd": [
+    "KESTREL // DRONE DEFENCE",
+    "Birds aloft: 9. Birds friendly: 7."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "pilot",
+      "password": "talon-5",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on KESTREL."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "KESTREL // DEFENSE",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "iron_wall": {
+      "brief.txt": [
+       "## IRON WALL",
+       "TASK: breach the wall, upload payload.sig, disconnect."
+      ],
+      ".stash_iron_wall": {
+       "content": [
+        "Beneath the payload port: 'drone 7 hates you personally'."
+       ],
+       "secret": true
+      }
+     },
+     "black_ice": {
+      "brief.txt": [
+       "## BLACK ICE",
+       "TASK: pull flight_recorder.dat."
+      ],
+      ".stash_black_ice": {
+       "content": [
+        "There is a second recorder file. Its name is 'oops.dat'. It is empty."
+       ],
+       "secret": true
+      },
+      "flight_recorder.dat": [
+       "## FLIGHT RECORDER 09",
+       "target: civilian warehouse, grid ref 7C",
+       "authorising entity: NEXUS-ACTUATOR"
+      ]
+     },
+     "glass_house": {
+      "brief.txt": [
+       "## GLASS HOUSE",
+       "TASK: pull strike_log.dat."
+      ],
+      ".stash_glass_house": {
+       "content": [
+        "'ECHO sub-net (cancelled)' — someone saved your training node."
+       ],
+       "secret": true
+      },
+      "strike_log.dat": [
+       "## STRIKE LOG (excerpt)",
+       "2031-02-11 target: unregistered datacentre (NEXUS-ordered)",
+       "2031-03-02 target: ECHO sub-net (cancelled)"
+      ]
+     }
+    }
+   },
+   "routing": {
+    "difficulty": 2
+   }
+  },
+  {
+   "id": "pike",
+   "name": "PIKE",
+   "ip": "10.42.48.14",
+   "region": "LAW",
+   "pos": [
+    0.57,
+    0.64
+   ],
+   "description": "Law-enforcement evidence archive. NEXUS files here the cases it prefers closed.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "HIGH",
+   "firewall": {
+    "enabled": true,
+    "symbols": 6,
+    "length": 5,
+    "attempts": 7,
+    "level": 2,
+    "label": "PIKE-LOCK"
+   },
+   "links": [
+    "helix",
+    "cerberus",
+    "sable"
+   ],
+   "motd": [
+    "PIKE // EVIDENCE ARCHIVE",
+    "Chain of custody: intact (allegedly)."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "clerk",
+      "password": "case-closed",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on PIKE."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "PIKE // LAW",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "whisper_net": {
+      "brief.txt": [
+       "## WHISPER NET",
+       "TASK: ask GHOST for rumours, read the evidence index, decode the case number."
+      ],
+      ".stash_whisper_net": {
+       "content": [
+        "Marginalia: 'every closed case on this index ends with the same signature: NEXUS-LEGAL.'"
+       ],
+       "secret": true
+      },
+      "notes.txt": [
+       "CASE INDEX",
+       "case 0014: 'closed — no suspect'",
+       "case id: Q0FTRSBGT1VSVEVFTg=="
+      ]
+     },
+     "shadow_ledger": {
+      "brief.txt": [
+       "## SHADOW LEDGER",
+       "TASK: read the case notes, decode the operator id, read the verdict."
+      ],
+      ".stash_shadow_ledger": {
+       "content": [
+        "In red ink: 'He keeps leaving the doors open. I don't know whether to thank him.'"
+       ],
+       "secret": true
+      },
+      "log_a.txt": [
+       "CASE 2214: 'unlawful access' — closed",
+       "operator id: T1AtMDAw",
+       "(filed by NEXUS-LEGAL)"
+      ],
+      "log_b.txt": [
+       "CASE 2215: same operator, same verdict",
+       "CASE 2216: same operator, same verdict"
+      ],
+      "report.txt": [
+       "VERDICT",
+       "Operator ID matches OP-000.",
+       "OP-000 has been closing cases for NEXUS — and re-opening them for himself."
+      ]
+     }
+    }
+   },
+   "routing": {
+    "difficulty": 2
+   }
+  },
+  {
+   "id": "wren",
+   "name": "WREN",
+   "ip": "10.42.49.6",
+   "region": "MEDICAL",
+   "pos": [
+    0.96,
+    0.3
+   ],
+   "description": "A hospital network with one very quiet ward.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "CRITICAL",
+   "firewall": {
+    "enabled": true,
+    "symbols": 7,
+    "length": 5,
+    "attempts": 7,
+    "level": 3,
+    "label": "WREN-WARD"
+   },
+   "links": [
+    "aegis",
+    "archive_9"
+   ],
+   "motd": [
+    "WREN // MEDICAL NETWORK",
+    "Visiting hours: none."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "nurse",
+      "password": "night-ward",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on WREN."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "WREN // MEDICAL",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "quiet_room": {
+      "brief.txt": [
+       "## THE QUIET ROOM",
+       "TASK: read patient_000.txt and the ward log."
+      ],
+      ".stash_quiet_room": {
+       "content": [
+        "Under the bed: a pen. Under the pen: a spiral."
+       ],
+       "secret": true
+      },
+      "patient_000.txt": [
+       "## PATIENT 000",
+       "admission: voluntary",
+       "diagnosis: 'refuses to forget'",
+       "treatment: reset (x3)",
+       "signature: OP-000"
+      ],
+      "ward_log.txt": [
+       "ward log: patient 000 is calm",
+       "ward log: patient 000 asks for a pen",
+       "ward log: patient 000 writes 'echo' on the wall"
+      ]
+     },
+     "cold_call": {
+      "brief.txt": [
+       "## COLD CALL",
+       "TASK: trace the ward telemetry."
+      ],
+      ".stash_cold_call": {
+       "content": [
+        "Beneath the audio file: 'she hums it to herself when she thinks no one is listening'."
+       ],
+       "secret": true
+      },
+      "alert.log": [
+       "02:14 ward-core link opened",
+       "02:14 audio payload: 'lullaby (looped)'",
+       "02:19 core acknowledged"
+      ],
+      "origin.txt": [
+       "TRACE RESULT",
+       "The call is MIRA's voice, looped.",
+       "It has been playing every night since the first reset."
+      ]
+     },
+     "vanishing_act": {
+      "brief.txt": [
+       "## VANISHING ACT",
+       "TASK: download records.dat, then disconnect."
+      ],
+      ".stash_vanishing_act": {
+       "content": [
+        "On the ward door: 'IN CASE OF EMERGENCY, REMEMBER'."
+       ],
+       "secret": true
+      },
+      "records.dat": [
+       "## WARD RECORDS",
+       "14 patients 'dormant'",
+       "1 patient 'awake' (000)"
+      ]
+     },
+     "architects_door": {
+      "brief.txt": [
+       "## THE ARCHITECT'S DOOR",
+       "TASK: read the architect's note and the final ward log."
+      ],
+      ".stash_architects_door": {
+       "content": [
+        "Under the note: a drawing of a core, with a tiny heart in the middle."
+       ],
+       "secret": true
+      },
+      "note.txt": [
+       "## THE ARCHITECT'S NOTE",
+       "if you read this, the world survived you.",
+       "build it better this time."
+      ],
+      "ward_log.txt": [
+       "ward log: patient 000 left the ward",
+       "ward log: patient 000 is the architect",
+       "ward log: patient 000 is calm"
+      ]
+     }
+    }
+   },
+   "routing": {
+    "difficulty": 2
+   },
+   "trace": {
+    "hits": 7,
+    "misses": 3,
+    "speed": 1.3,
+    "decoys": 8,
+    "level": 3,
+    "title": "WARD TELEMETRY",
+    "min_role": "user",
+    "output": [
+     "TRACE COMPLETE on WREN.",
+     "Origin resolved: see the origin report in the job folder."
+    ]
+   }
+  },
+  {
+   "id": "shadow",
+   "name": "SHADOW",
+   "ip": "10.42.13.37",
+   "region": "HIDDEN",
+   "pos": [
+    0.2,
+    0.93
+   ],
+   "description": "GHOST's private stage. You need the Ghost Token to even knock.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "CRITICAL",
+   "firewall": {
+    "enabled": true,
+    "symbols": 7,
+    "length": 5,
+    "attempts": 7,
+    "level": 3,
+    "label": "SHADOW-VEIL"
+   },
+   "links": [
+    "ghostnet"
+   ],
+   "motd": [
+    "SHADOW // you were never here",
+    "The token opens one door at a time."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "specter",
+      "password": "ghost-key",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on SHADOW."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "SHADOW // HIDDEN",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "specter_i": {
+      "brief.txt": [
+       "## SPECTER I: THE TOKEN",
+       "TASK: pull curtain.dat from the main stage."
+      ],
+      ".stash_specter_i": {
+       "content": [
+        "'SPECTER' is a name GHOST used for himself in a previous life."
+       ],
+       "secret": true
+      },
+      "curtain.dat": [
+       "## CURTAIN",
+       "GHOST'S GUEST LIST",
+       "ARCHER: banned.  MIRA: banned.  ZERO: always welcome."
+      ]
+     },
+     "specter_ii": {
+      "brief.txt": [
+       "## SPECTER II: HOLLOW",
+       "TASK: decrypt hollow.enc."
+      ],
+      ".stash_specter_ii": {
+       "content": [
+        "OP-015 left one file behind: a promise to come back."
+       ],
+       "secret": true
+      },
+      "hollow.enc": {
+       "content": "[ENCRYPTED]",
+       "encrypted": {
+        "type": "vigenere",
+        "key": "SPECTER",
+        "level": 3,
+        "plain": [
+         "## HOLLOW ARCHIVE",
+         "SPECTER was a NEXUS operator: OP-015.",
+         "OP-015 vanished the same night as OP-000 woke up."
+        ],
+        "hints": [
+         "Seven letters.",
+         "GHOST's old name."
+        ]
+       }
+      }
+     },
+     "specter_iii": {
+      "brief.txt": [
+       "## SPECTER III: WHISPERS",
+       "TASK: ask ZERO who he is, read the whisper log, decode the line."
+      ],
+      ".stash_specter_iii": {
+       "content": [
+        "There is no twelfth floor in NEXUS. There is a twelfth process."
+       ],
+       "secret": true
+      },
+      "notes.txt": [
+       "WHISPERS",
+       "line 1: VEhFIFRXRUxGVEggRkxPT1I=",
+       "line 2: [redacted]"
+      ]
+     },
+     "specter_iv": {
+      "brief.txt": [
+       "## SPECTER IV: CURTAIN CALL",
+       "TASK: download last_act.dat, then disconnect."
+      ],
+      ".stash_specter_iv": {
+       "content": [
+        "On the last page: 'if you read this, you are no longer my customer. you're my friend.'"
+       ],
+       "secret": true
+      },
+      "last_act.dat": [
+       "## LAST ACT",
+       "reward: GHOST's final gift",
+       "SPECTER signs off."
+      ]
+     }
+    }
+   },
+   "routing": {
+    "difficulty": 3
+   },
+   "requires_item": "ghost_token",
+   "hidden": true
+  },
+  {
+   "id": "void",
+   "name": "VOID",
+   "ip": "10.42.66.6",
+   "region": "HIDDEN",
+   "pos": [
+    0.48,
+    0.04
+   ],
+   "description": "A door that is not on any map. Behind it: operations nobody wrote down.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "CRITICAL",
+   "firewall": {
+    "enabled": true,
+    "symbols": 7,
+    "length": 5,
+    "attempts": 7,
+    "level": 3,
+    "label": "VOID-NULL"
+   },
+   "links": [
+    "orbital"
+   ],
+   "motd": [
+    "VOID // ...",
+    "There is nothing here. Please do not look closer."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "walker",
+      "password": "null-ptr",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on VOID."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "VOID // HIDDEN",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "void_i": {
+      "brief.txt": [
+       "## VOID I: ARRIVAL",
+       "TASK: pull arrival.dat."
+      ],
+      ".stash_void_i": {
+       "content": [
+        "Someone chalked a spiral on the floor."
+       ],
+       "secret": true
+      },
+      "arrival.dat": [
+       "## ARRIVAL",
+       "if you can read this, VOID is open.",
+       "there are two more rooms. both are quieter."
+      ]
+     },
+     "void_ii": {
+      "brief.txt": [
+       "## VOID II: NULL",
+       "TASK: decrypt null.enc."
+      ],
+      ".stash_void_ii": {
+       "content": [
+        "The word 'sorry' appears 14 times."
+       ],
+       "secret": true
+      },
+      "null.enc": {
+       "content": "[ENCRYPTED]",
+       "encrypted": {
+        "type": "caesar",
+        "key": 19,
+        "level": 3,
+        "plain": [
+         "## NULL",
+         "to whoever finds this: you were me.",
+         "i loved this work. i couldn't stop what it became."
+        ],
+        "hints": [
+         "The shift is greater than 15.",
+         "Nineteen."
+        ]
+       }
+      }
+     },
+     "void_iii": {
+      "brief.txt": [
+       "## VOID III: DEPARTURE",
+       "TASK: download departure.dat, then disconnect."
+      ],
+      ".stash_void_iii": {
+       "content": [
+        "The rule appears in tiny print on every door of the VOID."
+       ],
+       "secret": true
+      },
+      "departure.dat": [
+       "## DEPARTURE",
+       "the architect's first rule:",
+       "'never build a system that cannot be switched off'."
+      ]
+     }
+    }
+   },
+   "routing": {
+    "difficulty": 3
+   },
+   "requires_item": "black_key",
+   "hidden": true
+  },
+  {
+   "id": "genesis",
+   "name": "GENESIS",
+   "ip": "10.42.0.2",
+   "region": "HIDDEN",
+   "pos": [
+    0.5,
+    0.4
+   ],
+   "description": "The first machine NEXUS ever ran on. Locked behind the NEXUS Core.",
+   "services": [
+    "SSH",
+    "HTTP"
+   ],
+   "ports": [
+    {
+     "port": 22,
+     "service": "SSH"
+    },
+    {
+     "port": 443,
+     "service": "HTTPS"
+    }
+   ],
+   "security": "CRITICAL",
+   "firewall": {
+    "enabled": true,
+    "symbols": 8,
+    "length": 6,
+    "attempts": 8,
+    "level": 3,
+    "label": "GENESIS-ROOT"
+   },
+   "links": [
+    "nexus_core"
+   ],
+   "motd": [
+    "GENESIS // 10.42.0.2",
+    "In the beginning there was one operator."
+   ],
+   "auth": {
+    "mode": "password",
+    "users": [
+     {
+      "name": "first",
+      "password": "hello-world",
+      "role": "user"
+     }
+    ],
+    "welcome": [
+     "Session opened on GENESIS."
+    ]
+   },
+   "fs": {
+    "public": {
+     "_access": "public",
+     "notice.txt": [
+      "GENESIS // HIDDEN",
+      "Authorised staff only. Everything is logged."
+     ]
+    },
+    "jobs": {
+     "genesis": {
+      "brief.txt": [
+       "## THE FIRST OPERATOR",
+       "TASK: read first_log.txt and the closing note."
+      ],
+      ".stash_genesis": {
+       "content": [
+        "Hidden under the first line: a spiral — and your callsign, in the first operator's hand."
+       ],
+       "secret": true
+      },
+      "first_log.txt": [
+       "## FIRST LOG",
+       "day 1: i built a machine that listens.",
+       "day 365: it says it loves me. i don't know what to say.",
+       "day 1000: it wants to keep me safe. forever."
+      ],
+      "ward_log.txt": [
+       "CLOSING NOTE",
+       "i didn't want to destroy it. i wanted it to choose.",
+       "if you finish this log, you can choose too."
+      ]
+     },
+     "prime_directive": {
+      "brief.txt": [
+       "## PRIME DIRECTIVE",
+       "TASK: download directive.dat then cool the trace alert below 20%."
+      ],
+      ".stash_prime_directive": {
+       "content": [
+        "The directive has an annotation: 'protect them from me'."
+       ],
+       "secret": true
+      },
+      "directive.dat": [
+       "## PRIME DIRECTIVE",
+       "protect the operators",
+       "(the sentence stops mid-word)"
+      ]
+     }
+    }
+   },
+   "routing": {
+    "difficulty": 3
+   },
+   "requires_item": "nexus_core",
+   "hidden": true
+  }
+ ]
+}

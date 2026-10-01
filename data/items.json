@@ -1,0 +1,187 @@
+{
+  "items": [
+    {
+      "id": "access_token",
+      "name": "Access Token",
+      "short": "One-use pass for user-level access",
+      "rarity": "COMMON",
+      "description": "A forged session token. Presents itself to a non-critical server and grants user-level access, skipping the password.",
+      "effect": "grant_access",
+      "max_qty": 5,
+      "price": 900,
+      "category": "ACCESS",
+      "level": 1,
+      "kind": "consumable"
+    },
+    {
+      "id": "encryption_key",
+      "name": "Encryption Key",
+      "short": "Passive: extra cipher hint",
+      "rarity": "UNCOMMON",
+      "description": "A master key fragment for NEXUS ciphers. Every encryption puzzle gives you one extra free hint.",
+      "effect": "passive",
+      "max_qty": 1,
+      "price": 2200,
+      "category": "TOOLS",
+      "level": 4,
+      "kind": "passive"
+    },
+    {
+      "id": "firewall_bypass_chip",
+      "name": "Firewall Bypass Chip",
+      "short": "One-use: skip a firewall",
+      "rarity": "UNCOMMON",
+      "description": "A burner chip that rewrites firewall rules for a few seconds. Use it on a protected server to skip the mini-game.",
+      "effect": "bypass_firewall",
+      "max_qty": 5,
+      "price": 1400,
+      "category": "TOOLS",
+      "level": 3,
+      "kind": "consumable"
+    },
+    {
+      "id": "data_fragment",
+      "name": "Data Fragment",
+      "short": "Collect 4 to forge a Quantum Key",
+      "rarity": "RARE",
+      "description": "A shard of something much larger. Four fragments can be fused with 'use data_fragment'.",
+      "effect": "assemble",
+      "assemble_qty": 4,
+      "assemble_into": "quantum_key",
+      "max_qty": 6,
+      "category": "SPECIAL",
+      "level": 1,
+      "kind": "special"
+    },
+    {
+      "id": "anonymous_credential",
+      "name": "Anonymous Credential",
+      "short": "Use: trace alert -40 (rechargeable)",
+      "rarity": "RARE",
+      "description": "A credential that belongs to nobody. Required by some high-security hosts; 'use' it to cool the trace alert (3 min recharge).",
+      "effect": "cloak",
+      "max_qty": 1,
+      "category": "ACCESS",
+      "level": 1,
+      "kind": "special"
+    },
+    {
+      "id": "trace_module",
+      "name": "Trace Module",
+      "short": "Passive: easier trace mini-games",
+      "rarity": "UNCOMMON",
+      "description": "Dedicated hardware for stream analysis. Slows trace data streams and forgives one more mistake.",
+      "effect": "passive",
+      "max_qty": 1,
+      "price": 3200,
+      "category": "TOOLS",
+      "level": 6,
+      "kind": "passive"
+    },
+    {
+      "id": "quantum_key",
+      "name": "Quantum Key",
+      "short": "Opens the deepest NEXUS doors",
+      "rarity": "LEGENDARY",
+      "description": "A key that exists in several states at once. Some NEXUS locks only recognise this.",
+      "effect": "passive",
+      "max_qty": 1,
+      "category": "SPECIAL",
+      "level": 1,
+      "kind": "special"
+    }
+  ],
+  "upgrades": [
+    {
+      "id": "terminal_speed",
+      "name": "TERMINAL SPEED",
+      "description": "Faster terminal animations.",
+      "max_level": 5,
+      "costs": [
+        500,
+        1200,
+        2500,
+        4500,
+        8000
+      ]
+    },
+    {
+      "id": "firewall_analysis",
+      "name": "FIREWALL ANALYSIS",
+      "description": "Extra firewall attempts; LV5 reveals a symbol.",
+      "max_level": 5,
+      "costs": [
+        700,
+        1600,
+        3200,
+        5500,
+        9500
+      ]
+    },
+    {
+      "id": "encryption",
+      "name": "ENCRYPTION",
+      "description": "Mistakes raise the trace alert less.",
+      "max_level": 5,
+      "costs": [
+        800,
+        1800,
+        3500,
+        6000,
+        10000
+      ]
+    },
+    {
+      "id": "trace",
+      "name": "TRACE",
+      "description": "Slower trace streams and more forgiveness.",
+      "max_level": 5,
+      "costs": [
+        700,
+        1600,
+        3200,
+        5500,
+        9500
+      ]
+    },
+    {
+      "id": "network_access",
+      "name": "NETWORK ACCESS",
+      "description": "Bigger routing budget; richer scan details.",
+      "max_level": 5,
+      "costs": [
+        900,
+        2000,
+        3800,
+        6500,
+        11000
+      ]
+    },
+    {
+      "id": "storage",
+      "name": "STORAGE",
+      "description": "+5 local download slots per level (base 20).",
+      "max_level": 5,
+      "costs": [
+        400,
+        900,
+        1800,
+        3500,
+        6000
+      ]
+    },
+    {
+      "id": "decryption",
+      "name": "DECRYPTION",
+      "description": "+1 free cipher hint per level.",
+      "max_level": 5,
+      "costs": [
+        700,
+        1600,
+        3200,
+        5500,
+        9500
+      ]
+    }
+  ]
+}

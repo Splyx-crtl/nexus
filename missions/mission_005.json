@@ -1,0 +1,110 @@
+{
+ "id": "mission_005",
+ "number": 5,
+ "title": "TRACE",
+ "difficulty": 2,
+ "description": "An intruder signature (ID 000) tunnelled into BLACKVAULT via RELAY-7. Follow the data stream back to its source.",
+ "goal": "Trace the intruder's tunnel on RELAY-7.",
+ "reward": {
+  "xp": 700,
+  "credits": 1800,
+  "reputation": 3,
+  "items": [
+   "trace_module"
+  ]
+ },
+ "requires": [
+  "mission_004"
+ ],
+ "hint": "connect relay_7, read the tunnel log, then run 'trace' and click the highlighted packet.",
+ "on_start": {
+  "discover": [
+   "relay_7"
+  ]
+ },
+ "story_start": [
+  "MIRA: \"RELAY-7 is a transit node, nothing lives there. But traffic remembers. Follow it.\"",
+  "MIRA: \"When the trace begins, packets will race across your screen. Click the marked one before it escapes.\""
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to RELAY-7",
+   "event": "connect",
+   "server": "relay_7"
+  },
+  {
+   "id": "log",
+   "text": "Read /var/log/tunnel.log",
+   "event": "read",
+   "server": "relay_7",
+   "path": "/var/log/tunnel.log",
+   "hint": "cd /var/log  then  cat tunnel.log"
+  },
+  {
+   "id": "trace",
+   "text": "Trace the tunnel origin",
+   "event": "trace",
+   "server": "relay_7",
+   "hint": "Type: trace — click the glowing packet in the stream."
+  },
+  {
+   "id": "routes",
+   "text": "Read routes.cfg (service accounts)",
+   "event": "read",
+   "server": "relay_7",
+   "path": "/var/log/routes.cfg",
+   "optional": true,
+   "bonus": {
+    "xp": 100,
+    "credits": 200
+   }
+  }
+ ],
+ "story_end": [
+  "The tunnel ends at ORBITAL — a satellite relay platform with a very loud signature."
+ ],
+ "on_complete": {
+  "discover": [
+   "orbital"
+  ],
+  "flags": {
+   "shop_open": true
+  },
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Heard you're running traces without proper hardware. Amateur. Type 'shop' — I've got gear. Also: hi. I'm VECTOR."
+   },
+   {
+    "from": "mira",
+    "text": "Whoever is behind ID 000 has been inside NEXUS far longer than we thought. Be careful, {player}."
+   }
+  ]
+ },
+ "type": "TRACE",
+ "chapter": 2,
+ "main": true,
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 70,
+    "credits": 180
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 300 seconds",
+   "cond": "time_under",
+   "value": 300,
+   "reward": {
+    "xp": 56,
+    "credits": 144
+   }
+  }
+ ],
+ "required_level": 1
+}

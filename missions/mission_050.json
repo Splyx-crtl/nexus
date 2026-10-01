@@ -1,0 +1,137 @@
+{
+ "id": "mission_050",
+ "number": 50,
+ "title": "VOID III: DEPARTURE",
+ "type": "ESCAPE",
+ "difficulty": 5,
+ "chapter": 4,
+ "main": false,
+ "required_level": 46,
+ "min_reputation": 25,
+ "requires": [
+  "mission_049"
+ ],
+ "description": "Leave the VOID with its last record before it seals.",
+ "goal": "download departure.dat, then disconnect.",
+ "reward": {
+  "xp": 13500,
+  "credits": 16500,
+  "reputation": 6,
+  "items": [
+   "data_fragment"
+  ]
+ },
+ "hint": "Credentials are in ~/void_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "void"
+  ],
+  "files": {
+   "void_access.txt": [
+    "VOID",
+    "user: walker",
+    "pass: null-ptr",
+    "task: VOID III: DEPARTURE"
+   ]
+  }
+ },
+ "story_start": [
+  "ZERO: \"> take what you can. the room closes behind you.\""
+ ],
+ "story_end": [
+  "VOID is sealed. You are carrying its last word."
+ ],
+ "objectives": [
+  {
+   "id": "route",
+   "text": "Build a relay route to VOID",
+   "event": "route",
+   "server": "void"
+  },
+  {
+   "id": "connect",
+   "text": "Connect to VOID",
+   "event": "connect",
+   "server": "void",
+   "hint": "connect void"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the VOID-NULL firewall",
+   "event": "firewall",
+   "server": "void",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as walker",
+   "event": "login",
+   "server": "void",
+   "user": "walker",
+   "hint": "login walker null-ptr  (see ~/void_access.txt)"
+  },
+  {
+   "id": "dl",
+   "text": "Download departure.dat",
+   "event": "download",
+   "server": "void",
+   "file": "departure.dat"
+  },
+  {
+   "id": "leave",
+   "text": "Disconnect before NEXUS catches you",
+   "event": "disconnect"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "void",
+   "path": "/jobs/void_iii/.stash_void_iii",
+   "optional": true,
+   "bonus": {
+    "xp": 720,
+    "credits": 880
+   },
+   "hint": "ls -a /jobs/void_iii"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 1620,
+    "credits": 1980
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 370 seconds",
+   "cond": "time_under",
+   "value": 370,
+   "reward": {
+    "xp": 1350,
+    "credits": 1650
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "zero",
+    "text": "> the first rule. i broke it. don't."
+   }
+  ],
+  "flags": {
+   "void_done": true
+  }
+ },
+ "requires_items": [
+  "black_key"
+ ],
+ "secret": true,
+ "time_limit": 300,
+ "heat_rate": 0.9
+}

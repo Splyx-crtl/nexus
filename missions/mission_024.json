@@ -1,0 +1,167 @@
+{
+ "id": "mission_024",
+ "number": 24,
+ "title": "PATCH TUESDAY",
+ "type": "FIREWALL",
+ "difficulty": 2,
+ "chapter": 2,
+ "main": false,
+ "required_level": 10,
+ "min_reputation": 0,
+ "requires": [
+  "mission_004"
+ ],
+ "description": "FOUNDRY's firewall is being updated. Slip a signed payload through before it closes.",
+ "goal": "upload payload.sig to FOUNDRY, then disconnect.",
+ "reward": {
+  "xp": 1100,
+  "credits": 1300,
+  "reputation": 3,
+  "items": []
+ },
+ "hint": "Credentials are in ~/foundry_access.txt. Check 'mission' for objectives.",
+ "on_start": {
+  "discover": [
+   "foundry"
+  ],
+  "files": {
+   "foundry_access.txt": [
+    "FOUNDRY",
+    "user: smith",
+    "pass: anvil-7",
+    "task: PATCH TUESDAY"
+   ],
+   "payload.sig": [
+    "SIGNATURE: PAYLOAD",
+    "AUTHOR: VECTOR",
+    "[SIMULATED] 0x42 0x00 0xFF"
+   ]
+  }
+ },
+ "story_start": [
+  "VECTOR: \"The patch window is short. Breach the wall, log in, upload my payload, leave.\"",
+  "VECTOR: \"The payload is in your local files: payload.sig.\""
+ ],
+ "story_end": [
+  "The payload slipped through. FOUNDRY's robots don't suspect a thing."
+ ],
+ "objectives": [
+  {
+   "id": "connect",
+   "text": "Connect to FOUNDRY",
+   "event": "connect",
+   "server": "foundry",
+   "hint": "connect foundry"
+  },
+  {
+   "id": "fw",
+   "text": "Breach the FOUNDRY-WALL firewall",
+   "event": "firewall",
+   "server": "foundry",
+   "hint": "firewall"
+  },
+  {
+   "id": "login",
+   "text": "Log in as smith",
+   "event": "login",
+   "server": "foundry",
+   "user": "smith",
+   "hint": "login smith anvil-7  (see ~/foundry_access.txt)"
+  },
+  {
+   "id": "upload",
+   "text": "Upload payload.sig",
+   "event": "upload",
+   "server": "foundry",
+   "file": "payload.sig",
+   "hint": "upload payload.sig"
+  },
+  {
+   "id": "leave",
+   "text": "Disconnect cleanly",
+   "event": "disconnect"
+  },
+  {
+   "id": "stash",
+   "text": "Find the hidden stash file",
+   "event": "read",
+   "server": "foundry",
+   "path": "/jobs/patch_tuesday/.stash_patch_tuesday",
+   "optional": true,
+   "bonus": {
+    "xp": 88,
+    "credits": 104
+   },
+   "hint": "ls -a /jobs/patch_tuesday"
+  }
+ ],
+ "bonus_goals": [
+  {
+   "id": "clean",
+   "text": "Finish without a single mistake",
+   "cond": "no_losses",
+   "reward": {
+    "xp": 132,
+    "credits": 156
+   }
+  },
+  {
+   "id": "quick",
+   "text": "Finish in under 330 seconds",
+   "cond": "time_under",
+   "value": 330,
+   "reward": {
+    "xp": 110,
+    "credits": 130
+   }
+  }
+ ],
+ "on_complete": {
+  "messages": [
+   {
+    "from": "vector",
+    "text": "Patch accepted. I'm legally required to say I didn't do that."
+   }
+  ],
+  "flags": {}
+ },
+ "choice": {
+  "key": "patch_tuesday",
+  "prompt": "What do you do with what you found?",
+  "options": [
+   {
+    "id": "nexus",
+    "text": "Report it to NEXUS security through the proper channel.",
+    "trust": {
+     "archer": 4
+    },
+    "reward": {
+     "reputation": 3
+    },
+    "result": ""
+   },
+   {
+    "id": "ghost",
+    "text": "Sell the intel to GHOST. Information wants to be traded.",
+    "trust": {
+     "ghost": 4
+    },
+    "reward": {
+     "reputation": -1
+    },
+    "result": ""
+   },
+   {
+    "id": "quiet",
+    "text": "Keep it to yourself. Knowledge is leverage.",
+    "trust": {
+     "zero": 3
+    },
+    "reward": {
+     "reputation": 1
+    },
+    "result": ""
+   }
+  ]
+ }
+}

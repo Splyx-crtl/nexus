@@ -1,0 +1,518 @@
+{
+ "items": [
+  {
+   "id": "heat_sink",
+   "name": "Heat Sink",
+   "category": "TOOLS",
+   "rarity": "COMMON",
+   "price": 1200,
+   "level": 1,
+   "kind": "consumable",
+   "effect": "cool",
+   "max_qty": 5,
+   "short": "One-use: trace alert -50",
+   "description": "A disposable thermal buffer. Use it to dump half of your trace alert instantly."
+  },
+  {
+   "id": "cipher_lens",
+   "name": "Cipher Lens",
+   "category": "TOOLS",
+   "rarity": "UNCOMMON",
+   "price": 2000,
+   "level": 2,
+   "kind": "gear",
+   "slot": "DECRYPT",
+   "stats": {
+    "decrypt": 20
+   },
+   "max_qty": 1,
+   "short": "DECRYPT +20%",
+   "description": "A pattern-recognition lens. Cipher puzzles hand you a free hint."
+  },
+  {
+   "id": "trace_booster",
+   "name": "Trace Booster",
+   "category": "TOOLS",
+   "rarity": "UNCOMMON",
+   "price": 2500,
+   "level": 3,
+   "kind": "gear",
+   "slot": "TRACE",
+   "stats": {
+    "trace": 10
+   },
+   "max_qty": 1,
+   "short": "TRACE +10%",
+   "description": "Raises the efficiency of every trace probe. Data streams run slower."
+  },
+  {
+   "id": "route_amplifier",
+   "name": "Route Amplifier",
+   "category": "TOOLS",
+   "rarity": "UNCOMMON",
+   "price": 3000,
+   "level": 5,
+   "kind": "gear",
+   "slot": "NETWORK",
+   "stats": {
+    "network": 20
+   },
+   "max_qty": 1,
+   "short": "NETWORK +20%",
+   "description": "Widens the relay budget in routing puzzles."
+  },
+  {
+   "id": "stealth_cloak",
+   "name": "Stealth Cloak",
+   "category": "TOOLS",
+   "rarity": "UNCOMMON",
+   "price": 3500,
+   "level": 6,
+   "kind": "gear",
+   "slot": "UTILITY",
+   "stats": {
+    "stealth": 15
+   },
+   "max_qty": 1,
+   "short": "STEALTH +15%",
+   "description": "Your mistakes raise the trace alert 15% less."
+  },
+  {
+   "id": "firewall_analyzer",
+   "name": "Firewall Analyzer",
+   "category": "TOOLS",
+   "rarity": "RARE",
+   "price": 5000,
+   "level": 8,
+   "kind": "gear",
+   "slot": "FIREWALL",
+   "stats": {
+    "firewall": 20
+   },
+   "max_qty": 1,
+   "short": "FIREWALL +20%",
+   "description": "Improves every firewall mini-game: more attempts and better feedback."
+  },
+  {
+   "id": "trace_module_mk2",
+   "name": "Trace Module MK.II",
+   "category": "TOOLS",
+   "rarity": "RARE",
+   "price": 9000,
+   "level": 15,
+   "kind": "gear",
+   "slot": "TRACE",
+   "stats": {
+    "trace": 15,
+    "network": 5
+   },
+   "max_qty": 1,
+   "short": "TRACE +15%  NETWORK +5%",
+   "description": "Second-generation stream analyser with a built-in relay scanner."
+  },
+  {
+   "id": "mesh_antenna",
+   "name": "Mesh Antenna",
+   "category": "TOOLS",
+   "rarity": "RARE",
+   "price": 12000,
+   "level": 20,
+   "kind": "gear",
+   "slot": "NETWORK",
+   "stats": {
+    "network": 35,
+    "stealth": 5
+   },
+   "max_qty": 1,
+   "short": "NETWORK +35%  STEALTH +5%",
+   "description": "A distributed antenna that bounces your signal through quiet corners."
+  },
+  {
+   "id": "learning_matrix",
+   "name": "Learning Matrix",
+   "category": "TOOLS",
+   "rarity": "RARE",
+   "price": 14000,
+   "level": 16,
+   "kind": "gear",
+   "slot": "UTILITY",
+   "stats": {
+    "xp": 10
+   },
+   "max_qty": 1,
+   "short": "XP +10%",
+   "description": "Analyses every operation you run and feeds the lessons back: +10% XP."
+  },
+  {
+   "id": "credit_siphon",
+   "name": "Credit Siphon",
+   "category": "TOOLS",
+   "rarity": "RARE",
+   "price": 15000,
+   "level": 18,
+   "kind": "gear",
+   "slot": "UTILITY",
+   "stats": {
+    "income": 10
+   },
+   "max_qty": 1,
+   "short": "CREDITS +10%",
+   "description": "Skims a legal-ish 10% off every payout."
+  },
+  {
+   "id": "quantum_decryptor",
+   "name": "Quantum Decryptor",
+   "category": "TOOLS",
+   "rarity": "EPIC",
+   "price": 25000,
+   "level": 25,
+   "kind": "gear",
+   "slot": "DECRYPT",
+   "stats": {
+    "decrypt": 50
+   },
+   "max_qty": 1,
+   "short": "DECRYPT +50%  unlocks hard decryption jobs",
+   "description": "Brute-forces entangled ciphers. Required for the hardest decryption missions."
+  },
+  {
+   "id": "firewall_prism",
+   "name": "Firewall Prism",
+   "category": "TOOLS",
+   "rarity": "EPIC",
+   "price": 30000,
+   "level": 30,
+   "kind": "gear",
+   "slot": "FIREWALL",
+   "stats": {
+    "firewall": 45,
+    "stealth": 5
+   },
+   "max_qty": 1,
+   "short": "FIREWALL +45%  STEALTH +5%",
+   "description": "Splits a firewall into its component rules and shows you the weak ones."
+  },
+  {
+   "id": "overclock_chip",
+   "name": "Overclock Chip",
+   "category": "TOOLS",
+   "rarity": "EPIC",
+   "price": 35000,
+   "level": 35,
+   "kind": "gear",
+   "slot": "UTILITY",
+   "stats": {
+    "stealth": 10,
+    "xp": 10,
+    "income": 10
+   },
+   "max_qty": 1,
+   "short": "STEALTH +10%  XP +10%  CREDITS +10%",
+   "description": "Runs your whole rig hot. A little of everything."
+  },
+  {
+   "id": "trace_array_mk3",
+   "name": "Trace Array MK.III",
+   "category": "TOOLS",
+   "rarity": "EPIC",
+   "price": 40000,
+   "level": 40,
+   "kind": "gear",
+   "slot": "TRACE",
+   "stats": {
+    "trace": 30,
+    "stealth": 5
+   },
+   "max_qty": 1,
+   "short": "TRACE +30%  STEALTH +5%",
+   "description": "A full sensor array. Trace streams crawl."
+  },
+  {
+   "id": "ghost_router",
+   "name": "Ghost Router",
+   "category": "TOOLS",
+   "rarity": "EPIC",
+   "price": 45000,
+   "level": 45,
+   "kind": "gear",
+   "slot": "NETWORK",
+   "stats": {
+    "network": 60,
+    "stealth": 10
+   },
+   "max_qty": 1,
+   "short": "NETWORK +60%  STEALTH +10%",
+   "description": "A router that officially does not exist."
+  },
+  {
+   "id": "oracle_core",
+   "name": "Oracle Core",
+   "category": "TOOLS",
+   "rarity": "LEGENDARY",
+   "price": 90000,
+   "level": 60,
+   "kind": "gear",
+   "slot": "DECRYPT",
+   "stats": {
+    "decrypt": 80,
+    "trace": 10
+   },
+   "max_qty": 1,
+   "short": "DECRYPT +80%  TRACE +10%",
+   "description": "A predictive engine that has already read the plaintext."
+  },
+  {
+   "id": "nexus_core",
+   "name": "NEXUS Core",
+   "category": "TOOLS",
+   "rarity": "NEXUS",
+   "price": 250000,
+   "level": 70,
+   "kind": "gear",
+   "slot": "UTILITY",
+   "stats": {
+    "trace": 25,
+    "decrypt": 25,
+    "firewall": 25,
+    "network": 25,
+    "stealth": 15,
+    "xp": 15,
+    "income": 15
+   },
+   "max_qty": 1,
+   "short": "ALL STATS +25%  STEALTH/XP/CREDITS +15%",
+   "description": "A shard of the NEXUS kernel itself. Endgame. Also opens the final secret operation."
+  },
+  {
+   "id": "ghost_token",
+   "name": "Ghost Token",
+   "category": "ACCESS",
+   "rarity": "EPIC",
+   "price": 50000,
+   "level": 30,
+   "kind": "access",
+   "max_qty": 1,
+   "short": "Unlocks the SPECTER secret mission series",
+   "description": "A token that exists in no ledger. Opens a hidden chain of operations on SHADOW.",
+   "on_buy": {
+    "flags": {
+     "ghost_token_owned": true
+    },
+    "discover": [
+     "shadow"
+    ],
+    "message": {
+     "from": "ghost",
+     "text": "A token like that is rare, {player}. Find me on SHADOW. Bring nerves."
+    }
+   }
+  },
+  {
+   "id": "black_key",
+   "name": "Black Key",
+   "category": "ACCESS",
+   "rarity": "RARE",
+   "price": 20000,
+   "level": 22,
+   "kind": "access",
+   "max_qty": 1,
+   "short": "Unlocks the VOID operations",
+   "description": "A key for a door that is not on any map.",
+   "on_buy": {
+    "flags": {
+     "black_key_owned": true
+    },
+    "discover": [
+     "void"
+    ]
+   }
+  },
+  {
+   "id": "operator_license",
+   "name": "Operator License",
+   "category": "ACCESS",
+   "rarity": "UNCOMMON",
+   "price": 7500,
+   "level": 12,
+   "kind": "access",
+   "max_qty": 1,
+   "short": "Required for EXPERT contracts",
+   "description": "Official clearance for high-risk contract work.",
+   "on_buy": {
+    "flags": {
+     "operator_license_owned": true
+    }
+   }
+  },
+  {
+   "id": "intel_grid_map",
+   "name": "Grid Survey",
+   "category": "INTELLIGENCE",
+   "rarity": "COMMON",
+   "price": 1500,
+   "level": 1,
+   "kind": "intel",
+   "max_qty": 1,
+   "short": "Reveals four hosts on the network map",
+   "description": "A broker's survey of the outer grid.",
+   "on_buy": {
+    "discover": [
+     "polaris",
+     "harbor",
+     "lumen",
+     "tidal"
+    ],
+    "lines": [
+     "Four new hosts appear on your map."
+    ]
+   }
+  },
+  {
+   "id": "intel_vault_codes",
+   "name": "Vault Codes",
+   "category": "INTELLIGENCE",
+   "rarity": "UNCOMMON",
+   "price": 3000,
+   "level": 8,
+   "kind": "intel",
+   "max_qty": 1,
+   "short": "Reveals more hosts and a secret rumour",
+   "description": "Leaked access notes for mid-tier hosts.",
+   "on_buy": {
+    "discover": [
+     "sable",
+     "foundry",
+     "orchard"
+    ],
+    "lines": [
+     "Three more hosts appear on your map."
+    ]
+   }
+  },
+  {
+   "id": "intel_zero_dossier",
+   "name": "ZERO Dossier",
+   "category": "INTELLIGENCE",
+   "rarity": "RARE",
+   "price": 6000,
+   "level": 15,
+   "kind": "intel",
+   "max_qty": 1,
+   "short": "A tracked history of user ID 000",
+   "description": "Everything GHOST could scrape about ZERO.",
+   "on_buy": {
+    "flags": {
+     "zero_dossier": true
+    },
+    "message": {
+     "from": "ghost",
+     "text": "Page 3 of the dossier is a lie. Page 7 isn't. That's all I'll say."
+    },
+    "lines": [
+     "The dossier suggests ZERO logs in from inside NEXUS. It mentions a file named /.first_log on ORCHID."
+    ]
+   }
+  },
+  {
+   "id": "intel_deep_survey",
+   "name": "Deep Survey",
+   "category": "INTELLIGENCE",
+   "rarity": "RARE",
+   "price": 9000,
+   "level": 20,
+   "kind": "intel",
+   "max_qty": 1,
+   "short": "Reveals the deep-grid hosts",
+   "description": "Survey data for the industrial and military grid.",
+   "on_buy": {
+    "discover": [
+     "atlas",
+     "kestrel",
+     "pike",
+     "wren"
+    ],
+    "lines": [
+     "Four deep-grid hosts appear on your map."
+    ]
+   }
+  },
+  {
+   "id": "theme_classic",
+   "name": "Theme: CLASSIC GREEN",
+   "category": "COSMETICS",
+   "rarity": "COMMON",
+   "price": 2000,
+   "level": 1,
+   "kind": "theme",
+   "theme": "classic",
+   "max_qty": 1,
+   "short": "Old-school phosphor green",
+   "description": "The terminal colour scheme of a thousand late nights."
+  },
+  {
+   "id": "theme_cyan",
+   "name": "Theme: CYAN",
+   "category": "COSMETICS",
+   "rarity": "UNCOMMON",
+   "price": 3000,
+   "level": 3,
+   "kind": "theme",
+   "theme": "cyan",
+   "max_qty": 1,
+   "short": "Cold ice-blue interface",
+   "description": "A cool, clinical palette."
+  },
+  {
+   "id": "theme_amber",
+   "name": "Theme: AMBER",
+   "category": "COSMETICS",
+   "rarity": "UNCOMMON",
+   "price": 4000,
+   "level": 5,
+   "kind": "theme",
+   "theme": "amber",
+   "max_qty": 1,
+   "short": "Warm amber monochrome",
+   "description": "A vintage amber monitor."
+  },
+  {
+   "id": "theme_purple",
+   "name": "Theme: PURPLE",
+   "category": "COSMETICS",
+   "rarity": "RARE",
+   "price": 5000,
+   "level": 8,
+   "kind": "theme",
+   "theme": "purple",
+   "max_qty": 1,
+   "short": "Neon violet",
+   "description": "Synthwave nights."
+  },
+  {
+   "id": "theme_red_alert",
+   "name": "Theme: RED ALERT",
+   "category": "COSMETICS",
+   "rarity": "RARE",
+   "price": 5000,
+   "level": 10,
+   "kind": "theme",
+   "theme": "red_alert",
+   "max_qty": 1,
+   "short": "Combat red",
+   "description": "Everything is on fire. Stylishly."
+  },
+  {
+   "id": "theme_nexus",
+   "name": "Theme: NEXUS",
+   "category": "COSMETICS",
+   "rarity": "NEXUS",
+   "price": 100000,
+   "level": 50,
+   "kind": "theme",
+   "theme": "nexus",
+   "max_qty": 1,
+   "short": "White-gold core interface",
+   "description": "The interface of the core itself. Also unlocked by finishing the campaign."
+  }
+ ]
+}
