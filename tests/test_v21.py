@@ -116,7 +116,7 @@ class CreditsAndLinks(unittest.TestCase):
     def test_author_and_links(self):
         self.assertEqual(version.AUTHOR, "Toto")
         self.assertTrue(hasattr(version, "DISCORD_URL"))
-        self.assertTrue(version.VERSION.startswith("2.1"))
+        self.assertTrue(version.VERSION.startswith("2."))
         self.assertIn("Toto", " ".join(run(new_engine(), "about")))
 
     def test_contrast_theme_and_tips_defaults(self):

@@ -18,6 +18,7 @@ from .inventory import InventoryPanel
 from .loadout_page import LoadoutPage
 from .map_view import MapPanel
 from .market_page import MarketPage
+from .online_page import OnlinePage
 from .operations_page import OperationsPage
 from .profile_page import ProfilePage
 from .settings import SettingsWidget
@@ -26,8 +27,8 @@ from .widgets import NavButton, NeonBar, NeonButton, StatCard, hline, play
 
 NAV = [("terminal", "▌", "terminal"), ("operations", "◆", "operations"), ("network", "◎", "network"), ("market", "$", "market"),
        ("loadout", "▣", "loadout"), ("inventory", "▤", "inventory"), ("comms", "✉", "comms"), ("profile", "☺", "profile"),
-       ("achievements", "★", "achievements"), ("archives", "▥", "archives"), ("settings", "⚙", "settings")]
-KEYS = ["terminal", "operations", "network", "market", "loadout", "inventory", "comms", "profile", "achievements", "archives", "settings"]
+       ("achievements", "★", "achievements"), ("online", "◈", "online"), ("archives", "▥", "archives"), ("settings", "⚙", "settings")]
+KEYS = ["terminal", "operations", "network", "market", "loadout", "inventory", "comms", "profile", "achievements", "online", "archives", "settings"]
 
 
 class NotificationPopup(QDialog):
@@ -153,6 +154,7 @@ class AppShell(QWidget):
         self.pages["comms"] = ContactsPanel(engine, run)
         self.pages["profile"] = ProfilePage(engine)
         self.pages["achievements"] = AchievementsPage(engine)
+        self.pages["online"] = OnlinePage(engine, settings)
         self.pages["archives"] = ArchivesWidget(engine)
         self.pages["settings"] = SettingsWidget(settings, engine, self.settings_applied.emit, self.reload_requested.emit)
         for key in KEYS:
@@ -267,3 +269,4 @@ class AppShell(QWidget):
 
     def stop(self) -> None:
         self.timer.stop()
+        self.pages["online"].stop()

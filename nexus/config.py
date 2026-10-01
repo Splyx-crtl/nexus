@@ -134,4 +134,6 @@ DEFAULT_SETTINGS = {
     "language": "en",
     "animations": True,
     "seen_tips": [],
+    "online_enabled": False,
+    "online_token": "",
 }

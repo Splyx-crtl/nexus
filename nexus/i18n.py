@@ -13,6 +13,7 @@ STRINGS: dict[str, dict[str, str]] = {
     "inventory": {"en": "INVENTORY", "de": "INVENTAR"},
     "comms": {"en": "COMMS", "de": "KONTAKTE"},
     "profile": {"en": "PROFILE", "de": "PROFIL"},
+    "online": {"en": "ONLINE", "de": "ONLINE"},
     "achievements": {"en": "ACHIEVEMENTS", "de": "ERFOLGE"},
     "archives": {"en": "ARCHIVES", "de": "ARCHIV"},
     "settings": {"en": "SETTINGS", "de": "EINSTELLUNGEN"},

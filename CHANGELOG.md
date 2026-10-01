@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.2.0 — Online services (optional)
+
+### Added
+- **ONLINE page**: Discord login, leaderboards (level, missions, credits, weekly XP, perfect), friends list with live status, privacy
+  switch and account deletion. Opt-in with a consent box; off completely unless a server is configured.
+- **Server** (`server/`, FastAPI + SQLite, Dockerfile) with score plausibility checks, rate limits and a dev login for local testing.
+- `docs/ONLINE.md`: Discord application setup, deployment, privacy and API.
+- Tests that run the real server on localhost and drive it with the game's client.
+
 ## 2.1.0 — Replayability & polish (created by Toto)
 
 ### Added

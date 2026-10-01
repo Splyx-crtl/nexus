@@ -74,8 +74,8 @@ def validate_world(servers: dict[str, dict]) -> list[str]:
     return problems
 
 
-# The single, reviewed exception: the GitHub update check (HTTPS to github.com only, see nexus/updater.py).
-NETWORK_ALLOWED_FILES = {"updater.py"}
+# The two reviewed exceptions: the GitHub update check (nexus/updater.py) and the optional online service client (nexus/online.py).
+NETWORK_ALLOWED_FILES = {"updater.py", "online.py"}
 NETWORK_ALLOWED_MODULES = {"urllib", "ssl"}
 
 

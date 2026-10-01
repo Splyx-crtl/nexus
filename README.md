@@ -40,6 +40,9 @@ only inside the game. NEXUS never opens a network connection, never scans anythi
 * **Difficulty** easy / normal / hard (`difficulty`, or Settings → Gameplay) and **New Game+** (`newgameplus`) that keeps level, items and achievements.
 * First-time **how-to-play tips** for every mini-game, a **HIGH CONTRAST** theme, text size up to 24, **F12 screenshots**, *Open error log* / *Open save folder* buttons.
 
+**Online (optional, v2.2)** — Discord login, leaderboards and a friends list with live status via your own server.
+See [docs/ONLINE.md](docs/ONLINE.md). Without a configured server the game makes no online connection for this.
+
 **Progression & economy**
 * **100 levels**, 8 ranks (SCRIPT KIDDIE → TECHNICIAN → OPERATOR → SPECIALIST → ELITE → NEXUS → ARCHITECT → NEXUS PRIME) with a big level-up animation that lists new rank / item / mission unlocks.
 * **NEXUS MARKET**: tools, upgrades, cosmetics, access, intelligence — six rarities (COMMON … NEXUS), level requirements, a daily deal, reputation-based prices.
@@ -183,7 +186,7 @@ decisions (`choice`) with outcomes. Objectives complete when the matching gamepl
 
 ```text
 start.bat                                              run from source
-python -m unittest discover -s tests -t .              56 automated tests (logic, all 52 missions, migration, market ...)
+python -m unittest discover -s tests -t .              67 automated tests (logic, all 52 missions, migration, market ...)
 python tests\ui_flow.py                                UI integration test (needs a desktop session)
 python tests\ui_v2.py                                  renders every page to PNG screenshots
 python tools\build_content.py                          regenerate side missions + extra servers
@@ -216,7 +219,7 @@ NEXUS can check GitHub on startup and require installed copies to update. It is 
 4. Every older installed game shows an **Update** dialog at startup, downloads the installer, verifies the checksum and
    opens it; the installer updates the existing installation in place and keeps all saves. Offline players can still play.
 
-Privacy/security: `nexus/updater.py` is the only module that touches the network. It talks to `github.com` over HTTPS only
+Privacy/security: `nexus/updater.py` (updates) and `nexus/online.py` (optional online service, opt-in) are the only modules that touch the network. It talks to `github.com` over HTTPS only
 (redirects included), reads the latest release and downloads its installer. It sends no game or personal data. The tests
 fail if network code appears anywhere else. Games run from source are never nagged.
 
