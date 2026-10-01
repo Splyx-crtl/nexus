@@ -13,7 +13,7 @@ RELEASES_URL = ""
 
 # Auto-update (see README "Updates"): "owner/repository" of the public GitHub repo that hosts your releases.
 # Empty = the game never checks for updates and makes no network connection at all.
-GITHUB_REPO = ""
+GITHUB_REPO = "Splyx-crtl/nexus"
 UPDATE_REQUIRED = True        # True: an outdated installed game must update before it can be played
 if GITHUB_REPO and not RELEASES_URL:
     RELEASES_URL = f"https://github.com/{GITHUB_REPO}/releases/latest"
