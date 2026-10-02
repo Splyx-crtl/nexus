@@ -188,6 +188,7 @@ decisions (`choice`) with outcomes. Objectives complete when the matching gamepl
 start.bat                                              run from source
 python -m unittest discover -s tests -t .              67 automated tests (logic, all 52 missions, migration, market ...)
 python tests\ui_flow.py                                UI integration test (needs a desktop session)
+python tests\ui_campaign.py                            UI test: boot camp + missions 1-6 through the real terminal
 python tests\ui_v2.py                                  renders every page to PNG screenshots
 python tools\build_content.py                          regenerate side missions + extra servers
 ```

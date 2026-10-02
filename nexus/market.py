@@ -54,8 +54,10 @@ class Market:
         entries = self._item_entries() + self._upgrade_entries()
         if category and category != "ALL":
             entries = [e for e in entries if e["category"] == category]
+        ctx = {"deal": self.daily_deal_id(), "equipped": set(self.e.db.get_equipment().values()),
+               "rep_mult": reputation.price_multiplier(self.e.player.reputation)}     # computed once, not per entry
         for entry in entries:
-            self._decorate(entry)
+            self._decorate(entry, ctx)
         order = {c: i for i, c in enumerate(CATEGORIES)}
         return sorted(entries, key=lambda e: (order.get(e["category"], 99), e.get("level", 1), rarity_rank(e["rarity"]), e["base_price"]))
 
@@ -73,22 +75,25 @@ class Market:
         day = self.e.progress.today() if hasattr(self.e, "progress") else dt.date.today()
         return random.Random(day.isoformat()).choice(sorted(pool))
 
-    def price_of(self, entry: dict) -> int:
+    def price_of(self, entry: dict, ctx: dict | None = None) -> int:
         base = entry["price"]
-        mult = reputation.price_multiplier(self.e.player.reputation)
-        if entry["id"] == self.daily_deal_id():
+        mult = ctx["rep_mult"] if ctx else reputation.price_multiplier(self.e.player.reputation)
+        if entry["id"] == (ctx["deal"] if ctx else self.daily_deal_id()):
             mult *= 1 - DAILY_DEAL_DISCOUNT
         return max(0, int(round(base * mult)))
 
-    def _decorate(self, entry: dict) -> dict:
+    def _decorate(self, entry: dict, ctx: dict | None = None) -> dict:
         p = self.e.player
+        if ctx is None:
+            ctx = {"deal": self.daily_deal_id(), "equipped": set(self.e.db.get_equipment().values()),
+                   "rep_mult": reputation.price_multiplier(p.reputation)}
         entry["base_price"] = entry["price"]
-        entry["final_price"] = self.price_of(entry)
-        entry["deal"] = entry["id"] == self.daily_deal_id()
+        entry["final_price"] = self.price_of(entry, ctx)
+        entry["deal"] = entry["id"] == ctx["deal"]
         entry["rarity"] = entry["rarity"].upper()
         entry["owned"] = self.is_owned(entry)
         entry["locked_level"] = p.level < entry.get("level", 1)
-        entry["equipped"] = entry["id"] in self.e.db.get_equipment().values()
+        entry["equipped"] = entry["id"] in ctx["equipped"]
         entry["stats_text"] = ", ".join(f"{STAT_LABELS[k]} +{v}%" for k, v in entry.get("stats", {}).items())
         return entry
 

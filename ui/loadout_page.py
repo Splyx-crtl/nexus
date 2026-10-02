@@ -8,7 +8,7 @@ from nexus.config import COLORS
 from nexus.i18n import tr
 from nexus.market import SLOTS, STAT_LABELS
 
-from .widgets import ItemIcon, NeonBar, NeonButton, hline, play, rarity_color
+from .widgets import Deferred, ItemIcon, NeonBar, NeonButton, hline, play, rarity_color
 
 SLOT_HINT = {"TRACE": "Slows trace streams, more misses allowed", "DECRYPT": "Free cipher hints",
              "FIREWALL": "More firewall attempts, symbol reveal", "NETWORK": "Bigger routing budget, scan detail",
@@ -123,7 +123,7 @@ class LoadoutPage(QWidget):
         body.addLayout(right, 2)
         lay.addLayout(body, 1)
 
-        engine.inventory_changed.connect(self.refresh)
+        engine.inventory_changed.connect(Deferred(self, self.refresh))
         self.refresh()
 
     def _select(self, slot: str) -> None:

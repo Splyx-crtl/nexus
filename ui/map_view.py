@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QListWidget, QVBoxLay
 from nexus.config import COLORS
 from nexus.i18n import tr
 
-from .widgets import NeonButton, mono_font
+from .widgets import Deferred, NeonButton, mono_font
 
 REGION_COLORS = {"OUTER": "text", "CORE": "green", "VAULT": "purple", "SHADOW": "purple", "TRANSIT": "cyan", "LAB": "amber",
                  "SPACE": "cyan", "GRID": "red", "ARCHIVE": "amber", "BUNKER": "red", "PORT": "cyan", "POWER": "amber",
@@ -197,7 +197,7 @@ class MapPanel(QWidget):
         self.map.node_selected.connect(self._select)
         self.connect_btn.clicked.connect(lambda: self.run_command(f"connect {self.map.selected}", True))
         self.scan_btn.clicked.connect(lambda: self.run_command(f"scan {self.map.selected}", True))
-        engine.server_changed.connect(self.refresh)
+        engine.server_changed.connect(Deferred(self, self.refresh))
         self.refresh()
 
     def refresh(self) -> None:

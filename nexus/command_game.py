@@ -79,7 +79,7 @@ class GameCommandsMixin:
                 yield dim("No active mission.")
         elif sub == "info":
             n = int(args[1]) if len(args) > 1 and args[1].isdigit() else None
-            m = ms.by_number(n) if n else ms.active()
+            m = ms.by_number(n) if n is not None else ms.active()
             if not m:
                 return (yield err("usage: mission info <number>"))
             if ms.status(m["id"]) == "locked":
@@ -151,7 +151,9 @@ class GameCommandsMixin:
 
     def cmd_hint(self, args):
         self.e.bump("hints_used")
-        return [info("HINT: " + self.e.missions.hint())]
+        text = self.e.missions.hint()                 # computed first: the hint must name the step that is current now
+        self.e.event("hint")
+        return [info("HINT: " + text)]
 
     # -------------------------------------------------------- inventory ---
     def cmd_inventory(self, args):

@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
 
 from nexus.config import COLORS
 
-from .widgets import NeonBar, NeonButton
+from .widgets import Deferred, NeonBar, NeonButton
 
 
 class ContactsPanel(QWidget):
@@ -41,7 +41,7 @@ class ContactsPanel(QWidget):
         self.topics = QVBoxLayout()
         right.addLayout(self.topics)
         lay.addLayout(right, 1)
-        engine.comms_changed.connect(self.refresh)
+        engine.comms_changed.connect(Deferred(self, self.refresh))
         self.refresh()
 
     def refresh(self) -> None:

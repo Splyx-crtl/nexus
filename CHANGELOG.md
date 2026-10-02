@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.2.2 — Boot camp, mission fixes, big speed-up
+
+### Added
+- **BOOT CAMP** (mission 000): a short interactive tutorial before mission 001 (help, connect, scan, ls, cd/cat, hidden files,
+  download, hint, disconnect). It starts automatically on a new profile, pays a small reward, does not count as a mission in
+  statistics or leaderboards, hands over to mission 001 and can be skipped with `mission abort`.
+
+### Fixed
+- **Objectives were lost when done out of order** (e.g. `download manifest.txt` before `cat manifest.txt` in mission 3: the download
+  was silently ignored and the objective could not be completed that way). The mission engine now remembers what you did
+  and credits it as soon as the objective in front of it is done. Affects every mission.
+- Random events could take a mission away from you: a host needed by the current or next story mission could drop off the grid
+  or have its firewall re-armed between breach and login. Needed hosts are now protected, and starting a mission brings its hosts back online.
+- `hint` now always names the current step (objectives without a written hint get a generic one); mission 3 got a download hint.
+- The `disconnect` event reported no server; `mission info 0` handled wrongly.
+
+### Performance
+- The full-window CRT overlay repainted every pixel row 16x per second and forced the whole window to repaint with it
+  (about 140% CPU while idle). Scanlines/vignette/alert glow are now cached pixmaps and only the moving band is repainted: ~5% CPU idle.
+- Main menu: matrix rain uses pre-rendered glyphs, the title is a cached pixmap and only repaints while glitching (menu CPU roughly -65%).
+- Market: no more O(n^2) database access (about 4800 queries per refresh); inventory, upgrades, equipment and mission status
+  are cached in memory. Market page switch 92 ms -> 3 ms, achievements 217 ms -> <1 ms.
+- Pages that nobody is looking at are no longer rebuilt on every engine signal (`mission_changed` 2.3 ms -> 0.2 ms per signal).
+- Bell counter uses a COUNT query instead of fetching 60 rows every second.
+
+### Tests
+- `tests/test_v22.py`: out-of-order objectives, boot camp, 40 randomised full runs (tutorial -> mission 6 with mistakes, time and random events).
+- `tests/ui_campaign.py`: the real window and terminal from first launch through mission 6, plus a responsiveness check.
+
 ## 2.2.1 — Online server connected
 
 ### Changed

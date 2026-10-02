@@ -47,7 +47,7 @@ class TerminalPage(QWidget):
         e = self.engine
         if first_run:
             e.db.set_flag("intro_pending", False)
-            self.terminal.run_command("mission start 1", echo=False)
+            self.terminal.run_command("mission start 0", echo=False)
         else:
             self.terminal.print_line(f"Welcome back, {e.player.username}.  Type 'mission' for your orders, 'daily' for today's operations.", "ok")
         self.terminal.focus_input()

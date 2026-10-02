@@ -244,8 +244,7 @@ class AppShell(QWidget):
         self.bell.setText(f"◉ {self._unread()}")
 
     def _unread(self) -> int:
-        last = self.engine.db.get_world("notif_seen", 0)
-        return sum(1 for n in self.engine.db.get_notifications(60) if n["id"] > last)
+        return self.engine.db.count_notifications_after(self.engine.db.get_world("notif_seen", 0))
 
     def _refresh_badges(self) -> None:
         e = self.engine

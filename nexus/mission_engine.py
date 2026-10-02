@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 _RESERVED = {"id", "text", "event", "optional", "bonus", "hint", "hidden", "qty", "any_server"}
 PERFECT_HEAT = 25
 FAIL_REP_PENALTY = 2
+_STATE_EVENTS = ("connect", "login", "item", "flag", "firewall", "route", "decrypt", "heat_below")
+_SEEN_LIMIT = 80                 # remembered player actions per mission
 
 
 class MissionEngine:
@@ -24,8 +26,7 @@ class MissionEngine:
 
     # ------------------------------------------------------------ state ---
     def is_complete(self, mid: str) -> bool:
-        rec = self.e.db.get_mission(mid)
-        return bool(rec and rec["status"] == "completed")
+        return self.e.db.mission_status(mid) == "completed"
 
     def lock_reason(self, m: dict) -> str:
         """Human readable reason why a mission is locked ('' when available)."""
@@ -136,8 +137,20 @@ class MissionEngine:
             return "Make your decision with 'choose <number>'."
         for obj in m["objectives"]:
             if obj["id"] not in prog.get("done", []) and not obj.get("optional"):
-                return self.e.fmt(obj.get("hint", m.get("hint", "Check your terminal tools: help")))
+                return self.e.fmt(obj.get("hint") or self._default_hint(obj) or m.get("hint", "Check your terminal tools: help"))
         return m.get("hint", "")
+
+    @staticmethod
+    def _default_hint(obj: dict) -> str:
+        """Generic hint for objectives without a hand-written one, so 'hint' always names the current step."""
+        ev = obj.get("event")
+        if ev == "download" and obj.get("file"):
+            return f"Type: download {obj['file']}  (connected to the server that holds it)"
+        if ev == "read" and obj.get("path"):
+            return f"Read the file {obj['path']} with 'cat'."
+        if ev == "connect" and obj.get("server"):
+            return f"Type: connect {obj['server']}"
+        return ""
 
     def choice_options(self, m: dict | None = None) -> list[dict]:
         m = m or self.active()
@@ -162,6 +175,8 @@ class MissionEngine:
         start = m.get("on_start", {})
         for sid in start.get("discover", []):
             self.e.world.discover(sid)
+        for sid in {o.get("server") for o in m["objectives"] if o.get("server")}:
+            self.e.world.set_online(sid)             # a host that dropped off the grid earlier must not block a mission
         for item, qty in start.get("ensure_items", {}).items():
             missing = qty - self.e.player.qty(item)
             if missing > 0:
@@ -200,24 +215,26 @@ class MissionEngine:
         prog = self.progress()
         if prog.get("awaiting_choice"):
             return
-        changed = False
         done: list = prog.setdefault("done", [])
-        blocked = False
+        # Remember what the player did: an action performed a step "too early" (e.g. downloading a file before
+        # reading it) must still count once the objective in front of it is done, instead of being lost.
+        seen: list = prog.setdefault("seen", [])
+        seen.append({"type": etype, "kw": {k: v for k, v in kw.items() if isinstance(v, (str, int, float, bool))}, "used": False})
+        del seen[:-_SEEN_LIMIT]
         for obj in m["objectives"]:
-            if obj["id"] in done:
+            if obj["id"] in done or not obj.get("optional"):
                 continue
-            optional = obj.get("optional", False)
-            if not optional and blocked:
-                continue
-            if self._match(obj, etype, kw):
+            if self._match(obj, etype, kw):             # optional objectives never wait for their predecessors
                 self._mark_done(m, obj)
-                changed = True
-                if not optional:
-                    blocked = True      # one event completes at most one required objective
-            elif not optional:
-                blocked = True
-        if changed:
-            self.sync_states()
+        self.sync_states()
+
+    def _claim_seen(self, obj: dict) -> bool:
+        """Consume the oldest remembered event that satisfies a required action objective."""
+        for rec in self.progress().get("seen", []):
+            if not rec["used"] and self._match(obj, rec["type"], rec["kw"]):
+                rec["used"] = True
+                return True
+        return False
 
     def _match(self, obj: dict, etype: str, kw: dict) -> bool:
         if obj.get("event") != etype:
@@ -276,8 +293,11 @@ class MissionEngine:
                     continue
                 if obj.get("optional"):
                     continue
-                if obj.get("event") in ("connect", "login", "item", "flag", "firewall", "route", "decrypt", "heat_below") \
-                        and self._state_ok(obj):
+                if obj.get("event") in _STATE_EVENTS:
+                    if self._state_ok(obj):
+                        self._mark_done(m, obj)
+                        progressed = True
+                elif self._claim_seen(obj):
                     self._mark_done(m, obj)
                     progressed = True
                 break  # only the first pending required objective can progress
@@ -336,6 +356,9 @@ class MissionEngine:
 
     # ---------------------------------------------------------- complete ---
     def complete(self, m: dict, option: dict | None) -> None:
+        if m.get("tutorial"):
+            self._complete_tutorial(m)
+            return
         e = self.e
         prog = self.progress(m["id"])
         perfect = prog.get("peak_heat", 0) <= PERFECT_HEAT and prog.get("losses", 0) == 0
@@ -433,6 +456,36 @@ class MissionEngine:
                 e.say(f"NEW MISSION AVAILABLE: {nxt['number']:03d} \"{nxt['title']}\"  ->  mission start {nxt['number']}", "warn")
         e.check_chapters()
         e.snapshot_history()
+        e.mission_changed.emit()
+        e.state_changed.emit()
+        e.maybe_autosave(force=True)
+
+    def _complete_tutorial(self, m: dict) -> None:
+        """The guided tutorial pays a small reward but is not a real mission: it never counts in statistics,
+        ratings or leaderboards. It hands over to the next mission directly."""
+        e = self.e
+        reward = m.get("reward", {})
+        e.db.save_mission(m["id"], "completed", self.progress(m["id"]), result="TRAINED", completed_at=time.time())
+        self._cache = None
+        e.grant_xp(reward.get("xp", 0), announce=False)
+        e.grant_credits(reward.get("credits", 0), announce=False)
+        on_complete = m.get("on_complete", {})
+        for flag, value in on_complete.get("flags", {}).items():
+            e.set_flag(flag, value)
+        e.say("", "normal")
+        e.say(f"=== {m['title']} COMPLETE ===", "ok")
+        for line in m.get("story_end", []):
+            e.say(e.fmt(line), "story")
+        e.say(f"REWARD: +{reward.get('xp', 0)} XP   +${reward.get('credits', 0):,}", "info")
+        e.banner.emit("complete", ["TRAINING COMPLETE", f"+{reward.get('xp', 0)} XP", f"+${reward.get('credits', 0):,}"], {})
+        e.sound.emit("complete")
+        nxt = on_complete.get("start_next")
+        if nxt and nxt in self.by_id and not self.active():
+            started, _ = self.start(nxt)
+            if started:                                  # print the briefing the way 'mission start' does
+                for item in e.commands._print_briefing(self.by_id[nxt]):
+                    text = item.text or "".join(t for t, _ in (getattr(item, "spans", None) or []))
+                    e.say(text, getattr(item, "style", "normal"))
         e.mission_changed.emit()
         e.state_changed.emit()
         e.maybe_autosave(force=True)

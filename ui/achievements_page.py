@@ -69,6 +69,7 @@ class AchievementsPage(QWidget):
         super().__init__(parent)
         self.engine = engine
         self.cat = "ALL"
+        self._sig: tuple | None = None
         lay = QVBoxLayout(self)
         lay.setContentsMargins(14, 10, 14, 10)
         head = QHBoxLayout()
@@ -107,6 +108,11 @@ class AchievementsPage(QWidget):
         have = e.db.get_achievements()
         self.summary.setText(f"{len(have)} / {len(e.data.achievements)} {tr('unlocked')}")
         self.bar.set_value(len(have), len(e.data.achievements))
+        sig = (self.cat, COLORS["green"], tuple(sorted(have.items())))
+        if sig == self._sig:                         # nothing unlocked since the last build: keep the ~100 cards
+            return
+        self._sig = sig
+        self.list.setUpdatesEnabled(False)
         self.list.clear()
         items = [a for a in e.data.achievements if self.cat == "ALL" or a["category"] == self.cat]
         items.sort(key=lambda a: (a["id"] not in have, a["category"]))
@@ -116,3 +122,4 @@ class AchievementsPage(QWidget):
             li.setSizeHint(card.sizeHint())
             self.list.addItem(li)
             self.list.setItemWidget(li, card)
+        self.list.setUpdatesEnabled(True)

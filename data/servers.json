@@ -24,6 +24,34 @@
         "output": ["ORIGIN: OP-000 // 2031-03-13", "The first signal came from inside NEXUS."]
       },
       "fs": {
+        "training": {
+          "_requires": {"mission_active": "mission_000"},
+          "lesson.txt": [
+            "## BOOT CAMP // LESSON 1",
+            "Well done, {player}. You just used the three commands you will type a thousand times:",
+            "  ls          list what is in the current folder",
+            "  cd <dir>    walk into a folder (cd .. walks back out)",
+            "  cat <file>  read a file",
+            "",
+            "Some files hide. Their names start with a dot and 'ls' skips them.",
+            "Next: run 'ls -a' in this folder and read the hidden file you find."
+          ],
+          ".keycard": [
+            "## HIDDEN FILE FOUND",
+            "Real servers are full of these: old notes, keys, forgotten backups.",
+            "Always check with 'ls -a'.",
+            "",
+            "Last lesson: you can copy a file to your own machine with 'download <file>'.",
+            "Download field_notes.dat from this folder."
+          ],
+          "field_notes.dat": [
+            "## FIELD NOTES // FOR NEW OPERATORS",
+            "1. Every action raises the TRACE ALERT a little. Mistakes raise it a lot.",
+            "2. When the alert gets high: 'disconnect' and let it cool down.",
+            "3. Stuck? Type 'hint'. It always names your next step.",
+            "4. 'mission' shows your orders, 'help' lists every command."
+          ]
+        },
         "readme.txt": [
           "## ECHO // PUBLIC TRAINING NODE",
           "Welcome, operator {player}.",

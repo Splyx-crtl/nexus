@@ -182,6 +182,11 @@ class World:
     def is_online(self, sid: str) -> bool:
         return sid not in self.offline_map()
 
+    def set_online(self, sid: str) -> None:
+        raw = self.offline_map()
+        if raw.pop(sid, None) is not None:
+            self.db.set_world("offline", raw)
+
     def set_offline(self, sid: str, seconds: float) -> None:
         raw = self.offline_map()
         raw[sid] = time.time() + seconds
