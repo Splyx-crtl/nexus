@@ -988,3 +988,91 @@ def win_dossier() -> tuple[World, Session]:
     m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ----------------------------------------------------------------------------------------------- Act V — Windows, Chapter 2
+@scenario("win_users")
+def win_users() -> tuple[World, Session]:
+    """Level 104: Get-LocalUser — a baseline of who has a key to this box, before Level 108 finds one that shouldn't be there."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_filter")
+def win_filter() -> tuple[World, Session]:
+    """Level 105 (standard): Where-Object — filtering a list by a property instead of reading the whole thing, a real
+    technique even though no cmdlet here is new."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_rank")
+def win_rank() -> tuple[World, Session]:
+    """Level 106: Sort-Object — ranking objects by a property, the PowerShell shape of Act I's sort."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_worst")
+def win_worst() -> tuple[World, Session]:
+    """Level 107 (standard): Sort-Object + Select-Object -First — chaining two pipeline cmdlets to get exactly one
+    answer instead of a whole list to read through."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_extra_account")
+def win_extra_account() -> tuple[World, Session]:
+    """Level 108 (story): a local account nobody on this operation created — someone else already has a foothold on
+    this box. Not Kade Voss (he's still investigating from outside), not the player. A third party."""
+    world, player, target = _win_target_world()
+    target.add_user(User("svc_update", 1002, 1002, ("Users",), "C:\\Users\\svc_update", password="update-svc-9921!"))
+    target.fs.load({"Windows": {"Logs": {"account_changes.log": [
+        "2049-12-20 account 'opsadmin' password changed", "2050-01-02 account 'svc_update' created",
+        "2050-01-02 account 'svc_update' added to Administrators",
+    ]}}}, "C:\\")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_foreach")
+def win_foreach() -> tuple[World, Session]:
+    """Level 109: ForEach-Object — running a small transform over a list, the PowerShell shape of a loop."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_legacy")
+def win_legacy() -> tuple[World, Session]:
+    """Level 110 (standard): a second machine nobody ever upgraded off cmd.exe — the same incident-response idea
+    (find a hot process, stop it) in the older vocabulary this time."""
+    world = World(clock=lambda: EPOCH)
+    player = _player_machine({"notes.txt": "MIRA: Not every machine in this network got the PowerShell upgrade. Here's one that didn't.\n"})
+    target = Machine("LEGACY-SRV", "LEGACY-SRV", "10.20.30.9", "windows", VFS("windows", clock=lambda: EPOCH), shell="cmd")
+    target.domain = OPS_DOMAIN
+    target.add_user(User("Administrator", 500, 500, ("Administrators",), "C:\\Users\\Administrator", admin=True, password="Legacy-Root-99"))
+    target.add_user(User("svcacct", 1000, 1000, ("Users",), "C:\\Users\\svcacct", password="Legacy-Svc-99"))
+    target.fs.load({"Users": {"svcacct": {"_owner": "svcacct", "_group": "svcacct"}}}, "C:\\")
+    target.services = [Service(22, "ssh", "OpenSSH for Windows 7.9", "open")]
+    target.processes = [Process(pid=4, user="SYSTEM", name="System", cmd="", cpu=0.0, mem=0.1),
+                        Process(pid=1188, user="svcacct", name="legacy-index.exe", cmd="C:\\LegacyApp\\legacy-index.exe --rebuild", cpu=63.0, mem=5.1)]
+    world.add(player)
+    world.add(target)
+    player.neighbors.append(target.id)
+    world.dns[target.id] = target.ip
+    world.discovered.add(target.id)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_dossier2")
+def win_dossier2() -> tuple[World, Session]:
+    """Level 111 (milestone): closes Act V, Chapter 2 — the extra account and the legacy box both go in the record."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"winnotes": {
+        "account_changes.log": ["2050-01-02 account 'svc_update' created", "2050-01-02 account 'svc_update' added to Administrators"],
+        "legacy_findings.txt": ["LEGACY-SRV: legacy-index.exe consuming 63% CPU, stopped.", "Still running OpenSSH for Windows 7.9 — years out of date."],
+    }, "notes.txt": "MIRA: Everything from this chapter, one file. The extra account especially — Kade Voss needs to "
+                   "not be the only one who eventually notices that.\n"},
+                        root_extra={"archive": {"_mode": 0o700}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")

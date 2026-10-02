@@ -117,4 +117,123 @@ ACT5_CHAPTER1 = [
     ),
 ]
 
-ACT5 = [*ACT5_CHAPTER1]
+ACT5_CHAPTER2 = [
+    Mission(
+        id="act5_m104", number=104, act=5, size="mini", title="Who Has a Key", scenario="win_users",
+        requires=["act5_m103"],
+        briefing=["MIRA: Same habit as always, PowerShell's version. Who actually has an account on this box?"],
+        debrief=["MIRA: opsadmin, Administrator. Nothing unexpected yet. Keep checking — that's exactly the kind of "
+                 "thing that changes without anyone announcing it."],
+        objectives=[Objective(event="command", match={"name": "Get-LocalUser", "status": 0}, text="List local accounts (Get-LocalUser)",
+                              hints=["Get-LocalUser lists every account on the machine.", "Try: Get-LocalUser", "Get-LocalUser"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-LocalUser"], reward_xp=45, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m105", number=105, act=5, size="standard", title="Filter, Don't Scroll", scenario="win_filter",
+        requires=["act5_m104"],
+        briefing=["NEXUS: Don't read the whole process list hunting for the busy one. Ask for exactly what you want."],
+        debrief=["NEXUS: One line, exactly the process that matters. That's the whole point of a pipeline — you "
+                 "describe what you want, not how to find it."],
+        objectives=[Objective(event="command", match={"name": "Where-Object", "status": 0}, text="Filter processes by CPU (Where-Object)",
+                              hints=["Where-Object {$_.CPU -gt 10} keeps only processes over that threshold.",
+                                    "Try: Get-Process | Where-Object {$_.CPU -gt 10}", "Get-Process | Where-Object {$_.CPU -gt 10}"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-Process | Where-Object {$_.CPU -gt 10}"],
+        reward_xp=90, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m106", number=106, act=5, size="mini", title="Rank Them", scenario="win_rank",
+        requires=["act5_m105"],
+        briefing=["MIRA: Instead of filtering, just put them in order. Busiest first."],
+        debrief=["MIRA: Same information, different question. Filtering asks 'which ones qualify.' Sorting asks "
+                 "'which one's worst.'"],
+        objectives=[Objective(event="command", match={"name": "Sort-Object", "args__contains": "-Descending", "status": 0}, text="Sort processes by CPU, highest first",
+                              hints=["Sort-Object CPU -Descending ranks the list by that property.",
+                                    "Try: Get-Process | Sort-Object CPU -Descending", "Get-Process | Sort-Object CPU -Descending"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-Process | Sort-Object CPU -Descending"],
+        reward_xp=50, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m107", number=107, act=5, size="standard", title="Just the Worst One", scenario="win_worst",
+        requires=["act5_m106"],
+        briefing=["NEXUS: Don't make me read a sorted list either. Give me exactly one answer: what's the single "
+                  "worst offender?"],
+        debrief=["NEXUS: Chain them together and the pipeline does the thinking for you. Sort, then take the top of "
+                 "the list. That's the whole technique."],
+        objectives=[
+            Objective(event="command", match={"name": "Sort-Object", "status": 0}, text="Sort by CPU (Sort-Object)",
+                     hints=["Same as before.", "Try: Get-Process | Sort-Object CPU -Descending | Select-Object -First 1",
+                           "Get-Process | Sort-Object CPU -Descending | Select-Object -First 1"]),
+            Objective(event="command", match={"name": "Select-Object", "args__contains": "-First", "status": 0}, text="Take just the top result (Select-Object -First 1)",
+                     hints=["Select-Object -First 1 keeps only the first item.", "Try: ... | Select-Object -First 1", "Select-Object -First 1"]),
+        ],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-Process | Sort-Object CPU -Descending | Select-Object -First 1"],
+        reward_xp=85, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m108", number=108, act=5, size="story", title="One Account Too Many", scenario="win_extra_account",
+        requires=["act5_m107"],
+        briefing=["MIRA: Check the account list again. Compare it to what you saw at Level 104."],
+        debrief=["NEXUS: 'svc_update.' Created two days ago. Added to Administrators the same day. Nobody on this "
+                 "operation did that.",
+                 "MIRA: Kade Voss is investigating from outside. We're in. That's someone else, already inside, "
+                 "before either of us got here."],
+        objectives=[
+            Objective(event="command", match={"name": "Get-LocalUser", "status": 0}, text="Check the account list again",
+                     hints=["Same command as Level 104 — compare what comes back.", "Try: Get-LocalUser", "Get-LocalUser"]),
+            Objective(event="file_read", match={"path__glob": "*account_changes.log"}, text="Check when that account was created",
+                     hints=["There's a log for exactly this, at the system root, not in your own folder.",
+                           "Try: Get-Content C:\\Windows\\Logs\\account_changes.log", "Get-Content C:\\Windows\\Logs\\account_changes.log"]),
+        ],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-LocalUser", "Get-Content C:\\Windows\\Logs\\account_changes.log"],
+        reward_xp=120, tags=["bash", "act5", "story"],
+    ),
+    Mission(
+        id="act5_m109", number=109, act=5, size="mini", title="One by One", scenario="win_foreach",
+        requires=["act5_m108"],
+        briefing=["NEXUS: Run the same small step over every item in a list instead of repeating yourself. Just the "
+                  "names from Documents, nothing else."],
+        debrief=["NEXUS: That's a loop, PowerShell's way. Same idea as everything else, new spelling."],
+        objectives=[Objective(event="command", match={"name": "ForEach-Object", "status": 0}, text="Print just the names (ForEach-Object)",
+                              hints=["ForEach-Object {$_.Name} runs once per item and prints just that piece.",
+                                    "Try: Get-ChildItem Documents | ForEach-Object {$_.Name}", "Get-ChildItem Documents | ForEach-Object {$_.Name}"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-ChildItem Documents | ForEach-Object {$_.Name}"],
+        reward_xp=50, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m110", number=110, act=5, size="standard", title="The Machine Nobody Upgraded", scenario="win_legacy",
+        requires=["act5_m109"],
+        briefing=["MIRA: Not every machine in this network got the PowerShell upgrade. Here's one that didn't — "
+                  "same job, older tools."],
+        debrief=["MIRA: 'legacy-index.exe,' 63% CPU, nobody's touched this box in years by the look of it. Old "
+                 "tools, same incident-response habit."],
+        objectives=[
+            Objective(event="command", match={"name": "tasklist", "status": 0}, text="Check what's running (tasklist)",
+                     hints=["tasklist is cmd.exe's process list.", "Try: tasklist", "tasklist"]),
+            Objective(event="process_killed", match={"pid": 1188}, text="Stop legacy-index.exe (taskkill /PID 1188)",
+                     hints=["taskkill /PID number stops a process the old way.", "Try: taskkill /PID 1188", "taskkill /PID 1188"]),
+        ],
+        solution=["sshpass -p Legacy-Svc-99 ssh svcacct@10.20.30.9", "tasklist", "taskkill /PID 1188"],
+        reward_xp=90, tags=["bash", "act5", "cmd"],
+    ),
+    Mission(
+        id="act5_m111", number=111, act=5, size="milestone", title="Nobody Else Noticed Yet", scenario="win_dossier2",
+        requires=["act5_m110"],
+        briefing=["MIRA: Everything from this chapter, one file. The extra account especially — Kade Voss needs to "
+                  "not be the only one who eventually notices that."],
+        debrief=["MIRA: Filed and locked. Chapter closed.",
+                 "NEXUS: Two things true at once: Kade Voss is closing in on us, and someone else already got there "
+                 "first. I don't love either half of that sentence."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*win5_dossier.txt"}, text="Assemble the findings (grep -r ... | tee)",
+                     hints=["Same habit as every chapter close so far.", "Try: grep -r svc_update winnotes | tee win5_dossier.txt",
+                           "grep -r svc_update winnotes | tee win5_dossier.txt\ncat win5_dossier.txt"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive it (sudo cp)",
+                     hints=["It lives at /archive, at the filesystem root.", "Try: sudo cp win5_dossier.txt /archive/win5_dossier.txt",
+                           "sudo cp win5_dossier.txt /archive/win5_dossier.txt"]),
+        ],
+        solution=["grep -r svc_update winnotes | tee win5_dossier.txt", "cat win5_dossier.txt", "sudo cp win5_dossier.txt /archive/win5_dossier.txt"],
+        reward_xp=210, tags=["bash", "act5", "milestone", "grep", "tee", "sudo"],
+    ),
+]
+
+ACT5 = [*ACT5_CHAPTER1, *ACT5_CHAPTER2]
