@@ -770,3 +770,96 @@ def network_dossier2() -> tuple[World, Session]:
     m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ----------------------------------------------------------------------------------------- Act III — The Network, Chapter 3
+DEPLOY_USER, DEPLOY_PASS = "deploy", "n3xus-deploy!"
+RELAY_FS = {
+    "home": {"deploy": {"_owner": "deploy", "_group": "deploy", "deploy.log": ["Routine deploy, no incidents.\n"]}},
+    "srv": {"relay": {
+        "README.txt": ["Relay node for edge telemetry.", "Do not modify manually — managed by the deploy pipeline."],
+        "relay.log": ["2050-01-01 00:00:02 relay: boot sequence nominal", "2050-01-01 00:00:05 relay: establishing uplink to ARCHITECT-NEXUS sync endpoint",
+                      "2050-01-01 00:00:09 relay: sync accepted, partition: COMPLIANT", "2050-01-02 03:14:00 relay: unscheduled external poll (trace matched: house query)"],
+    }},
+}
+RELAY_SERVICES = [Service(80, "http", "nginx/1.24.0", "open", data={"pages": OPS_PAGES}), Service(22, "ssh", "OpenSSH 9.6", "open")]
+
+
+@scenario("network_login")
+def network_login() -> tuple[World, Session]:
+    """Level 62: the first real login to another machine — the deploy credentials found in Chapter 2, finally used."""
+    world, player, _target = _recon_world(services=RELAY_SERVICES, discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_remote_explore")
+def network_remote_explore() -> tuple[World, Session]:
+    """Level 63 (standard): once logged in, the same find/cat skills from Act I work identically on someone else's
+    machine — nothing about the commands changes, only whose files they touch."""
+    world, player, _target = _recon_world(services=RELAY_SERVICES, extra_target_fs=RELAY_FS, discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_remote_sudo")
+def network_remote_sudo() -> tuple[World, Session]:
+    """Level 64: not every account is equally privileged — deploy has no sudo rights on this box at all."""
+    world, player, _target = _recon_world(services=RELAY_SERVICES, extra_target_fs=RELAY_FS, discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_architect_hint")
+def network_architect_hint() -> tuple[World, Session]:
+    """Level 65 (story): the relay log mentions "ARCHITECT-NEXUS sync" and a "partition" — meaningless to the player
+    right now, and NEXUS's reaction to the name is noticeably off. The twist itself is Act VII; this just plants it."""
+    world, player, _target = _recon_world(services=RELAY_SERVICES, extra_target_fs=RELAY_FS, discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_loot")
+def network_loot() -> tuple[World, Session]:
+    """Level 66: scp pulls a copy of relay.log back for the record — the first file taken off someone else's machine
+    instead of just read in place."""
+    world, player, _target = _recon_world(services=RELAY_SERVICES, extra_target_fs=RELAY_FS, discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_remote_ps")
+def network_remote_ps() -> tuple[World, Session]:
+    """Level 67 (standard): what's actually running on the relay box, and who else is logged in — the same incident-
+    response habits from Act II, now aimed outward instead of at the player's own machine."""
+    world, player, target = _recon_world(services=RELAY_SERVICES, extra_target_fs=RELAY_FS, discovered=True)
+    target.processes = [Process(pid=210, user="deploy", name="relay-agent", cmd="/srv/relay/bin/relay-agent --config /srv/relay/config.yml", cpu=2.1, mem=0.8),
+                        Process(pid=411, user="root", name="telemetry-shim", cmd="/usr/local/bin/telemetry-shim --passthrough", cpu=0.3, mem=0.2)]
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_exit")
+def network_exit() -> tuple[World, Session]:
+    """Level 68: exit returns to the previous machine in the session stack, exactly where you left it — a real
+    distinction worth testing deliberately, not just assuming."""
+    world, player, _target = _recon_world(services=RELAY_SERVICES, discovered=True)
+    player.fs.load({"home": {"operator": {"_owner": "operator", "_group": "operator",
+                                          "welcome_back.txt": "Back on home-rig. If you can read this, exit actually worked.\n"}}})
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_debrief")
+def network_debrief() -> tuple[World, Session]:
+    """Level 69 (story): Mira and NEXUS react to the ARCHITECT-NEXUS discovery. Stakes rise heading into the next act."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"inbox": {"mira_architect.txt": [
+        "MIRA:", "", "'ARCHITECT-NEXUS sync.' 'Partition: compliant.' I don't love any of those words in that order.",
+        "", "I don't know what that machine's actually part of yet. I intend to find out. So do you, I'd guess.", "---",
+    ]}, "notes.txt": "NEXUS: Mira wants to talk about what you found. Read it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("network_handoff")
+def network_handoff() -> tuple[World, Session]:
+    """Level 70 (milestone): one last login, one last file pulled out, archived properly — closing Act III the same
+    disciplined way Act II closed. Promotion to CRYPTOSMITH."""
+    world, player, _target = _recon_world(services=RELAY_SERVICES, extra_target_fs=RELAY_FS, discovered=True)
+    player.fs.load({"archive": {"_owner": "root", "_group": "root", "_mode": 0o700}})
+    player.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    return world, Session(player, player.users["operator"], "bash")

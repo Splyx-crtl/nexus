@@ -385,10 +385,10 @@ ACT2_CHAPTER3 = [
                      hints=["Same trick from before — search, and save a copy while you're looking at it.",
                            "Try: grep -r 203.0.113.9 dossier | tee case_summary.txt", "grep -r 203.0.113.9 dossier | tee case_summary.txt\ncat case_summary.txt"]),
             Objective(event="sudo_used", match={"command": "cp"}, text="Archive a copy somewhere only root can reach (sudo cp)",
-                     hints=["The archive folder is root-only — you'll need sudo to put anything in it.",
-                           "Try: sudo cp case_summary.txt archive/case_summary.txt", "sudo cp case_summary.txt archive/case_summary.txt"]),
+                     hints=["The archive folder is root-only — you'll need sudo to put anything in it. It lives at /archive, not inside your home folder.",
+                           "Try: sudo cp case_summary.txt /archive/case_summary.txt", "sudo cp case_summary.txt /archive/case_summary.txt"]),
         ],
-        solution=["grep -r 203.0.113.9 dossier | tee case_summary.txt", "cat case_summary.txt", "sudo cp case_summary.txt archive/case_summary.txt"],
+        solution=["grep -r 203.0.113.9 dossier | tee case_summary.txt", "cat case_summary.txt", "sudo cp case_summary.txt /archive/case_summary.txt"],
         reward_xp=200, tags=["bash", "act2", "milestone", "grep", "tee", "sudo"],
     ),
 ]

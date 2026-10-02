@@ -6,7 +6,10 @@ real, resolves and looks up its domain, checks the player's own exposure, and in
 deeper into the same server: alternate DNS tools, a robots.txt-hinted hidden path leading to an exposed deployment
 config with live credentials in it (an very ordinary, very real way servers get compromised — found, not cracked, same
 principle as every credential in this campaign so far), a caution beat from Oduya, and a mystery subdomain that
-resolves but can't be reached yet. Chapter 3 (62-70), the ssh/scp climax, is not written yet.
+resolves but can't be reached yet. Chapter 3 (62-70) is the ssh/scp climax: the deploy credentials found in Chapter 2
+finally get used for a real login, the player explores someone else's machine with the same fs commands from Act I,
+finds a log line that plants the ARCHITECT/NEXUS twist (paid off in full only in Act VII) without explaining it, and the
+act closes with a milestone promoting to CRYPTOSMITH.
 """
 from __future__ import annotations
 
@@ -227,12 +230,141 @@ ACT3_CHAPTER2 = [
                      hints=["Same trick as Act II's case file — search, and save a copy while you're looking.",
                            "Try: grep -r DEPLOY recon | tee creds_summary.txt", "grep -r DEPLOY recon | tee creds_summary.txt\ncat creds_summary.txt"]),
             Objective(event="sudo_used", match={"command": "cp"}, text="Archive a copy somewhere only root can reach (sudo cp)",
-                     hints=["Same archive folder as before — root-only.", "Try: sudo cp creds_summary.txt archive/creds_summary.txt",
-                           "sudo cp creds_summary.txt archive/creds_summary.txt"]),
+                     hints=["Same archive folder as before — root-only, and it lives at /archive, not inside your home folder.",
+                           "Try: sudo cp creds_summary.txt /archive/creds_summary.txt", "sudo cp creds_summary.txt /archive/creds_summary.txt"]),
         ],
-        solution=["grep -r DEPLOY recon | tee creds_summary.txt", "cat creds_summary.txt", "sudo cp creds_summary.txt archive/creds_summary.txt"],
+        solution=["grep -r DEPLOY recon | tee creds_summary.txt", "cat creds_summary.txt", "sudo cp creds_summary.txt /archive/creds_summary.txt"],
         reward_xp=195, tags=["bash", "act3", "milestone", "grep", "tee", "sudo"],
     ),
 ]
 
-ACT3 = [*ACT3_CHAPTER1, *ACT3_CHAPTER2]
+ACT3_CHAPTER3 = [
+    Mission(
+        id="act3_m62", number=62, act=3, size="mini", title="First Login", scenario="network_login",
+        requires=["act3_m61"],
+        briefing=["MIRA: You have a working password now. Use it. sshpass hands it to ssh without a prompt — that's "
+                  "how you script a login instead of typing it by hand every time."],
+        debrief=["MIRA: You're in. Don't get comfortable — Oduya's rules apply from here on, for real."],
+        objectives=[Objective(event="ssh_login", match={"user": "deploy"}, text="Log into the edge server as deploy",
+                              hints=["sshpass -p PASSWORD ssh user@host logs in without an interactive prompt.",
+                                    "Try: sshpass -p n3xus-deploy! ssh deploy@nexus-company.com", "sshpass -p n3xus-deploy! ssh deploy@nexus-company.com"])],
+        solution=["sshpass -p n3xus-deploy! ssh deploy@nexus-company.com"], reward_xp=90, tags=["bash", "act3", "net", "ssh"],
+    ),
+    Mission(
+        id="act3_m63", number=63, act=3, size="standard", title="New Ground", scenario="network_remote_explore",
+        requires=["act3_m62"],
+        briefing=["NEXUS: Same commands, different machine. Find out what's actually on here before anything else."],
+        debrief=["NEXUS: A relay service, managed by a deploy pipeline, apparently. Nothing unusual yet."],
+        objectives=[
+            Objective(event="command", match={"name": "find", "status": 0}, text="Find what's under /srv (find /srv -type f)",
+                     hints=["find works on a remote machine exactly like it does locally, once you're logged in.",
+                           "Try: find /srv -type f", "find /srv -type f"]),
+            Objective(event="file_read", match={"path__glob": "*README.txt"}, text="Read the relay's README",
+                     hints=["It's inside /srv/relay.", "Try: cat /srv/relay/README.txt", "cat /srv/relay/README.txt"]),
+        ],
+        solution=["sshpass -p n3xus-deploy! ssh deploy@nexus-company.com", "find /srv -type f", "cat /srv/relay/README.txt"],
+        reward_xp=95, tags=["bash", "act3", "net", "find"],
+    ),
+    Mission(
+        id="act3_m64", number=64, act=3, size="mini", title="Not That Privileged", scenario="network_remote_sudo",
+        requires=["act3_m63"],
+        briefing=["MIRA: Before you assume you can do anything you want on there — check. What does deploy actually "
+                  "have rights to?"],
+        debrief=["MIRA: Nothing. A service account, exactly as privileged as it needs to be and not one bit more. "
+                 "That's how it's supposed to work, for once."],
+        objectives=[Objective(event="command", match={"name": "sudo", "args__contains": "-l", "status": 1}, text="Check what deploy can run as root (sudo -l)",
+                              hints=["sudo -l lists what you're allowed to run — if anything.", "Try: sudo -l", "sudo -l"])],
+        solution=["sshpass -p n3xus-deploy! ssh deploy@nexus-company.com", "sudo -l"], reward_xp=55, tags=["bash", "act3", "net", "sudo"],
+    ),
+    Mission(
+        id="act3_m65", number=65, act=3, size="story", title="A Word NEXUS Doesn't Like", scenario="network_architect_hint",
+        requires=["act3_m64"],
+        briefing=["NEXUS: Check the relay's own log. Logs tell you what a thing actually does, not what its README "
+                  "claims."],
+        debrief=["NEXUS: 'ARCHITECT-NEXUS sync.' ...I don't have a clever line for that one. Give me a moment.",
+                 "MIRA: NEXUS? You went quiet.", "NEXUS: I'm fine. Keep going. We'll come back to this."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*relay.log"}, text="Read the relay's own log",
+                              hints=["Same folder as the README.", "Try: cat /srv/relay/relay.log", "cat /srv/relay/relay.log"])],
+        solution=["sshpass -p n3xus-deploy! ssh deploy@nexus-company.com", "cat /srv/relay/relay.log"],
+        reward_xp=100, tags=["bash", "act3", "story", "architect"],
+    ),
+    Mission(
+        id="act3_m66", number=66, act=3, size="mini", title="Taking a Copy", scenario="network_loot",
+        requires=["act3_m65"],
+        briefing=["MIRA: Get a copy of that log off their machine and onto yours. I want it somewhere they can't "
+                  "quietly edit it later."],
+        debrief=["MIRA: Filed. If that line disappears from their server tomorrow, we'll still have it."],
+        objectives=[
+            Objective(event="scp", match={"direction": "down"}, text="Copy relay.log to your own machine (scp)",
+                     hints=["scp works like cp, but one side can be a remote host.",
+                           "Try: sshpass -p n3xus-deploy! scp deploy@nexus-company.com:/srv/relay/relay.log relay.log",
+                           "sshpass -p n3xus-deploy! scp deploy@nexus-company.com:/srv/relay/relay.log relay.log"]),
+            Objective(event="file_read", match={"path__glob": "*relay.log"}, text="Confirm it copied correctly",
+                     hints=["Read it back locally.", "Try: cat relay.log", "cat relay.log"]),
+        ],
+        solution=["sshpass -p n3xus-deploy! scp deploy@nexus-company.com:/srv/relay/relay.log relay.log", "cat relay.log"],
+        reward_xp=85, tags=["bash", "act3", "net", "scp"],
+    ),
+    Mission(
+        id="act3_m67", number=67, act=3, size="standard", title="Who Else Is On This One", scenario="network_remote_ps",
+        requires=["act3_m66"],
+        briefing=["NEXUS: Same habit as always, just pointed somewhere else this time: what's running, and who's "
+                  "logged in?"],
+        debrief=["NEXUS: 'telemetry-shim, --passthrough,' running as root. Could be nothing. Could be exactly why "
+                 "that address has been so patient. Not your box to clean up — yet. Just remember it."],
+        objectives=[
+            Objective(event="command", match={"name": "ps", "status": 0}, text="Check what's running on the relay box (ps aux)",
+                     hints=["Same command, someone else's machine.", "Try: ps aux", "ps aux"]),
+            Objective(event="command", match={"name": "who", "status": 0}, text="Check who else is logged in (who)",
+                     hints=["who shows every active session on this machine.", "Try: who", "who"]),
+        ],
+        solution=["sshpass -p n3xus-deploy! ssh deploy@nexus-company.com", "ps aux", "who"],
+        reward_xp=95, tags=["bash", "act3", "net", "ps", "who"],
+    ),
+    Mission(
+        id="act3_m68", number=68, act=3, size="mini", title="Coming Back", scenario="network_exit",
+        requires=["act3_m67"],
+        briefing=["MIRA: Log in, confirm you can get back out cleanly, then prove it."],
+        debrief=["MIRA: Good. Always know you can get back before you go anywhere worth going."],
+        objectives=[
+            Objective(event="command", match={"name": "exit", "status": 0}, text="Log out of the edge server (exit)",
+                     hints=["exit returns you to whichever machine you connected from.", "Try: exit", "exit"]),
+            Objective(event="file_read", match={"path__glob": "*welcome_back.txt"}, text="Confirm you're back on home-rig",
+                     hints=["This file only exists locally.", "Try: cat welcome_back.txt", "cat welcome_back.txt"]),
+        ],
+        solution=["sshpass -p n3xus-deploy! ssh deploy@nexus-company.com", "exit", "cat welcome_back.txt"],
+        reward_xp=50, tags=["bash", "act3", "net", "ssh"],
+    ),
+    Mission(
+        id="act3_m69", number=69, act=3, size="story", title="I Don't Love Any of Those Words", scenario="network_debrief",
+        requires=["act3_m68"],
+        briefing=["NEXUS: Mira wants to talk about what you found. Read it."],
+        debrief=["NEXUS: For what it's worth — neither do I.",
+                 "MIRA: We're not done with that server. We're just done with it from the outside."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*mira_architect.txt"}, text="Read Mira's reaction",
+                              hints=["Check your inbox.", "Try: cat inbox/mira_architect.txt", "cat inbox/mira_architect.txt"])],
+        solution=["cat inbox/mira_architect.txt"], reward_xp=70, tags=["bash", "act3", "story"],
+    ),
+    Mission(
+        id="act3_m70", number=70, act=3, size="milestone", title="Inside, Properly", scenario="network_handoff",
+        requires=["act3_m69"],
+        briefing=["MIRA: Last pass. Log in, pull the relay log one more time for a clean copy, archive it properly, "
+                  "and log back out. By the book, start to finish."],
+        debrief=["MIRA: Clean work. In, out, documented, nothing left behind.",
+                 "NEXUS: Rank up — CRYPTOSMITH. Act closed. Next time, we stop reading their infrastructure from the "
+                 "outside and start taking apart what they're actually protecting.",
+                 "MIRA: That means keys, hashes, the things people think are unbreakable because they've never had "
+                 "anyone patient enough try."],
+        objectives=[
+            Objective(event="scp", match={"direction": "down"}, text="Pull a clean copy of relay.log (scp)",
+                     hints=["Same move as before.", "Try: sshpass -p n3xus-deploy! scp deploy@nexus-company.com:/srv/relay/relay.log relay.log",
+                           "sshpass -p n3xus-deploy! scp deploy@nexus-company.com:/srv/relay/relay.log relay.log"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive it somewhere only root can reach (sudo cp)",
+                     hints=["Same archive habit as Act II — it lives at /archive, not inside your home folder.", "Try: sudo cp relay.log /archive/relay.log", "sudo cp relay.log /archive/relay.log"]),
+        ],
+        solution=["sshpass -p n3xus-deploy! scp deploy@nexus-company.com:/srv/relay/relay.log relay.log", "sudo cp relay.log /archive/relay.log"],
+        reward_xp=220, tags=["bash", "act3", "milestone", "scp", "sudo"],
+    ),
+]
+
+ACT3 = [*ACT3_CHAPTER1, *ACT3_CHAPTER2, *ACT3_CHAPTER3]
