@@ -1,6 +1,6 @@
 """Single source of truth for the application version and project links."""
 
-VERSION = "2.2.3"
+VERSION = "2.3.0"
 APP_NAME = "NEXUS"
 APP_TITLE = "NEXUS // TERMINAL"
 APP_TAGLINE = "TACTICAL CYBER OPERATIONS"
@@ -8,7 +8,7 @@ BUILD_CHANNEL = "release"
 AUTHOR = "Toto"
 
 # Community links (opened in the user's browser only when they click a button; empty = button hidden).
-DISCORD_URL = ""
+DISCORD_URL = "https://discord.gg/EfFkMVKkna"
 RELEASES_URL = ""
 
 # Online services (Discord login, leaderboards, friends). Empty = the game has no online features at all.

@@ -19,7 +19,11 @@ from .version import ONLINE_SERVER_URL, VERSION
 
 
 class OnlineError(Exception):
-    """A problem that can be shown to the player as-is."""
+    """A problem that can be shown to the player as-is. ``status`` = the HTTP status when the server answered (403 = refused)."""
+
+    def __init__(self, message: str = "", status: int = 0):
+        super().__init__(message)
+        self.status = status
 
 
 def server_url() -> str:
@@ -36,6 +40,7 @@ def _validate_base(url: str) -> None:
 class OnlineClient:
     def __init__(self, settings, base_url: str | None = None):
         self.settings = settings
+        self._admin_token = ""
         self.base = (base_url if base_url is not None else server_url()).rstrip("/")
 
     # -------------------------------------------------------------- state --
@@ -56,12 +61,15 @@ class OnlineClient:
         return self.enabled and bool(self.token)
 
     # ---------------------------------------------------------------- http --
-    def _call(self, method: str, path: str, payload: dict | None = None, auth: bool = True, timeout: float = 8.0) -> dict:
+    def _call(self, method: str, path: str, payload: dict | None = None, auth: bool = True, timeout: float = 8.0,
+              bearer: str = "") -> dict:
         if not self.configured:
             raise OnlineError("Online services are not configured.")
         _validate_base(self.base)
         headers = {"User-Agent": f"NEXUS/{VERSION}", "Accept": "application/json"}
-        if auth:
+        if bearer:                                           # admin calls carry their own session, never the player's
+            headers["Authorization"] = f"Bearer {bearer}"
+        elif auth:
             if not self.token:
                 raise OnlineError("Not logged in.")
             headers["Authorization"] = f"Bearer {self.token}"
@@ -80,10 +88,12 @@ class OnlineClient:
                 detail = json.loads(exc.read().decode("utf-8")).get("detail", "")
             except (ValueError, OSError):
                 pass
+            if exc.code == 401 and bearer:
+                raise OnlineError(str(detail) or "Admin session expired. Please log in again.", 401)
             if exc.code == 401:
                 self.settings.set("online_token", "")
-                raise OnlineError("Your session expired. Please log in again.")
-            raise OnlineError(str(detail) or f"Server error {exc.code}")
+                raise OnlineError(str(detail) or "Your session expired. Please log in again.", 401)
+            raise OnlineError(str(detail) or f"Server error {exc.code}", exc.code)
         except (urllib.error.URLError, OSError, TimeoutError):
             raise OnlineError("Can't reach the NEXUS server. Check your connection.")
         except ValueError:
@@ -96,6 +106,20 @@ class OnlineClient:
         if dev_name:                                         # local testing against NEXUS_DEV_LOGIN=1
             return state, f"{self.base}/auth/dev?name={urllib.parse.quote(dev_name)}&state={state}"
         return state, f"{self.base}/auth/start?state={state}"
+
+    def server_info(self) -> dict:
+        """Public server facts (no login): whether it is invite-only and needs an access key."""
+        return self._call("GET", "/health", auth=False)
+
+    @property
+    def key(self) -> str:
+        return self.settings.get("online_key") or ""
+
+    def begin_login(self, state: str, key: str = "") -> None:
+        """Step 1 of a login: announce the attempt and the access key (raises OnlineError with the reason if the key is refused)."""
+        self._call("POST", "/auth/begin", {"state": state, "key": key.strip()}, auth=False)
+        if key.strip():
+            self.settings.set("online_key", key.strip())
 
     def poll_login(self, state: str) -> bool:
         """True once the browser login finished (the token is then stored)."""
@@ -141,6 +165,47 @@ class OnlineClient:
 
     def friend_remove(self, name: str) -> dict:
         return self._call("DELETE", f"/friends/{urllib.parse.quote(name)}")
+
+    # --------------------------------------------------------------- admin --
+    # The admin session token is held in memory only (never saved to the settings file); the credentials are checked by the
+    # server and exist nowhere in the game.
+    def admin_login(self, user: str, password: str) -> None:
+        answer = self._call("POST", "/admin/login", {"user": user, "password": password}, auth=False)
+        self._admin_token = answer["token"]
+
+    @property
+    def admin_logged_in(self) -> bool:
+        return bool(getattr(self, "_admin_token", ""))
+
+    def admin_logout(self) -> None:
+        token, self._admin_token = getattr(self, "_admin_token", ""), ""
+        if token:
+            try:
+                self._call("POST", "/admin/logout", bearer=token)
+            except OnlineError:
+                pass
+
+    def _admin(self, method: str, path: str, payload: dict | None = None) -> dict:
+        if not self.admin_logged_in:
+            raise OnlineError("Admin login required.", 401)
+        try:
+            return self._call(method, path, payload, bearer=self._admin_token)
+        except OnlineError as exc:
+            if exc.status == 401:
+                self._admin_token = ""
+            raise
+
+    def admin_keys(self) -> list[dict]:
+        return self._admin("GET", "/admin/keys")["keys"]
+
+    def admin_create_keys(self, label: str, count: int) -> list[dict]:
+        return self._admin("POST", "/admin/keys", {"label": label, "count": count})["keys"]
+
+    def admin_revoke(self, key_id: int) -> None:
+        self._admin("POST", f"/admin/keys/{int(key_id)}/revoke")
+
+    def admin_unbind(self, key_id: int) -> None:
+        self._admin("POST", f"/admin/keys/{int(key_id)}/unbind")
 
     def presence(self, status: str) -> dict:
         return self._call("POST", "/presence", {"status": status[:60]})

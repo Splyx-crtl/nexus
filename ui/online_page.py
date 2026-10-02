@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (QCheckBox, QFrame, QHBoxLayout, QLabel, QLineEdit
 from nexus import online
 from nexus.config import COLORS
 from nexus.i18n import tr
+from nexus.version import DISCORD_URL
 
 from .dialogs import ConfirmDialog
 from .widgets import Chip, NeonButton
@@ -25,6 +26,7 @@ class Job(QThread):
 
     done = Signal(object)
     failed = Signal(str)
+    refused = Signal(str)          # the server said no (HTTP 403): a login refusal the player must be told about
 
     def __init__(self, fn, parent=None):
         super().__init__(parent)
@@ -34,7 +36,7 @@ class Job(QThread):
         try:
             self.done.emit(self.fn())
         except online.OnlineError as exc:
-            self.failed.emit(str(exc))
+            (self.refused if exc.status == 403 else self.failed).emit(str(exc))
         except Exception as exc:                                    # never let a network problem crash the game
             self.failed.emit(f"Unexpected error: {exc}")
 
@@ -48,6 +50,7 @@ class OnlinePage(QWidget):
         self._jobs: list[Job] = []
         self._poll_state = ""
         self._poll_left = 0
+        self.gated: bool | None = None          # None = not asked yet; the key field is shown unless the server says it is open
         self._last_sync = 0.0
         self.lay = QVBoxLayout(self)
         self.lay.setContentsMargins(14, 10, 14, 10)
@@ -66,6 +69,28 @@ class OnlinePage(QWidget):
         self.intro = QLabel("")
         self.intro.setWordWrap(True)
         ol.addWidget(self.intro)
+        self.key_row = QWidget()
+        kl = QVBoxLayout(self.key_row)
+        kl.setContentsMargins(0, 0, 0, 0)
+        key_title = QLabel("ACCESS KEY")
+        key_title.setStyleSheet(f"color:{COLORS['green']}; font-weight:bold; letter-spacing:3px; background:transparent;")
+        kl.addWidget(key_title)
+        self.key_edit = QLineEdit()
+        self.key_edit.setPlaceholderText("NX-XXXXX-XXXXX-XXXXX")
+        self.key_edit.setMaxLength(40)
+        self.key_edit.setText(self.client.key)
+        self.key_edit.returnPressed.connect(self._login)
+        kl.addWidget(self.key_edit)
+        key_hint = QLabel("This server is invite-only. Join our Discord server, get your access key from the staff and paste it here. "
+                          "You have to stay on the Discord server to keep playing online.")
+        key_hint.setWordWrap(True)
+        key_hint.setObjectName("dim")
+        kl.addWidget(key_hint)
+        if DISCORD_URL:
+            join = NeonButton("OPEN DISCORD SERVER", "Opens our Discord invite in your browser", "cyan")
+            join.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(DISCORD_URL)))
+            kl.addWidget(join)
+        ol.addWidget(self.key_row)
         self.consent = QCheckBox("I agree to share my display name, level, rank, mission count and credits earned with other players (leaderboards, friends).")
         ol.addWidget(self.consent)
         self.login_btn = NeonButton("LOGIN WITH DISCORD", "Opens your browser for a Discord login. NEXUS never sees your password.", "cyan")
@@ -169,15 +194,18 @@ class OnlinePage(QWidget):
         self.tabs.addTab(w, "ACCOUNT")
 
     # ----------------------------------------------------------- plumbing --
-    def _run(self, fn, on_done=None, on_fail=None) -> None:
+    def _run(self, fn, on_done=None, on_fail=None, on_refused=None) -> None:
         job = Job(fn, self)
         job.done.connect(lambda r: on_done(r) if on_done else None)
         job.failed.connect(on_fail or self._error)
+        job.refused.connect(on_refused or on_fail or self._error)
         job.finished.connect(lambda j=job: self._jobs.remove(j) if j in self._jobs else None)
         self._jobs.append(job)
         job.start()
 
     def _error(self, msg: str) -> None:
+        if msg == "Not logged in." and not self.client.token:
+            return                                    # follow-up of a call that already told the player why they were logged out
         self.status.setText(f"⚠ {msg}")
         self.status.setStyleSheet(f"color:{COLORS['amber']};")
         if not self.client.token:
@@ -204,9 +232,16 @@ class OnlinePage(QWidget):
             self.login_btn.setEnabled(True)
             self.consent.setEnabled(True)
             self.timer.stop()
+            self.key_row.setVisible(self.gated is not False)
+            if self.gated is None:
+                self._run(self.client.server_info, self._on_info, lambda _m: None)
         else:
             self.timer.start()
             self._load_all()
+
+    def _on_info(self, info: dict) -> None:
+        self.gated = bool(info.get("gated"))
+        self.key_row.setVisible(not self.client.logged_in and self.gated)
 
     def _load_all(self) -> None:
         self._run(self.client.me, self._on_me)
@@ -227,14 +262,27 @@ class OnlinePage(QWidget):
         if not self.consent.isChecked():
             self._error("Please tick the consent box first.")
             return
+        key = self.key_edit.text().strip()
+        if self.gated is not False and not key:
+            self._error("Please enter your access key. You get it from the staff on our Discord server.")
+            return
         self.settings.set("online_enabled", True)
         import os
         state, url = self.client.new_login(os.environ.get("NEXUS_DEV_NAME", ""))
+        self.login_btn.setEnabled(False)
+        self._info("Checking your access key...")
+        self._run(lambda: self.client.begin_login(state, key), lambda _r: self._begun(state, url), self._login_failed, self._login_failed)
+
+    def _begun(self, state: str, url: str) -> None:
         self._poll_state, self._poll_left = state, 90
         QDesktopServices.openUrl(QUrl(url))
         self._info("Waiting for the Discord login in your browser...")
-        self.login_btn.setEnabled(False)
         self.poll_timer.start()
+
+    def _login_failed(self, msg: str) -> None:
+        self.poll_timer.stop()
+        self.login_btn.setEnabled(True)
+        self._error(msg)
 
     def _poll(self) -> None:
         self._poll_left -= 1
@@ -243,7 +291,7 @@ class OnlinePage(QWidget):
             self.login_btn.setEnabled(True)
             self._error("Login timed out.")
             return
-        self._run(lambda: self.client.poll_login(self._poll_state), self._poll_done, lambda m: None)
+        self._run(lambda: self.client.poll_login(self._poll_state), self._poll_done, lambda m: None, self._login_failed)
 
     def _poll_done(self, ok: bool) -> None:
         if ok:
