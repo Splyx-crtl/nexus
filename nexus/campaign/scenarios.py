@@ -364,3 +364,130 @@ def traces_incident() -> tuple[World, Session]:
                       "operator pts/0    10.44.0.7        Thu Jan  8 09:12 - 09:50  (00:38)"]
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ---------------------------------------------------------------------------------------------- Act II — Traces, Chapter 2
+@scenario("traces_copy")
+def traces_copy() -> tuple[World, Session]:
+    """Level 31: tee — seeing output and saving it are not the same thing, and sometimes you need both at once."""
+    world = World(clock=lambda: EPOCH)
+    log = ["198.51.100.4 - auth attempt", "203.0.113.20 - auth attempt", "198.51.100.4 - auth attempt",
+           "198.51.100.4 - auth attempt", "192.0.2.44 - auth attempt", "198.51.100.4 - auth attempt"]
+    m = _player_machine({"auth_events.log": log,
+                         "notes.txt": "MIRA: Same drill as before, but I need a copy of the result this time, not just a look at it. "
+                                     "tee lets you see it and save it in the same breath.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_report")
+def traces_report() -> tuple[World, Session]:
+    """Level 32: plain output redirection (>) — a written baseline survives, a glance at the terminal doesn't."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"notes.txt": "NEXUS: Before anything else gets weird on this box, I want a written baseline of "
+                         "what SHOULD be running. Save it — don't just glance at it and move on.\n"})
+    m.processes.append(Process(pid=1102, user="operator", name="sshd", cmd="/usr/sbin/sshd -D", cpu=0.1, mem=0.3))
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_quiet")
+def traces_quiet() -> tuple[World, Session]:
+    """Level 33 (standard): stderr redirection (2>) — keep the real output clean by routing errors somewhere else."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"siteA.cfg": "region=eu\ntier=standard\n", "siteB.cfg": "region=us\ntier=priority\n",
+                         "notes.txt": "MIRA: Read siteA, siteB and siteC's configs together. There's no siteC yet, so route whatever "
+                                     "errors that throws into its own file instead of letting it clutter the real output.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_feed")
+def traces_feed() -> tuple[World, Session]:
+    """Level 34: input redirection (<) — the natural way to hand a file to a command that only reads stdin."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"message.txt": "they are closer than you think\n",
+                         "notes.txt": "NEXUS: Mira wants that message shouted, not whispered — all caps, saved to a new file.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_offer")
+def traces_offer() -> tuple[World, Session]:
+    """Level 35 (story, first real decision): Reyes offers a trade — information about 203.0.113.9 in exchange for
+    what the player knows about contractor_temp. No mechanical branching exists yet (C5 is unbuilt) — the "choice" is the
+    player's own free-form reply, same mechanism as act1_m09's first contact with Mira."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"inbox": {"reyes_offer.txt": [
+        "- R.", "", "Heard you had a visitor. The patient kind, not the loud kind.",
+        "", "I know something about that address. I'll trade — tell me what you know about 'contractor_temp' and the "
+        "decommissioned box it came from, and I'll tell you who I think 203.0.113.9 actually is.",
+        "", "Or don't. Your call. I'll find out either way, I'm just offering you a shortcut.", "---",
+    ]}, "notes.txt": "NEXUS: Reyes again. This one actually wants something. Read it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_tally")
+def traces_tally() -> tuple[World, Session]:
+    """Level 36: nl and seq — numbering an existing list, and generating a fresh one."""
+    world = World(clock=lambda: EPOCH)
+    roster = ["wraith", "cipher", "echo-two", "vantage"]
+    m = _player_machine({"contacts.roster": roster,
+                         "notes.txt": "MIRA: Number that roster for me, readably, for printing. And I need ten fresh case IDs "
+                                     "— 101 through 110 is fine.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_mirror")
+def traces_mirror() -> tuple[World, Session]:
+    """Level 37: rev — a low-effort obfuscation trick (reversed text), the kind a cocky rival leaves on purpose."""
+    world = World(clock=lambda: EPOCH)
+    message = "they are closer than you think - R"
+    m = _player_machine({"scrambled.txt": message[::-1] + "\n",
+                         "notes.txt": "NEXUS: That file reads as nonsense forwards. Reyes has done this before — try it backwards.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_format")
+def traces_format() -> tuple[World, Session]:
+    """Level 38 (standard): paste + column — merging two exports into one readable table, the finishing move on the
+    report habit this chapter's been building (cut/tr at Level 16, tee at Level 31)."""
+    world = World(clock=lambda: EPOCH)
+    names = ["wraith", "cipher", "echo-two", "vantage"]
+    statuses = ["active", "active", "benched", "active"]
+    m = _player_machine({"names.txt": names, "statuses.txt": statuses,
+                         "notes.txt": "MIRA: Merge these side by side into one table, lined up properly. I'm not reading two "
+                                     "separate lists and matching them up myself.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_sweep")
+def traces_sweep() -> tuple[World, Session]:
+    """Level 39: xargs — batch-deleting a folder of scratch files at once, the payoff for find (Act I) and xargs together."""
+    world = World(clock=lambda: EPOCH)
+    spool = {f"junk_{i}.tmp": "scratch\n" for i in range(4)}
+    m = _player_machine({".cache": {"spool": spool},
+                         "notes.txt": "NEXUS: That spool folder from before is still full of scratch files nobody needs. "
+                                     "Find them all and clear them out in one go — don't delete them one at a time.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_audit")
+def traces_audit() -> tuple[World, Session]:
+    """Level 40 (milestone): closes Act II, Chapter 2 by chaining this chapter's whole toolkit — grep -h (Act I), stderr
+    redirection, tee, and an xargs cleanup — into one real audit pass."""
+    world = World(clock=lambda: EPOCH)
+    w1 = ["09:00 INFO service started", "09:14 ERROR disk allocation failed", "09:20 INFO heartbeat ok"]
+    w2 = ["10:01 INFO service started", "10:40 ERROR auth backend unreachable"]
+    m = _player_machine({"logs": {"w1.log": w1, "w2.log": w2}, "scratch1.tmp": "temp\n", "scratch2.tmp": "temp\n",
+                         "notes.txt": "MIRA: Full pass before we call this chapter done: pull every ERROR line out of this week's "
+                                     "logs (there's a third file listed that doesn't exist — don't let that break the real output), "
+                                     "save a copy of what you find, review whatever errors it throws separately, then clear out "
+                                     "the scratch files when you're done.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")

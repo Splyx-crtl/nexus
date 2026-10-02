@@ -164,4 +164,152 @@ ACT2_CHAPTER1 = [
     ),
 ]
 
-ACT2 = [*ACT2_CHAPTER1]
+ACT2_CHAPTER2 = [
+    Mission(
+        id="act2_m31", number=31, act=2, size="mini", title="Keep a Copy", scenario="traces_copy",
+        requires=["act2_m30"],
+        briefing=["MIRA: Same drill as before, but I need a copy of the result this time, not just a look at it. "
+                  "tee lets you see it and save it in the same breath."],
+        debrief=["MIRA: That's the one you'll reach for constantly. Seeing something and keeping it are different problems."],
+        objectives=[
+            Objective(event="command", match={"name": "sort", "status": 0}, text="Sort auth_events.log",
+                     hints=["Same pattern as before: sort first, then count.", "Try: sort auth_events.log", "sort auth_events.log"]),
+            Objective(event="command", match={"name": "tee", "status": 0}, text="Count and save a copy in one line (uniq -c | tee)",
+                     hints=["tee writes to a file AND still shows you the output.", "Try: sort auth_events.log | uniq -c | tee summary.txt",
+                           "sort auth_events.log | uniq -c | tee summary.txt"]),
+        ],
+        solution=["sort auth_events.log | uniq -c | tee summary.txt"], reward_xp=55, tags=["bash", "act2", "tee"],
+    ),
+    Mission(
+        id="act2_m32", number=32, act=2, size="mini", title="Save It This Time", scenario="traces_report",
+        requires=["act2_m31"],
+        briefing=["NEXUS: Before anything else gets weird on this box, I want a written baseline of what SHOULD be "
+                  "running. Save it — don't just glance at it and move on."],
+        debrief=["NEXUS: Filed. Next time something looks off, we have something honest to compare it to."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*process_report.txt"}, text="Write and re-read a process baseline",
+                              hints=["> sends a command's output into a file instead of the screen.",
+                                    "Try: ps aux > process_report.txt, then cat process_report.txt", "ps aux > process_report.txt\ncat process_report.txt"])],
+        solution=["ps aux > process_report.txt", "cat process_report.txt"], reward_xp=45, tags=["bash", "act2", "redirection"],
+    ),
+    Mission(
+        id="act2_m33", number=33, act=2, size="standard", title="Route the Noise", scenario="traces_quiet",
+        requires=["act2_m32"],
+        briefing=["MIRA: Read siteA, siteB and siteC's configs together. There's no siteC yet, so route whatever errors "
+                  "that throws into its own file instead of letting it clutter the real output."],
+        debrief=["MIRA: Clean output, errors filed separately. That's the difference between a report and a mess."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*errors.log"}, text="Route the missing-file error into errors.log and check it",
+                              hints=["2> sends only error messages to a file, leaving normal output alone.",
+                                    "Try: cat siteA.cfg siteB.cfg siteC.cfg 2> errors.log, then cat errors.log",
+                                    "cat siteA.cfg siteB.cfg siteC.cfg 2> errors.log\ncat errors.log"])],
+        solution=["cat siteA.cfg siteB.cfg siteC.cfg 2> errors.log", "cat errors.log"], reward_xp=70, tags=["bash", "act2", "redirection"],
+    ),
+    Mission(
+        id="act2_m34", number=34, act=2, size="mini", title="Feed It In", scenario="traces_feed",
+        requires=["act2_m33"],
+        briefing=["NEXUS: Mira wants that message shouted, not whispered — all caps, saved to a new file."],
+        debrief=["NEXUS: tr never takes a filename directly — < is the only clean way to hand it one."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*shout.txt"}, text="Upper-case message.txt into shout.txt and check it",
+                              hints=["tr only reads from standard input, never a filename — < feeds it a file.",
+                                    "Try: tr a-z A-Z < message.txt > shout.txt, then cat shout.txt",
+                                    "tr a-z A-Z < message.txt > shout.txt\ncat shout.txt"])],
+        solution=["tr a-z A-Z < message.txt > shout.txt", "cat shout.txt"], reward_xp=50, tags=["bash", "act2", "redirection", "tr"],
+    ),
+    Mission(
+        id="act2_m35", number=35, act=2, size="story", title="Reyes' Offer", scenario="traces_offer",
+        requires=["act2_m34"],
+        briefing=["NEXUS: Reyes again. This one actually wants something. Read it."],
+        debrief=["NEXUS: Whatever you told them, that's on the record now. I hope it was the right call.",
+                 "MIRA: There isn't always a clean answer with Reyes. Welcome to working with other people."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*reyes_offer.txt"}, text="Read Reyes' offer",
+                     hints=["Check your inbox.", "Try: cat inbox/reyes_offer.txt", "cat inbox/reyes_offer.txt"]),
+            Objective(event="command", match={"name": "echo", "status": 0}, text="Reply — your call what you tell them",
+                     hints=["Same as replying to Mira, early on: write it, append it to the file.",
+                           'echo "your reply here" >> inbox/reyes_offer.txt', 'echo "Deal." >> inbox/reyes_offer.txt']),
+        ],
+        solution=["cat inbox/reyes_offer.txt", 'echo "Fine. Deal." >> inbox/reyes_offer.txt'],
+        reward_xp=90, tags=["bash", "act2", "story", "reyes", "decision:1"],
+    ),
+    Mission(
+        id="act2_m36", number=36, act=2, size="mini", title="Numbers, Old and New", scenario="traces_tally",
+        requires=["act2_m35"],
+        briefing=["MIRA: Number that roster for me, readably, for printing. And I need ten fresh case IDs — 101 "
+                  "through 110 is fine."],
+        debrief=["MIRA: Small stuff, but it's the small stuff that makes a report look like it came from someone "
+                 "who knows what they're doing."],
+        objectives=[
+            Objective(event="command", match={"name": "nl", "status": 0}, text="Number the roster (nl)",
+                     hints=["nl numbers every non-blank line of a file.", "Try: nl contacts.roster", "nl contacts.roster"]),
+            Objective(event="command", match={"name": "seq", "status": 0}, text="Generate case IDs 101-110 (seq)",
+                     hints=["seq FIRST LAST prints a run of numbers.", "Try: seq 101 110", "seq 101 110"]),
+        ],
+        solution=["nl contacts.roster", "seq 101 110"], reward_xp=35, tags=["bash", "act2", "nl", "seq"],
+    ),
+    Mission(
+        id="act2_m37", number=37, act=2, size="mini", title="Read It Backwards", scenario="traces_mirror",
+        requires=["act2_m36"],
+        briefing=["NEXUS: That file reads as nonsense forwards. Reyes has done this before — try it backwards."],
+        debrief=["NEXUS: 'They are closer than you think.' Reyes' idea of a joke, probably. Probably."],
+        objectives=[Objective(event="command", match={"name": "rev", "status": 0}, text="Read scrambled.txt in reverse (rev)",
+                              hints=["rev reverses every line, character by character.", "Try: rev scrambled.txt", "rev scrambled.txt"])],
+        solution=["rev scrambled.txt"], reward_xp=35, tags=["bash", "act2", "rev"],
+    ),
+    Mission(
+        id="act2_m38", number=38, act=2, size="standard", title="One Table, Not Two Lists", scenario="traces_format",
+        requires=["act2_m37"],
+        briefing=["MIRA: Merge these side by side into one table, lined up properly. I'm not reading two separate "
+                  "lists and matching them up myself."],
+        debrief=["MIRA: Now that's a report. Keep formatting things like you expect someone else to actually read them."],
+        objectives=[
+            Objective(event="command", match={"name": "paste", "status": 0}, text="Merge the two files side by side (paste)",
+                     hints=["paste joins files line by line, side by side.", "Try: paste names.txt statuses.txt", "paste names.txt statuses.txt"]),
+            Objective(event="command", match={"name": "column", "args__contains": "-t", "status": 0}, text="Line the columns up (column -t)",
+                     hints=["column -t turns separator-joined text into a lined-up table.",
+                           "Try: paste names.txt statuses.txt | column -t", "paste names.txt statuses.txt | column -t"]),
+        ],
+        solution=["paste names.txt statuses.txt | column -t"], reward_xp=70, tags=["bash", "act2", "paste", "column"],
+    ),
+    Mission(
+        id="act2_m39", number=39, act=2, size="mini", title="Clean Sweep", scenario="traces_sweep",
+        requires=["act2_m38"],
+        briefing=["NEXUS: That spool folder from before is still full of scratch files nobody needs. Find them all "
+                  "and clear them out in one go — don't delete them one at a time."],
+        debrief=["NEXUS: Four files, one command. That's the entire point of xargs."],
+        objectives=[
+            Objective(event="command", match={"name": "xargs", "status": 0}, text="Delete every .tmp file in one go (find | xargs rm)",
+                     hints=["find lists the files; xargs turns that list into arguments for another command.",
+                           "Try: find .cache/spool -name '*.tmp' | xargs rm", "find .cache/spool -name '*.tmp' | xargs rm"]),
+            Objective(event="delete", match={"path__glob": "*.tmp"}, count=4, text="All four scratch files actually gone",
+                     hints=["If xargs built the command right, all four should disappear in one shot.",
+                           "find .cache/spool -name '*.tmp' | xargs rm", "find .cache/spool -name '*.tmp' | xargs rm"]),
+        ],
+        solution=["find .cache/spool -name '*.tmp' | xargs rm"], reward_xp=55, tags=["bash", "act2", "xargs"],
+    ),
+    Mission(
+        id="act2_m40", number=40, act=2, size="milestone", title="Full Pass", scenario="traces_audit",
+        requires=["act2_m39"],
+        briefing=["MIRA: Full pass before we call this chapter done: pull every ERROR line out of this week's logs "
+                  "— there's a third file listed that doesn't exist, don't let that break the real output — save a "
+                  "copy of what you find, review whatever errors it throws separately, then clear out the scratch "
+                  "files when you're done."],
+        debrief=["MIRA: Two real errors, one dead file reference, and a tidy workspace when you're finished. That's "
+                 "the whole job, every time, just at different scales.",
+                 "NEXUS: Chapter closed. Whatever's coming next, you've got the habits for it now."],
+        objectives=[
+            Objective(event="command", match={"name": "grep", "args__contains": "-h", "status": 0}, text="Pull ERROR lines from all the logs at once (grep -h)",
+                     hints=["-h keeps multiple files from cluttering the output with filenames.",
+                           "Try: grep -h ERROR logs/w1.log logs/w2.log logs/w3.log 2> scan_errors.log | tee scan_results.txt"]),
+            Objective(event="file_read", match={"path__glob": "*scan_results.txt"}, text="Review the saved results (scan_results.txt)",
+                     hints=["tee wrote a copy while you were looking at it — read it back.", "Try: cat scan_results.txt", "cat scan_results.txt"]),
+            Objective(event="file_read", match={"path__glob": "*scan_errors.log"}, text="Review what went wrong separately (scan_errors.log)",
+                     hints=["2> routed the missing-file error to its own file.", "Try: cat scan_errors.log", "cat scan_errors.log"]),
+            Objective(event="delete", match={"path__glob": "*.tmp"}, count=2, text="Clear out the scratch files (find | xargs rm)",
+                     hints=["Same move as the spool cleanup.", "Try: find . -name '*.tmp' | xargs rm", "find . -name '*.tmp' | xargs rm"]),
+        ],
+        solution=["grep -h ERROR logs/w1.log logs/w2.log logs/w3.log 2> scan_errors.log | tee scan_results.txt",
+                 "cat scan_results.txt", "cat scan_errors.log", "find . -name '*.tmp' | xargs rm"],
+        reward_xp=190, tags=["bash", "act2", "milestone", "grep", "redirection", "tee", "xargs"],
+    ),
+]
+
+ACT2 = [*ACT2_CHAPTER1, *ACT2_CHAPTER2]
