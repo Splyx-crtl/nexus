@@ -863,3 +863,128 @@ def network_handoff() -> tuple[World, Session]:
     player.fs.load({"archive": {"_owner": "root", "_group": "root", "_mode": 0o700}})
     player.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
     return world, Session(player, player.users["operator"], "bash")
+
+
+# ============================================================================================ Act V — Windows
+OPS_IP = "10.20.30.5"              # the "unreachable" subdomain from Act III Level 59 — now finally reachable
+OPS_HOST = "OPS-CONSOLE"
+OPS_DOMAIN = "NEXUSCORP"
+OPS_USER, OPS_PASS = "opsadmin", "Meridian-2050!"
+
+WIN_TREE = {
+    "Users": {"opsadmin": {"_owner": "opsadmin", "_group": "opsadmin",
+        "Desktop": {"notes.txt": ["Reminder: rotate the console password after the Q1 audit.", "Ticket queue is a mess again — ask IT to look at the backlog service."]},
+        "Documents": {"kade_voss_memo.txt": [
+            "FROM: K. Voss, Security Operations", "TO: Ops Console Admins", "SUBJECT: Anomalous access pattern — edge relay",
+            "", "We've identified irregular access against the edge relay infrastructure over the past several weeks.",
+            "Pattern suggests a patient external actor, not an automated scan. I am opening a formal investigation.",
+            "", "Until further notice: rotate credentials on anything externally reachable, and report anything that",
+            "doesn't look like routine traffic directly to me, not to the ticket queue.", "", "- K. Voss",
+        ]},
+    }, "Public": {}},
+    "Windows": {"System32": {}},
+    "inetpub": {"wwwroot": {}},
+}
+
+
+def _win_target_world() -> tuple[World, Machine, Machine]:
+    """Player's home-rig plus a Windows admin console at the Act III Level-59 "unreachable" subdomain — the first
+    Windows target of the campaign, shared by every Act V, Chapter 1 mission."""
+    world = World(clock=lambda: EPOCH)
+    player = _player_machine({"notes.txt": "MIRA: New target. Windows this time — different commands, same discipline.\n"})
+    target = Machine(OPS_HOST, OPS_HOST, OPS_IP, "windows", VFS("windows", clock=lambda: EPOCH))
+    target.domain = OPS_DOMAIN
+    target.add_user(User("Administrator", 500, 500, ("Administrators",), "C:\\Users\\Administrator", admin=True, password="R3curs1ve!Root"))
+    target.add_user(User(OPS_USER, 1000, 1000, ("Administrators",), f"C:\\Users\\{OPS_USER}", password=OPS_PASS))
+    target.fs.load(WIN_TREE, "C:\\")
+    target.services = [Service(22, "ssh", "OpenSSH for Windows 9.6", "open")]
+    target.processes = [Process(pid=4, user="SYSTEM", name="System", cmd="", cpu=0.0, mem=0.1),
+                        Process(pid=812, user=OPS_USER, name="explorer.exe", cmd="C:\\Windows\\explorer.exe", cpu=0.3, mem=1.2),
+                        Process(pid=2290, user=OPS_USER, name="ticket-sync.exe", cmd="C:\\Program Files\\OpsTools\\ticket-sync.exe --poll 30", cpu=41.0, mem=3.4)]
+    target.data["winservices"] = [{"Status": "Running", "Name": "Spooler", "DisplayName": "Print Spooler"},
+                                  {"Status": "Stopped", "Name": "wuauserv", "DisplayName": "Windows Update"},
+                                  {"Status": "Running", "Name": "sshd", "DisplayName": "OpenSSH SSH Server"}]
+    world.add(player)
+    world.add(target)
+    player.neighbors.append(target.id)
+    world.dns[OPS_HOST] = OPS_IP
+    world.dns["ops.nexus-company.com"] = OPS_IP
+    world.discovered.add(target.id)
+    return world, player, target
+
+
+@scenario("win_login")
+def win_login() -> tuple[World, Session]:
+    """Level 96: the Act III Level-59 subdomain is finally reachable — the first Windows login of the campaign."""
+    world, player, _target = _win_target_world()
+    player.fs.load({"home": {"operator": {"_owner": "operator", "_group": "operator", "inbox": {"mira_opsconsole.txt": [
+        "MIRA:", "", "We found a way to that subdomain from Level 59. It's a Windows admin console — different world, "
+        f"same job. Credentials: {OPS_USER} / {OPS_PASS}.", "", "ssh works the same way into Windows. The prompt will "
+        "look different once you're in — that's normal.", "---",
+    ]}}}})
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_explore")
+def win_explore() -> tuple[World, Session]:
+    """Level 97: Get-ChildItem / Set-Location — the same navigation idea, PowerShell's own vocabulary for it."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_notes")
+def win_notes() -> tuple[World, Session]:
+    """Level 98: Get-Content — reading a file on a Windows machine works the same as cat, under a different name."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_process")
+def win_process() -> tuple[World, Session]:
+    """Level 99 (standard): Get-Process / Stop-Process — a runaway ticket-sync tool eating CPU, same incident-response
+    habit as Act II, PowerShell's own cmdlets this time."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_kade")
+def win_kade() -> tuple[World, Session]:
+    """Level 100 (story): Kade Voss, Nexus Company's security director, is introduced — a memo on the console itself,
+    already investigating the same "patient" pattern from Acts I-III. The first named, active hunter in the campaign."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_services")
+def win_services() -> tuple[World, Session]:
+    """Level 101: Get-Service — Windows's own service list, including its own sshd entry, right there in plain sight."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_search")
+def win_search() -> tuple[World, Session]:
+    """Level 102 (standard): Select-String — the Windows grep. A ticket log with one line that actually matters among
+    routine noise, same shape as Act I's first real log."""
+    world, player, target = _win_target_world()
+    target.fs.load({"inetpub": {"wwwroot": {}}, "Users": {OPS_USER: {"_owner": OPS_USER, "_group": OPS_USER,
+        "ticket-sync.log": ["09:00 poll ok, 0 new tickets", "09:30 poll ok, 2 new tickets", "10:00 poll ok, 0 new tickets",
+                            "10:30 WARNING auth token near expiry for svc-relay-sync", "11:00 poll ok, 1 new ticket"]}}}, "C:\\")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_dossier")
+def win_dossier() -> tuple[World, Session]:
+    """Level 103 (milestone): closes Act V, Chapter 1 — compile what Kade Voss's memo and the ticket log revealed, the
+    same disciplined habit as every chapter close so far."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"winnotes": {
+        "kade_voss_memo.txt": ["FROM: K. Voss, Security Operations", "SUBJECT: Anomalous access pattern — edge relay",
+                               "Pattern suggests a patient external actor, not an automated scan."],
+        "ticket-sync.log": ["10:30 WARNING auth token near expiry for svc-relay-sync"],
+    }, "notes.txt": "MIRA: Pull the Kade Voss memo and that token warning into one file. We need to know everything "
+                   "he already knows before he gets any further ahead of us.\n"},
+                        root_extra={"archive": {"_mode": 0o700}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
