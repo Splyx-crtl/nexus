@@ -1,2 +1,2 @@
 """Importing this package registers every command of the shell library."""
-from . import core_fs  # noqa: F401
+from . import core_fs, core_sys, core_text  # noqa: F401
