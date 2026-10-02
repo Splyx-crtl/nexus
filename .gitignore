@@ -29,3 +29,6 @@ tests/__pycache__/
 # Local server database created by running/importing the server
 server/*.db
 server/*.db-*
+
+# Secret that signs the game licences (see tools/make_license_key.py)
+license_seed.txt

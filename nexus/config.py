@@ -137,4 +137,8 @@ DEFAULT_SETTINGS = {
     "seen_tips": [],
     "online_enabled": False,
     "online_token": "",
+    "online_key": "",
+    "device_id": "",
+    "license_token": "",
+    "license_key": "",
 }

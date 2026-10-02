@@ -11,6 +11,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "windows")
 os.environ["NEXUS_NO_AUDIO"] = "1"
+os.environ["NEXUS_LICENSE_PUBKEY"] = ""                      # these scripts test other things: no game key needed (tests/ui_license.py covers it)
 os.environ["NEXUS_DB"] = str(Path(tempfile.mkdtemp()) / "online.db")
 os.environ["NEXUS_DEV_LOGIN"] = "1"
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))

@@ -14,6 +14,11 @@
   The game crossfades between them: menu music in the menus, calm terminal music while playing, tension music when the heat
   reaches 70 % (back to calm below 50 %). New sound effects for level-up, purchases and friends coming online.
 
+- **A game key is required to play, also offline**: a new installation asks for the key before anything else. The server checks it once and
+  signs a licence for that computer that the game verifies offline (Ed25519, 30 days, renewed silently at every start with a connection).
+  Forged or edited licences, licences copied to another computer, deactivated, deleted, expired or already used keys are refused; a key belongs to the
+  first computer that activates it. One key also covers the online login. Setup: `python tools/make_license_key.py`, then the server variable
+  `NEXUS_LICENSE_SEED` (docs/ONLINE.md).
 - **Game key before registration, enforced by the server**: a missing, invalid, revoked, expired or already used key is refused and no account is
   created; on a real server this is on by default (`NEXUS_OPEN_LOGIN=1` opts out). Keys now have an optional expiry date.
 - **Admin panel rebuilt** (PLAYERS / GAME KEYS / ACTIVITY): player database with search by name or account ID, filters, sorting and
@@ -37,6 +42,8 @@
   deactivate / ban, access protection between players and administrators, upgrade of an old database), `tests/test_edits.py` (how the game applies an edit,
   plus the whole path key -> account -> save -> admin edit -> player's save -> restart against a real server), `tests/ui_admin.py` (the panel and the player's
   game end to end), `tests/ui_audio.py`.
+- `tests/test_license.py` (RFC 8032 vectors, offline licence checks, server activation rules), `tests/ui_license.py` (activation, offline start,
+  forged / edited / copied licences, expiry and renewal, revocation, second computer).
 - `tests/test_v24.py` (challenge maths, baseline per week, privacy, once-per-week Discord announcement, music files and loop seams);
   `tests/ui_online.py` also covers the challenge tab and the friends bar.
 

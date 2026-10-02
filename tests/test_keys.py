@@ -20,7 +20,7 @@ ENV = {"NEXUS_ADMIN_USER": ADMIN_USER, "NEXUS_ADMIN_PASSWORD": ADMIN_PASSWORD, "
 
 def load_server(db_path, **env):
     """Import a private copy of server/app.py with its own configuration (it reads the environment at import time)."""
-    saved = {k: os.environ.get(k) for k in [*ENV, "NEXUS_DB"]}
+    saved = {k: os.environ.get(k) for k in [*ENV, "NEXUS_DB", *env]}
     os.environ.update({**ENV, **env, "NEXUS_DB": str(db_path)})
     for key in [k for k in ENV if k in env and env[k] is None]:
         os.environ.pop(key, None)

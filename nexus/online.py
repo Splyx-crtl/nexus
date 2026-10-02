@@ -116,9 +116,17 @@ class OnlineClient:
     def key(self) -> str:
         return self.settings.get("online_key") or ""
 
+    def activate_license(self, key: str) -> str:
+        """Ask the server to activate (or renew) the game on this computer. Returns the signed licence; raises OnlineError with the reason
+        (status 403) when the key is invalid, deactivated, expired or already used on another computer."""
+        from . import license
+        answer = self._call("POST", "/license/activate", {"key": key.strip(), "device": license.device_id(self.settings)}, auth=False)
+        return answer["token"]
+
     def begin_login(self, state: str, key: str = "") -> None:
         """Step 1 of a login: announce the attempt and the access key (raises OnlineError with the reason if the key is refused)."""
-        self._call("POST", "/auth/begin", {"state": state, "key": key.strip()}, auth=False)
+        from . import license
+        self._call("POST", "/auth/begin", {"state": state, "key": key.strip(), "device": license.device_id(self.settings)}, auth=False)
         if key.strip():
             self.settings.set("online_key", key.strip())
 

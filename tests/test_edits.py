@@ -116,9 +116,10 @@ class EndToEnd(unittest.TestCase):
                                          headers={**ADMIN, "Content-Type": "application/json"})
         return json.loads(urllib.request.urlopen(request, timeout=5).read())
 
-    def make_client(self):
+    def make_client(self, device=None):
+        """A game installation; pass the id of an existing one to be the same computer."""
         from nexus.online import OnlineClient
-        return OnlineClient(FakeSettings(), self.url)
+        return OnlineClient(FakeSettings(device_id=device) if device else FakeSettings(), self.url)
 
     def login(self, client, key, name):
         state, url = client.new_login(dev_name=name)
@@ -130,7 +131,10 @@ class EndToEnd(unittest.TestCase):
         """A login the server turns down: returns the reason the player is shown."""
         from nexus.online import OnlineError
         state, url = client.new_login(dev_name=name)
-        client.begin_login(state, key)
+        try:
+            client.begin_login(state, key)
+        except OnlineError as exc:                                      # refused already at the key check (before any browser step)
+            return str(exc)
         try:
             urllib.request.urlopen(url, timeout=5).read()
         except urllib.error.HTTPError as exc:                          # the "browser" page says no
@@ -154,7 +158,9 @@ class EndToEnd(unittest.TestCase):
         key = self.admin("POST", "/admin/keys", {"label": "e2e", "count": 1})["keys"][0]["key"]
         self.login(client, key, "Eddie")
         self.assertEqual(client.me()["name"], "Eddie")
-        self.assertIn("already been used", self.refused_login(self.make_client(), key, "Imposter"))      # the key is now taken
+        reason = self.refused_login(self.make_client(), key, "Imposter")                                   # the key is now taken (by this computer)
+        self.assertTrue("another computer" in reason or "already been used" in reason, reason)
+        mine = client.settings.get("device_id")
 
         # 3. game -> save numbers -> server
         engine = new_engine("EDDIE")
@@ -209,9 +215,9 @@ class EndToEnd(unittest.TestCase):
         with self.assertRaises(OnlineError) as cm:
             client.me()
         self.assertIn("deactivated", str(cm.exception))
-        self.assertIn("deactivated", self.refused_login(self.make_client(), key, "Eddie"))
+        self.assertIn("deactivated", self.refused_login(self.make_client(mine), key, "Eddie"))
         self.admin("POST", f"/admin/players/{pid}/status", {"status": "active"})
-        self.login(self.make_client(), key, "Eddie")
+        self.login(self.make_client(mine), key, "Eddie")
 
 
 if __name__ == "__main__":

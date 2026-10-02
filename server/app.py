@@ -11,6 +11,7 @@ DISCORD_ROLE_ID, if set) and (2) a key that an admin created. Keys are checked a
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -27,6 +28,10 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field, StrictInt
 
+try:                                              # in the Docker image the file is copied next to this one
+    from . import ed25519
+except ImportError:
+    from nexus import ed25519
 from .players import ACCOUNT_STATUSES, EditError, clean_details, key_status as _key_status, mask_key, validate_edit
 from .validation import Rejected, cumulative_xp, validate
 
@@ -52,6 +57,9 @@ CHALLENGES = [("xp", "XP RUSH", "Earn the most XP this week."),
               ("missions", "OPERATOR", "Complete the most missions this week."),
               ("credits", "PAYDAY", "Earn the most credits this week."),
               ("perfect", "GHOST", "Finish the most missions without a single mistake this week.")]
+LICENSE_DAYS = int(os.environ.get("NEXUS_LICENSE_DAYS", "30"))      # how long a signed licence lets the game run offline before it must renew
+_seed_hex = os.environ.get("NEXUS_LICENSE_SEED", "").strip()
+LICENSE_SEED = bytes.fromhex(_seed_hex) if re.fullmatch(r"[0-9a-fA-F]{64}", _seed_hex) else b""      # secret: the key the licences are signed with
 ONLINE_WINDOW = 120            # seconds since last heartbeat that count as "online"
 STATE_TTL = 600
 BOARDS = {"level": "level DESC, xp_total DESC", "missions": "missions DESC, level DESC", "credits": "credits_earned DESC",
@@ -83,7 +91,7 @@ NEW_COLUMNS = {
     "auth_states": {"key_id": "INTEGER", "error": "TEXT"},
     "users": {"account_status": "TEXT DEFAULT 'active'", "status_reason": "TEXT DEFAULT ''", "last_login": "REAL DEFAULT 0",
               "login_count": "INTEGER DEFAULT 0"},
-    "access_keys": {"expires_at": "REAL"},
+    "access_keys": {"expires_at": "REAL", "device_id": "TEXT", "device_at": "REAL"},
     "scores": {"details": "TEXT DEFAULT '{}'"},
 }
 
@@ -258,15 +266,70 @@ def state_row(conn: sqlite3.Connection, state: str):
                         (state, time.time() - STATE_TTL)).fetchone()
 
 
+# ------------------------------------------------------------------ licence --
+DEVICE_RE = re.compile(r"^[A-Za-z0-9\-]{16,64}$")
+
+
+def clean_device(device: str) -> str:
+    if not DEVICE_RE.match(device or ""):
+        raise HTTPException(422, "Invalid device id.")
+    return device
+
+
+def bind_device(conn: sqlite3.Connection, row, device: str) -> str:
+    """The first installation that activates a key owns it; the same installation may renew it any time. Returns an error text or ''."""
+    if row["device_id"] and row["device_id"] != device:
+        return "This key has already been used on another computer. Ask the staff to free it."
+    if not row["device_id"]:
+        conn.execute("UPDATE access_keys SET device_id=?, device_at=? WHERE id=?", (device, time.time(), row["id"]))
+    return ""
+
+
+def sign_licence(key_id: int, device: str) -> tuple[str, int]:
+    now = int(time.time())
+    payload = json.dumps({"v": 1, "kid": key_id, "dev": device, "iat": now, "exp": now + LICENSE_DAYS * 86400}, separators=(",", ":")).encode()
+    signature = ed25519.sign(LICENSE_SEED, payload)
+    b64 = lambda raw: base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+    return f"{b64(payload)}.{b64(signature)}", now + LICENSE_DAYS * 86400
+
+
+class ActivateBody(BaseModel):
+    key: str = Field(max_length=64)
+    device: str = Field(max_length=64)
+
+
+@app.post("/license/activate")
+def license_activate(body: ActivateBody, request: Request):
+    """Activates (or renews) the game on one computer: checks the key on the server and returns a signed licence the game can verify offline.
+    Deactivated, deleted, expired and already used keys get nothing, and banned accounts are refused too."""
+    if not LICENSE_SEED:
+        raise HTTPException(503, "Game activation is not set up on this server yet.")
+    rate_limit("license:" + client_ip(request), limit=12, window=60)                # also slows down key guessing
+    device = clean_device(body.device)
+    with db() as conn:
+        row = conn.execute("SELECT * FROM access_keys WHERE key_hash=?", (hash_key(body.key),)).fetchone() if normalize_key(body.key) else None
+        if problem := key_problem(row):
+            raise HTTPException(403, problem)
+        if problem := bind_device(conn, row, device):
+            raise HTTPException(403, problem)
+        owner = conn.execute("SELECT * FROM users WHERE discord_id=?", (row["discord_id"],)).fetchone() if row["discord_id"] else None
+        if owner is not None and (problem := account_problem(owner)):
+            raise HTTPException(403, problem)
+        token, expires = sign_licence(row["id"], device)
+    return {"token": token, "expires": expires, "days": LICENSE_DAYS}
+
+
 # --------------------------------------------------------------------- auth --
 @app.get("/health")
 def health():
-    return {"ok": True, "dev_login": DEV_LOGIN, "discord": bool(DISCORD_CLIENT_ID), "gated": GATED, "admin": bool(ADMIN_TOKEN or ADMIN_LOGIN)}
+    return {"ok": True, "dev_login": DEV_LOGIN, "discord": bool(DISCORD_CLIENT_ID), "gated": GATED, "admin": bool(ADMIN_TOKEN or ADMIN_LOGIN),
+            "license": bool(LICENSE_SEED)}
 
 
 class BeginBody(BaseModel):
     state: str
     key: str = Field(default="", max_length=64)
+    device: str = Field(default="", max_length=64)          # the activated game installation (older games send none)
 
 
 @app.post("/auth/begin")
@@ -280,6 +343,10 @@ def auth_begin(body: BeginBody, request: Request):
             row = conn.execute("SELECT * FROM access_keys WHERE key_hash=?", (hash_key(body.key),)).fetchone() if normalize_key(body.key) else None
         if problem := key_problem(row):
             raise HTTPException(403, problem)
+        if body.device:
+            with db() as conn:
+                if problem := bind_device(conn, row, clean_device(body.device)):
+                    raise HTTPException(403, problem)
         key_id = row["id"]
     with db() as conn:
         conn.execute("INSERT OR REPLACE INTO auth_states(state, token, created_at, key_id, error) VALUES(?,NULL,?,?,NULL)", (body.state, time.time(), key_id))
@@ -768,9 +835,9 @@ def admin_create_keys(body: NewKeys):
 
 KEY_FILTERS = {
     "revoked": "k.revoked = 1",
-    "in use": "k.revoked = 0 AND k.discord_id IS NOT NULL",
-    "expired": "k.revoked = 0 AND k.discord_id IS NULL AND k.expires_at IS NOT NULL AND k.expires_at < :now",
-    "unused": "k.revoked = 0 AND k.discord_id IS NULL AND (k.expires_at IS NULL OR k.expires_at >= :now)",
+    "in use": "k.revoked = 0 AND (k.discord_id IS NOT NULL OR k.device_id IS NOT NULL)",
+    "expired": "k.revoked = 0 AND k.discord_id IS NULL AND k.device_id IS NULL AND k.expires_at IS NOT NULL AND k.expires_at < :now",
+    "unused": "k.revoked = 0 AND k.discord_id IS NULL AND k.device_id IS NULL AND (k.expires_at IS NULL OR k.expires_at >= :now)",
 }
 
 
@@ -799,7 +866,7 @@ def admin_list_keys(search: str = "", status: str = "", page: int = 1, per_page:
         counts = {name: conn.execute("SELECT COUNT(*) FROM access_keys k WHERE " + clause, {"now": params["now"]}).fetchone()[0]
                   for name, clause in KEY_FILTERS.items()}
     keys = [{"id": r["id"], "key": mask_key(r["tail"]), "label": r["label"], "status": key_status(r), "user": r["user_name"], "user_id": r["user_id"],
-             "created_at": r["created_at"], "redeemed_at": r["redeemed_at"], "expires_at": r["expires_at"]} for r in rows]
+             "created_at": r["created_at"], "redeemed_at": r["redeemed_at"], "expires_at": r["expires_at"], "device": bool(r["device_id"])} for r in rows]
     return {"keys": keys, "total": total, "page": page, "pages": max(1, -(-total // per_page)), "counts": counts}
 
 
@@ -844,7 +911,7 @@ def admin_unbind_key(key_id: int):
     """Frees a key from its Discord account (e.g. the player switched accounts) and logs the old owner out."""
     with db() as conn:
         row = _key_or_404(conn, key_id)
-        conn.execute("UPDATE access_keys SET discord_id=NULL, redeemed_at=NULL WHERE id=?", (key_id,))
+        conn.execute("UPDATE access_keys SET discord_id=NULL, redeemed_at=NULL, device_id=NULL, device_at=NULL WHERE id=?", (key_id,))
         _end_sessions(conn, row["discord_id"])
         audit(conn, "key.free", key_id=key_id)
         status = key_status(conn.execute("SELECT * FROM access_keys WHERE id=?", (key_id,)).fetchone())

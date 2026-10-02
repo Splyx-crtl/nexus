@@ -52,7 +52,23 @@ Typical cost: about 5 € per month for a small VPS, or free tiers for a few pla
 In `nexus/version.py`: `ONLINE_SERVER_URL = "https://nexus.example.com"`, bump `VERSION`, release (see README → Updates).
 Players then see **ONLINE** → *Login with Discord* in the sidebar.
 
-## 4. Game keys (mandatory) and the Discord server check (optional)
+## 4. Game key required to play (also offline), and the Discord server check (optional)
+
+**The game itself needs a key**, not only the online features: a new installation asks for it before anything else (even before
+creating a profile). The game sends the key to the server once, the server checks it and answers with a **signed licence for that
+computer** (valid 30 days). The game verifies the signature with a public key built into it, so it can then be played **offline**;
+every start with a connection renews the licence silently. Editing the settings file does not help (a licence the server did not sign,
+with an edited date, or copied to another computer fails the check), and deactivating or deleting a key locks the game at its next
+renewal. One key belongs to the first computer that activates it (an admin can *free* it).
+
+**Set up once (before you release the version that has it):**
+
+1. `python tools/make_license_key.py` creates `license_seed.txt` (SECRET, git-ignored) and writes the public key into `nexus/version.py`.
+2. Railway → Variables → `NEXUS_LICENSE_SEED` = the content of `license_seed.txt`. Keep a backup of that file; without it you could not
+   renew licences (you would have to make a new pair and everybody would activate again).
+3. Release the game. `GET /health` then shows `"license": true`. **Set the variable first**, otherwise players cannot activate yet.
+
+The same key is also used for the online login (the game fills it in), so players enter it only once.
 
 **A game key is required before an account can be created.** On a real server (one with `DISCORD_CLIENT_ID` set) this is on by
 default; the game asks for the key first, the server checks it, and only then does the Discord login start. A missing, invalid,

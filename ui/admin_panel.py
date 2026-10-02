@@ -797,7 +797,7 @@ class AdminPanel(JobMixin, NeonDialog):
         keep = self._selected_id()
         self.table.setRowCount(len(keys))
         for r, k in enumerate(keys):
-            cells = [str(k["id"]), k["key"], KEY_LABEL[k["status"]], k.get("user") or "—", stamp(k.get("created_at")),
+            cells = [str(k["id"]), k["key"], KEY_LABEL[k["status"]], k.get("user") or ("offline computer" if k.get("device") else "—"), stamp(k.get("created_at")),
                      stamp(k["expires_at"]) if k.get("expires_at") else "never", k.get("label") or ""]
             set_row(self.table, r, cells, {2: KEY_COLOR.get(k["status"], "dim")})
             if keep == k["id"]:

@@ -27,6 +27,7 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
           NEXUS_NO_AUDIO: "1"
+          NEXUS_LICENSE_PUBKEY: ""
       - name: Check tag matches nexus/version.py
         shell: pwsh
         run: |

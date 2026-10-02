@@ -3,6 +3,7 @@ WORKDIR /app
 COPY server/requirements.txt /app/server/requirements.txt
 RUN pip install --no-cache-dir -r server/requirements.txt
 COPY server /app/server
+COPY nexus/ed25519.py /app/server/ed25519.py
 ENV NEXUS_DB=/data/nexus_online.db
 RUN mkdir -p /data
 EXPOSE 8000

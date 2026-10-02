@@ -87,7 +87,7 @@ def key_status(row: dict, now: float) -> str:
     """unused / in use / revoked / expired. Expiry only matters for redeeming: a key that is already in use keeps working."""
     if row["revoked"]:
         return "revoked"
-    if row["discord_id"]:
+    if row["discord_id"] or row.get("device_id"):
         return "in use"
     if row.get("expires_at") and row["expires_at"] < now:
         return "expired"
