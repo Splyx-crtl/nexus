@@ -5,9 +5,11 @@ succeeds against targets the world says exist and are reachable, and every answe
 from __future__ import annotations
 
 import re
+import shlex
 import time
 
 from .. import opts
+from ..fs import FsError
 from ..registry import command
 
 
@@ -388,6 +390,158 @@ def ifconfig(ctx, args):
     ctx.out(f"lo: flags=73<UP,LOOPBACK,RUNNING>  mtu 65536")
     ctx.out(f"        inet 127.0.0.1  netmask 255.0.0.0")
     return 0
+
+
+# ---------------------------------------------------------------------------------------------------- ssh / sshpass
+@command("ssh", level=13, summary="OpenSSH remote login client.", usage="ssh [-p port] [-i identity_file] [user@]hostname [command]", category="net",
+         man="""NAME
+       ssh - OpenSSH remote login client
+
+SYNOPSIS
+       ssh [-p port] [-i identity_file] [user@]hostname [command]
+
+DESCRIPTION
+       ssh logs into a remote machine and executes commands on it. Authentication is by a private key (-i) or a password; without a
+       terminal attached, a password must be supplied non-interactively (see sshpass). If a command is given, it is run on the remote
+       host and ssh returns; otherwise you are left in a remote shell until you type 'exit'.
+
+       -p PORT          port to connect to (default 22)
+       -i IDENTITY_FILE  private key file to authenticate with
+""", lesson="ssh opens a shell on another machine, if you have a matching key or password: 'ssh alice@10.0.0.5'. Once connected, every command runs on that machine until you type 'exit'.")
+def ssh(ctx, args):
+    o = opts.parse(ctx, args, short="qvAXCN46T", with_arg="pio", stop_at_positional=True)
+    if o is None:
+        return 2
+    if not o.rest:
+        ctx.err("usage: ssh [-46AXCNqTv] [-i identity_file] [-p port] destination [command]")
+        return 255
+    dest, remote_cmd = o.rest[0], o.rest[1:]
+    user, _, host = dest.rpartition("@")
+    user = user or ctx.user.name
+    port = int(o.get("p") or 22)
+    machine, ip = _target(ctx, host)
+    if ip is None:
+        ctx.err(f"ssh: Could not resolve hostname {host}: Name or service not known")
+        return 255
+    if machine is None:
+        ctx.err(f"ssh: connect to host {host} port {port}: No route to host")
+        return 255
+    svc = machine.service(port)
+    if svc is None or svc.name != "ssh" or svc.state != "open":
+        ctx.err(f"ssh: connect to host {host} port {port}: Connection refused")
+        return 255
+    target_user = machine.user(user)
+    auth_ok, identity = False, o.get("i")
+    if identity:
+        try:
+            key_text = ctx.read_text(identity).strip()
+        except FsError:
+            ctx.err(f"Warning: Identity file {identity} not accessible: No such file or directory.")
+            key_text = None
+        if target_user is not None and key_text and machine.data.get("authorized_keys", {}).get(target_user.name) == key_text:
+            auth_ok = True
+    password = ctx.session.env.get("_SSHPASS")
+    if not auth_ok and password is not None and target_user is not None and not target_user.locked:
+        auth_ok = target_user.password == password
+    if not auth_ok:
+        ctx.err(f"{user}@{host}: Permission denied (publickey,password).")
+        ctx.event("ssh_failed", machine=machine.id, user=user)
+        return 255
+    _announce(ctx, machine)
+    ctx.event("ssh_login", machine=machine.id, user=user)
+    new_session = ctx.shell.push_session(machine, target_user, origin=ctx.machine.ip)
+    if remote_cmd:
+        line = " ".join(shlex.quote(a) for a in remote_cmd)
+        status, res = ctx.shell.run_inner(line)
+        ctx.chunks.extend(res)
+        ctx.shell.pop_session()
+        return status
+    if machine.motd:
+        ctx.out(machine.motd)
+    ctx.out(f"Last login: {time.strftime('%a %b %e %H:%M:%S %Y', time.gmtime(ctx.now() - 600))} from {ctx.machine.ip}")
+    return 0
+
+
+@command("scp", level=13, summary="Secure copy (remote file copy program).", usage="scp [-P port] [-i identity] SOURCE DEST", category="net",
+         lesson="scp copies a file to or from another machine over ssh: 'scp loot.txt alice@10.0.0.5:/tmp/'. Same authentication rules as ssh.")
+def scp(ctx, args):
+    o = opts.parse(ctx, args, short="rpqC", with_arg="Pi")
+    if o is None:
+        return 2
+    if len(o.rest) != 2:
+        ctx.err("usage: scp [-rpq] [-P port] [-i identity] source target")
+        return 1
+    src, dst = o.rest
+    if ":" in dst and "@" in dst.split(":")[0]:
+        remote, _, remote_path = dst.partition(":")
+        direction = "up"
+    elif ":" in src and "@" in src.split(":")[0]:
+        remote, _, remote_path = src.partition(":")
+        direction = "down"
+    else:
+        ctx.err("scp: one of source or target must be a remote (user@host:path)")
+        return 1
+    user, _, host = remote.rpartition("@")
+    user = user or ctx.user.name
+    machine, ip = _target(ctx, host)
+    if ip is None:
+        ctx.err(f"ssh: Could not resolve hostname {host}: Name or service not known")
+        return 1
+    if machine is None or machine.service(int(o.get("P") or 22)) is None or machine.service(int(o.get("P") or 22)).name != "ssh":
+        ctx.err(f"ssh: connect to host {host} port {o.get('P') or 22}: Connection refused")
+        return 1
+    target_user = machine.user(user)
+    identity = o.get("i")
+    key_ok = False
+    if identity:
+        try:
+            key_ok = target_user is not None and machine.data.get("authorized_keys", {}).get(target_user.name) == ctx.read_text(identity).strip()
+        except FsError:
+            key_ok = False
+    password = ctx.session.env.get("_SSHPASS")
+    pass_ok = target_user is not None and password is not None and not target_user.locked and target_user.password == password
+    if not (key_ok or pass_ok):
+        ctx.err(f"{user}@{host}: Permission denied (publickey,password).")
+        return 1
+    try:
+        if direction == "up":
+            data = ctx.read_text(src)
+            machine.fs.write(target_user, remote_path, data, target_user.home)
+        else:
+            data = machine.fs.read(target_user, remote_path, target_user.home)
+            ctx.fs.write(ctx.user, dst, data, ctx.cwd)
+    except FsError as exc:
+        ctx.err(f"scp: {exc.path or src}: {exc.text}")
+        return 1
+    _announce(ctx, machine)
+    ctx.event("scp", machine=machine.id, direction=direction)
+    return 0
+
+
+@command("sshpass", level=13, summary="Run ssh (or any command) with a password supplied non-interactively.", usage="sshpass -p PASSWORD command", category="net",
+         lesson="sshpass hands a password to ssh without a terminal prompt — the standard way to script logins: 'sshpass -p hunter2 ssh alice@10.0.0.5'.")
+def sshpass(ctx, args):
+    o = opts.parse(ctx, args, with_arg="pf")
+    if o is None:
+        return 2
+    if o.get("p") is None:
+        ctx.err("sshpass: no password source. use -p PASSWORD")
+        return 1
+    if not o.rest:
+        ctx.err("Usage: sshpass [-p PASSWORD] command parameters")
+        return 1
+    saved = ctx.session.env.get("_SSHPASS")
+    ctx.session.env["_SSHPASS"] = o.get("p")
+    try:
+        line = " ".join(shlex.quote(a) for a in o.rest)
+        status, res = ctx.shell.run_inner(line)
+        ctx.chunks.extend(res)
+    finally:
+        if saved is None:
+            ctx.session.env.pop("_SSHPASS", None)
+        else:
+            ctx.session.env["_SSHPASS"] = saved
+    return status
 
 
 @command("arp", level=11, summary="Manipulate the system ARP cache.", usage="arp [-a]", category="net",

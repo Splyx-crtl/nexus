@@ -104,11 +104,12 @@ def env(ctx, args):
         saved = dict(ctx.env)
         ctx.env.update(env_vars)
         try:
-            ctx.chunks.extend(ctx.shell.run_inner(" ".join(rest)))
+            status, res = ctx.shell.run_inner(" ".join(rest))
+            ctx.chunks.extend(res)
         finally:
             ctx.env.clear()
             ctx.env.update(saved)
-        return 0
+        return status
     for k, v in env_vars.items():
         ctx.out(f"{k}={v}")
     return 0
@@ -381,13 +382,14 @@ def sudo(ctx, args):
     ctx.session.env.update({"USER": target.name, "LOGNAME": target.name})
     try:
         line = " ".join("'" + a.replace("'", "'\\''") + "'" if re.search(r"[\s*?\[\]$;&|<>()]", a) else a for a in o.rest)
-        ctx.chunks.extend(ctx.shell.run_inner(line))
+        status, res = ctx.shell.run_inner(line)
+        ctx.chunks.extend(res)
     finally:
         ctx.session.user = saved
         ctx.session.env.clear()
         ctx.session.env.update(saved_env)
     ctx.event("sudo_used", machine=ctx.machine.id, command=cmd)
-    return 0
+    return status
 
 
 @command("bash", level=10, summary="GNU Bourne-Again SHell.", usage="bash [option] [script-file [argument ...]]", aliases=("sh",),
@@ -397,8 +399,9 @@ def bash_cmd(ctx, args):
     if o is None:
         return 2
     if o.get("c"):
-        ctx.chunks.extend(ctx.shell.run_inner(o.get("c")))
-        return 0
+        status, res = ctx.shell.run_inner(o.get("c"))
+        ctx.chunks.extend(res)
+        return status
     if not o.rest:
         ctx.err(f"{ctx.name}: interactive subshells are not available here; give a script file")
         return 1

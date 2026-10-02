@@ -966,8 +966,9 @@ def find(ctx, args):
                             exec_batches.setdefault(id(act), []).append(shown)
                         else:
                             line = " ".join(("'" + shown + "'") if c == "{}" else c for c in cmd) if "{}" in cmd else " ".join(cmd + [shown])
-                            res = ctx.shell.run_inner(line)
+                            exec_status, res = ctx.shell.run_inner(line)
                             ctx.chunks.extend(res)
+                            status = status or (exec_status and 1)
                 if not acted:
                     ctx.out(shown)
                 ctx.event("found", path=path, machine=ctx.machine.id)
@@ -981,8 +982,9 @@ def find(ctx, args):
         visit(base, ctx.fs.lookup(base), start, 0)
     for act in actions:
         if act[0] == "exec" and act[2] and exec_batches.get(id(act)):
-            res = ctx.shell.run_inner(" ".join(act[1][:-1] + [f"'{x}'" for x in exec_batches[id(act)]]) if act[1] and act[1][-1] == "{}" else " ".join(act[1] + exec_batches[id(act)]))
+            exec_status, res = ctx.shell.run_inner(" ".join(act[1][:-1] + [f"'{x}'" for x in exec_batches[id(act)]]) if act[1] and act[1][-1] == "{}" else " ".join(act[1] + exec_batches[id(act)]))
             ctx.chunks.extend(res)
+            status = status or (exec_status and 1)
     return status
 
 

@@ -121,6 +121,71 @@ class HostDiscovery(NetBase):
         self.assertIn("portal (10.0.0.5)", r.out)
 
 
+class Ssh(NetBase):
+    def test_login_with_password_via_sshpass(self):
+        r = self.run_("sshpass -p toor ssh root@portal")
+        self.assertEqual(r.status, 0)
+        self.assertIn("Last login:", r.out)
+        self.assertEqual(self.shell.session.machine.id, self.target.id)    # the session is now on the remote machine
+        self.assertEqual(self.shell.session.user.name, "root")
+        self.assertEqual(self.shell.session.cwd, "/root")
+        self.assertEqual(self.out("whoami"), "root\n")
+        self.assertEqual(self.out("hostname"), "portal\n")
+        self.check("exit", "logout\nConnection to 10.0.0.5 closed.\n")
+        self.assertEqual(self.shell.session.machine.id, self.machine.id)   # back on kali
+        self.assertEqual(self.out("whoami"), "player\n")
+
+    def test_wrong_password_is_refused(self):
+        r = self.run_("sshpass -p wrongpass ssh root@portal")
+        self.assertIn("Permission denied (publickey,password)", r.err)
+        self.assertEqual(self.shell.session.machine.id, self.machine.id)
+
+    def test_no_password_at_all_is_refused_like_a_real_batch_ssh(self):
+        r = self.run_("ssh root@portal")
+        self.assertEqual(r.status, 255)
+        self.assertIn("Permission denied", r.err)
+
+    def test_key_based_auth(self):
+        self.run_("echo 'ssh-ed25519 AAAAexamplekey alice@kali' > mykey")
+        r = self.run_("ssh -i mykey alice@portal")
+        self.assertEqual(r.status, 0)
+        self.assertEqual(self.shell.session.user.name, "alice")
+        self.check("exit", "logout\nConnection to 10.0.0.5 closed.\n")
+
+    def test_wrong_key_is_refused(self):
+        self.run_("echo 'ssh-ed25519 WRONGKEY alice@kali' > mykey")
+        r = self.run_("ssh -i mykey alice@portal")
+        self.assertEqual(r.status, 255)
+
+    def test_remote_command_runs_and_returns(self):
+        r = self.run_("sshpass -p toor ssh root@portal cat /root/.bashrc 2>/dev/null; echo local-again")
+        self.assertEqual(self.shell.session.machine.id, self.machine.id)   # a one-shot remote command does not leave you logged in
+        self.assertIn("local-again", r.out)
+
+    def test_unreachable_and_closed_port(self):
+        r = self.run_("ssh root@nope.example")
+        self.assertEqual((r.status, "Name or service not known" in r.err), (255, True))
+        self.target.services[1].state = "closed"
+        r = self.run_("sshpass -p toor ssh root@portal")
+        self.assertEqual(r.status, 255)
+        self.assertIn("Connection refused", r.err)
+
+    def test_scp_upload_and_download(self):
+        self.run_("echo loot > secret.txt")
+        r = self.run_("sshpass -p toor scp secret.txt root@portal:/root/secret.txt")
+        self.assertEqual(r.status, 0)
+        self.assertEqual(self.target.fs.read(None, "/root/secret.txt"), "loot\n")
+        r = self.run_("sshpass -p toor scp root@portal:/root/flag.txt here.txt")
+        self.assertEqual(r.status, 0)
+        self.assertIn("flag", self.out("cat here.txt") + "flag")
+
+    def test_scp_wrong_credentials(self):
+        self.run_("echo x > secret.txt")
+        r = self.run_("sshpass -p wrong scp secret.txt root@portal:/root/secret.txt")
+        self.assertEqual(r.status, 1)
+        self.assertIn("Permission denied", r.err)
+
+
 class LevelGating(NetBase):
     def test_locked_until_level(self):
         self.shell.level = lambda: 1

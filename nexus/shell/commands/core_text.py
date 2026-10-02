@@ -569,9 +569,9 @@ def xargs(ctx, args):
     for line in lines:
         if o.has("t"):
             ctx.err(line)
-        res = ctx.shell.run_inner(line)
+        line_status, res = ctx.shell.run_inner(line)
         ctx.chunks.extend(res)
-        if any(fd == 2 for fd, _ in res):
+        if line_status:
             status = 123
     return status
 

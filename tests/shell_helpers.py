@@ -40,6 +40,10 @@ def add_web_target(world: World, source: Machine, ip: str = "10.0.0.5", hostname
     target = Machine(hostname, hostname, ip, "linux", VFS("posix", clock=world.clock))
     target.domain = domain
     target.add_user(User("root", 0, 0, ("root",), "/root", admin=True, password="toor"))
+    target.add_user(User("alice", 1000, 1000, ("alice",), "/home/alice", password="wonderland"))
+    target.fs.load({"home": {"alice": {"_owner": "alice", "_group": "alice", "todo.txt": "patch the server\n"}},
+                    "root": {"_owner": "root", "_mode": "700", "flag.txt": "flag{server_pwned}\n"}})
+    target.data["authorized_keys"] = {"alice": "ssh-ed25519 AAAAexamplekey alice@kali"}
     target.services = [Service(80, "http", "Apache/2.4.58", "open" if open_80 else "closed", banner="Apache/2.4.58 (Debian)",
                                data={"pages": {"/": {"body": "<html><body>Welcome to NEXUS COMPANY</body></html>", "status": 200}}}),
                        Service(22, "ssh", "OpenSSH 9.6", "open")]

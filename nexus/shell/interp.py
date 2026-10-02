@@ -170,14 +170,15 @@ class Shell:
         res.delay_ms, res.interactive, res.events = self.delay_ms, self.interactive, self.events
         return res
 
-    def run_inner(self, src: str) -> list[tuple[int, str]]:
-        """Run a command line for another command (find -exec, xargs, sudo): returns its output chunks, keeps history and counters untouched."""
+    def run_inner(self, src: str) -> tuple[int, list[tuple[int, str]]]:
+        """Run a command line for another command (find -exec, xargs, sudo, ssh, sshpass): returns (exit status, output chunks)."""
         sink: list[tuple[int, str]] = []
         try:
-            self.exec_seq(parse(src), None, sink)
+            status = self.exec_seq(parse(src), None, sink)
         except ParseError as exc:
             sink.append((2, f"bash: {exc}\n"))
-        return sink
+            status = 2
+        return status, sink
 
     def emit(self, event: str, /, **data) -> None:
         self.events.append((event, data))
