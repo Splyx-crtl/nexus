@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.3.0 — Invite-only login (Discord server + access key)
+
+### Added
+- **Invite-only online login**: with `DISCORD_GUILD_ID` set on the server, a player must be on your Discord server (and have
+  `DISCORD_ROLE_ID`, if set) and enter an **access key** that an admin created. Checked at every login; leaving/being banned
+  blocks the next login, revoking a key logs its owner out at once. Keys bind to the first Discord account that uses them.
+- ONLINE page: access-key field (shown only for invite-only servers), clear refusal messages (invalid / revoked / belongs to another
+  account / not on the Discord server / missing role) and optional "Open Discord server" button (`DISCORD_URL` in `nexus/version.py`).
+- Admin tool `python -m server.keys create|list|revoke|unbind` and `/admin/keys` API (protected by `NEXUS_ADMIN_TOKEN`).
+- Servers without `DISCORD_GUILD_ID` keep working exactly as before (open login).
+
+### Changed
+- Login is now two steps (`POST /auth/begin`, then the browser login); older game versions are refused on invite-only servers.
+- Sessions on invite-only servers last 30 days (`NEXUS_SESSION_DAYS`) so membership is re-checked regularly.
+
+### Tests
+- `tests/test_keys.py` (24 server tests incl. faked Discord answers for member / role / not a member), `tests/ui_keys.py` (ONLINE page against an invite-only server).
+
 ## 2.2.3 — Banner fix & new update window
 
 ### Changed

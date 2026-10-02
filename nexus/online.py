@@ -19,7 +19,11 @@ from .version import ONLINE_SERVER_URL, VERSION
 
 
 class OnlineError(Exception):
-    """A problem that can be shown to the player as-is."""
+    """A problem that can be shown to the player as-is. ``status`` = the HTTP status when the server answered (403 = refused)."""
+
+    def __init__(self, message: str = "", status: int = 0):
+        super().__init__(message)
+        self.status = status
 
 
 def server_url() -> str:
@@ -82,8 +86,8 @@ class OnlineClient:
                 pass
             if exc.code == 401:
                 self.settings.set("online_token", "")
-                raise OnlineError("Your session expired. Please log in again.")
-            raise OnlineError(str(detail) or f"Server error {exc.code}")
+                raise OnlineError(str(detail) or "Your session expired. Please log in again.", 401)
+            raise OnlineError(str(detail) or f"Server error {exc.code}", exc.code)
         except (urllib.error.URLError, OSError, TimeoutError):
             raise OnlineError("Can't reach the NEXUS server. Check your connection.")
         except ValueError:
@@ -96,6 +100,20 @@ class OnlineClient:
         if dev_name:                                         # local testing against NEXUS_DEV_LOGIN=1
             return state, f"{self.base}/auth/dev?name={urllib.parse.quote(dev_name)}&state={state}"
         return state, f"{self.base}/auth/start?state={state}"
+
+    def server_info(self) -> dict:
+        """Public server facts (no login): whether it is invite-only and needs an access key."""
+        return self._call("GET", "/health", auth=False)
+
+    @property
+    def key(self) -> str:
+        return self.settings.get("online_key") or ""
+
+    def begin_login(self, state: str, key: str = "") -> None:
+        """Step 1 of a login: announce the attempt and the access key (raises OnlineError with the reason if the key is refused)."""
+        self._call("POST", "/auth/begin", {"state": state, "key": key.strip()}, auth=False)
+        if key.strip():
+            self.settings.set("online_key", key.strip())
 
     def poll_login(self, state: str) -> bool:
         """True once the browser login finished (the token is then stored)."""
