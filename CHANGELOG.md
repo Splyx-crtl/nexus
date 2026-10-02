@@ -1,5 +1,52 @@
 # Changelog
 
+## 2.4.0 — Weekly challenge, friends bar, Discord announcements, music
+
+### Added
+- **Weekly community challenge** (ONLINE → WEEKLY CHALLENGE): every week everybody plays for the same goal (XP RUSH, OPERATOR,
+  PAYDAY, GHOST — rotating by calendar week). The table counts what you earned *since the start of the week*, shows the time left
+  and the community total. Players who hide themselves are not listed.
+- **Friends bar**: the sidebar shows how many friends are online (tooltip: who, level, current mission); click to open ONLINE.
+  A soft sound plays when a friend comes online.
+- **Discord announcements (optional)**: set `DISCORD_WEBHOOK_URL` on the server and the weekly winners (top 3) are posted into your
+  Discord server once per week. Add the repository secret `DISCORD_WEBHOOK_URL` and every release announces itself there too.
+- **Music**: three original synthwave loops (menu, terminal, tension) composed by `tools/build_music.py` — our own, nothing to license.
+  The game crossfades between them: menu music in the menus, calm terminal music while playing, tension music when the heat
+  reaches 70 % (back to calm below 50 %). New sound effects for level-up, purchases and friends coming online.
+
+- **A game key is required to play, also offline**: a new installation asks for the key before anything else. The server checks it once and
+  signs a licence for that computer that the game verifies offline (Ed25519, 30 days, renewed silently at every start with a connection).
+  Forged or edited licences, licences copied to another computer, deactivated, deleted, expired or already used keys are refused; a key belongs to the
+  first computer that activates it. One key also covers the online login. Setup: `python tools/make_license_key.py`, then the server variable
+  `NEXUS_LICENSE_SEED` (docs/ONLINE.md).
+- **Game key before registration, enforced by the server**: a missing, invalid, revoked, expired or already used key is refused and no account is
+  created; on a real server this is on by default (`NEXUS_OPEN_LOGIN=1` opts out). Keys now have an optional expiry date.
+- **Admin panel rebuilt** (PLAYERS / GAME KEYS / ACTIVITY): player database with search by name or account ID, filters, sorting and
+  pagination; detail view (key, registration, last login, level, XP, balance, unlocks, counters, status); editing of level, XP, credits,
+  reputation and resets with confirmation dialogs (type the player's name for dangerous changes); deactivate / activate / ban / unban with a reason;
+  key management with bulk creation, search, status filter (unused / active / deactivated / expired), deactivate, activate, expiry and delete;
+  an activity log of everything an administrator did.
+- **Admin changes reach the player's save**: an edit is stored in the server database at once, queued for the player's game, applied to the local save at
+  the next sync (the player gets a notification) and confirmed; the server ignores old numbers from the game until then. The game also sends
+  a few save details (balance, reputation, achievement/unlock names, counters) that administrators can see; the consent text says so.
+- `python -m server.seed_demo` fills a local test database with demo players; `python -m server.keys` got `activate`, `delete`, `--days`, `--status`.
+
+### Changed
+- Existing server databases are upgraded automatically (new columns and tables, no data lost).
+- A save file that is locked by another program (second NEXUS window, OneDrive, virus scanner) is waited for up to 30 s and then
+  explained with a **Try again** button instead of a crash.
+- The old drone ambience was replaced by the music; the MUSIC VOLUME slider controls it.
+
+### Tests
+- `tests/test_admin.py` (key-first registration, key rules and management, player list / search / sort / pagination, details, edits incl. restart persistence,
+  deactivate / ban, access protection between players and administrators, upgrade of an old database), `tests/test_edits.py` (how the game applies an edit,
+  plus the whole path key -> account -> save -> admin edit -> player's save -> restart against a real server), `tests/ui_admin.py` (the panel and the player's
+  game end to end), `tests/ui_audio.py`.
+- `tests/test_license.py` (RFC 8032 vectors, offline licence checks, server activation rules), `tests/ui_license.py` (activation, offline start,
+  forged / edited / copied licences, expiry and renewal, revocation, second computer).
+- `tests/test_v24.py` (challenge maths, baseline per week, privacy, once-per-week Discord announcement, music files and loop seams);
+  `tests/ui_online.py` also covers the challenge tab and the friends bar.
+
 ## 2.3.0 — Invite-only login (Discord server + access key)
 
 ### Added

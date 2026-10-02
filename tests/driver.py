@@ -8,6 +8,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("NEXUS_NO_AUDIO", "1")
+os.environ.setdefault("NEXUS_LICENSE_PUBKEY", "")             # headless tests need no game key
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from nexus.database import Database

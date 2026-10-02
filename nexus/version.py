@@ -1,6 +1,6 @@
 """Single source of truth for the application version and project links."""
 
-VERSION = "2.3.0"
+VERSION = "2.4.0"
 APP_NAME = "NEXUS"
 APP_TITLE = "NEXUS // TERMINAL"
 APP_TAGLINE = "TACTICAL CYBER OPERATIONS"
@@ -14,6 +14,10 @@ RELEASES_URL = ""
 # Online services (Discord login, leaderboards, friends). Empty = the game has no online features at all.
 # Set to your deployed server, e.g. "https://nexus.example.com" (see docs/ONLINE.md).
 ONLINE_SERVER_URL = "https://nexus-production-b0c9.up.railway.app"
+
+# Game key activation: the PUBLIC key that verifies the licences your server signs (see docs/ONLINE.md, "Game key required to play").
+# Create it with `python tools/make_license_key.py`. Empty = the game needs no key (development builds).
+LICENSE_PUBLIC_KEY = "f19fc9249088fea2a5cf745648defc29af996754f72f7c754ca3abcef3c0ae00"
 
 # Auto-update (see README "Updates"): "owner/repository" of the public GitHub repo that hosts your releases.
 # Empty = the game never checks for updates and makes no network connection at all.

@@ -3,8 +3,9 @@
 Second (and last) module that uses the network, next to updater.py. Rules:
 * nothing happens unless the server URL is configured AND the player opted in (settings ``online_enabled``),
 * it only talks to the configured server (HTTPS; plain HTTP only for localhost testing),
-* it only sends: the session token, display-relevant score numbers (level, XP, missions, credits, rank) and a short status text.
-  Never save files, file names, local paths or the operator's real identity.
+* it only sends: the session token, score numbers (level, XP, missions, credits, rank), a few save details (balance, reputation,
+  achievement and unlock ids, game counters) and a short status text. Never save files, file names, local paths or the operator's real identity.
+* an administrator's change to a player (level, XP, credits, resets) is applied to the local save here, and the player is told.
 """
 from __future__ import annotations
 
@@ -115,9 +116,17 @@ class OnlineClient:
     def key(self) -> str:
         return self.settings.get("online_key") or ""
 
+    def activate_license(self, key: str) -> str:
+        """Ask the server to activate (or renew) the game on this computer. Returns the signed licence; raises OnlineError with the reason
+        (status 403) when the key is invalid, deactivated, expired or already used on another computer."""
+        from . import license
+        answer = self._call("POST", "/license/activate", {"key": key.strip(), "device": license.device_id(self.settings)}, auth=False)
+        return answer["token"]
+
     def begin_login(self, state: str, key: str = "") -> None:
         """Step 1 of a login: announce the attempt and the access key (raises OnlineError with the reason if the key is refused)."""
-        self._call("POST", "/auth/begin", {"state": state, "key": key.strip()}, auth=False)
+        from . import license
+        self._call("POST", "/auth/begin", {"state": state, "key": key.strip(), "device": license.device_id(self.settings)}, auth=False)
         if key.strip():
             self.settings.set("online_key", key.strip())
 
@@ -153,6 +162,10 @@ class OnlineClient:
 
     def leaderboard(self, board: str = "level", limit: int = 50) -> dict:
         return self._call("GET", f"/leaderboard?board={urllib.parse.quote(board)}&limit={int(limit)}")
+
+    def challenge(self) -> dict:
+        """This week's community challenge: goal, time left, top players and my own place."""
+        return self._call("GET", "/challenge")
 
     def friends(self) -> dict:
         return self._call("GET", "/friends")
@@ -198,14 +211,51 @@ class OnlineClient:
     def admin_keys(self) -> list[dict]:
         return self._admin("GET", "/admin/keys")["keys"]
 
-    def admin_create_keys(self, label: str, count: int) -> list[dict]:
-        return self._admin("POST", "/admin/keys", {"label": label, "count": count})["keys"]
+    def admin_keys_page(self, search: str = "", status: str = "", page: int = 1, per_page: int = 25, newest_first: bool = True) -> dict:
+        """Keys with search, status filter and pagination: {keys, total, page, pages, counts}."""
+        query = urllib.parse.urlencode({"search": search, "status": status, "page": page, "per_page": per_page,
+                                        "newest_first": "true" if newest_first else "false"})
+        return self._admin("GET", f"/admin/keys?{query}")
+
+    def admin_create_keys(self, label: str, count: int, expires_days: int = 0) -> list[dict]:
+        return self._admin("POST", "/admin/keys", {"label": label, "count": count, "expires_days": expires_days})["keys"]
+
+    def admin_activate(self, key_id: int) -> None:
+        self._admin("POST", f"/admin/keys/{int(key_id)}/activate")
+
+    def admin_delete_key(self, key_id: int) -> None:
+        self._admin("DELETE", f"/admin/keys/{int(key_id)}")
+
+    def admin_key_expiry(self, key_id: int, days: int) -> None:
+        self._admin("POST", f"/admin/keys/{int(key_id)}/expiry", {"days": int(days)})
+
+    # player database
+    def admin_players(self, search: str = "", status: str = "", sort: str = "registered", direction: str = "desc", page: int = 1,
+                      per_page: int = 25) -> dict:
+        query = urllib.parse.urlencode({"search": search, "status": status, "sort": sort, "direction": direction, "page": page, "per_page": per_page})
+        return self._admin("GET", f"/admin/players?{query}")
+
+    def admin_player(self, user_id: int) -> dict:
+        return self._admin("GET", f"/admin/players/{int(user_id)}")
+
+    def admin_edit_player(self, user_id: int, changes: dict, reason: str = "") -> dict:
+        return self._admin("POST", f"/admin/players/{int(user_id)}/edit", {**changes, "reason": reason})
+
+    def admin_set_status(self, user_id: int, status: str, reason: str = "") -> dict:
+        return self._admin("POST", f"/admin/players/{int(user_id)}/status", {"status": status, "reason": reason})
+
+    def admin_audit(self, limit: int = 50) -> list[dict]:
+        return self._admin("GET", f"/admin/audit?limit={int(limit)}")["entries"]
 
     def admin_revoke(self, key_id: int) -> None:
         self._admin("POST", f"/admin/keys/{int(key_id)}/revoke")
 
     def admin_unbind(self, key_id: int) -> None:
         self._admin("POST", f"/admin/keys/{int(key_id)}/unbind")
+
+    def ack_edit(self, edit_id: int) -> dict:
+        """Tell the server that an administrator's change has been applied to the local save."""
+        return self._call("POST", f"/me/edits/{int(edit_id)}/ack")
 
     def presence(self, status: str) -> dict:
         return self._call("POST", "/presence", {"status": status[:60]})
@@ -217,7 +267,10 @@ def snapshot(engine) -> dict:
     p = engine.player
     return {"level": p.level, "xp_total": int(s.get("xp_earned", 0)), "missions": int(p.completed_missions),
             "credits_earned": int(s.get("credits_earned", 0)), "perfect": int(s.get("perfect_missions", 0)),
-            "playtime": int(p.playtime), "ng_plus": int(engine.ng_plus), "rank": p.rank}
+            "playtime": int(p.playtime), "ng_plus": int(engine.ng_plus), "rank": p.rank,
+            "details": {"credits": int(p.credits), "reputation": int(p.reputation), "heat": int(engine.heat),
+                        "achievements": sorted(engine.db.get_achievements()), "unlocks": engine.db.unlocks(),
+                        "stats": {k: int(v) for k, v in s.items()}}}
 
 
 def presence_text(engine) -> str:

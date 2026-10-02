@@ -29,7 +29,7 @@ class SettingsWidget(QWidget):
         audio = QWidget()
         al = QVBoxLayout(audio)
         al.addWidget(self._slider("volume_master", "MASTER VOLUME", 0, 100, "Overall loudness"))
-        al.addWidget(self._slider("volume_music", "MUSIC VOLUME", 0, 100, "Ambient background drone"))
+        al.addWidget(self._slider("volume_music", "MUSIC VOLUME", 0, 100, "Background music"))
         al.addWidget(self._slider("volume_sfx", "SFX VOLUME", 0, 100, "Terminal, alerts and UI sounds"))
         al.addWidget(self._check("typing_sound", "Typing sound", "Play a click for every few typed characters"))
         al.addStretch(1)

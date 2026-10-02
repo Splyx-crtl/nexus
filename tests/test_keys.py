@@ -4,6 +4,7 @@ import importlib.util
 import io
 import os
 import sqlite3
+import sys
 import tempfile
 import time
 import unittest
@@ -19,13 +20,14 @@ ENV = {"NEXUS_ADMIN_USER": ADMIN_USER, "NEXUS_ADMIN_PASSWORD": ADMIN_PASSWORD, "
 
 def load_server(db_path, **env):
     """Import a private copy of server/app.py with its own configuration (it reads the environment at import time)."""
-    saved = {k: os.environ.get(k) for k in [*ENV, "NEXUS_DB"]}
+    saved = {k: os.environ.get(k) for k in [*ENV, "NEXUS_DB", *env]}
     os.environ.update({**ENV, **env, "NEXUS_DB": str(db_path)})
     for key in [k for k in ENV if k in env and env[k] is None]:
         os.environ.pop(key, None)
     try:
         spec = importlib.util.spec_from_file_location("server.app_keys_test", ROOT / "server" / "app.py")
         module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module               # pydantic resolves the models' string annotations through sys.modules
         spec.loader.exec_module(module)
         return module
     finally:
@@ -163,7 +165,7 @@ class InviteOnlyLogin(unittest.TestCase):
         self.assertEqual(page.status_code, 403)
         r = self.token(state)
         self.assertEqual(r.status_code, 403)
-        self.assertIn("another Discord account", r.json()["detail"])
+        self.assertIn("already been used", r.json()["detail"])
 
     def test_one_account_cannot_collect_two_keys(self):
         a, b = (k["key"] for k in self.make_keys(2))

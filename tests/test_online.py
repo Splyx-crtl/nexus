@@ -149,7 +149,8 @@ class OnlineIntegration(unittest.TestCase):
         from tests.driver import new_engine
         e = new_engine("PRIVATE_NAME")
         snap = snapshot(e)
-        self.assertEqual(set(snap), {"level", "xp_total", "missions", "credits_earned", "perfect", "playtime", "ng_plus", "rank"})
+        self.assertEqual(set(snap), {"level", "xp_total", "missions", "credits_earned", "perfect", "playtime", "ng_plus", "rank", "details"})
+        self.assertEqual(set(snap["details"]), {"credits", "reputation", "heat", "achievements", "unlocks", "stats"})
         self.assertNotIn("PRIVATE_NAME", str(snap))
         self.assertIn("menus", presence_text(e))
 

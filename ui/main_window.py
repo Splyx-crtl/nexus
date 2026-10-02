@@ -1,11 +1,12 @@
 """Main window: owns pages, overlays and the whole application flow."""
 from __future__ import annotations
+import sqlite3
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QIcon, QKeySequence, QPainter, QPixmap, QShortcut
-from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QStackedWidget, QVBoxLayout, QWidget
 
-from nexus import config, i18n
+from nexus import config, i18n, license, online
 from nexus.config import APP_FULL_NAME, ASSETS_DIR, COLORS
 from nexus.data import get_data
 from nexus.game_engine import GameEngine
@@ -15,6 +16,7 @@ from .app_shell import KEYS, AppShell
 from .cinematic import CinematicScreen, LoadingScreen
 from .dialogs import LoadDialog, NamePrompt, PauseMenu, SlotDialog
 from .first_launch import FirstLaunchScreen
+from .license_screen import LicenseScreen
 from .main_menu import MainMenu
 from .tutorial import TutorialOverlay
 from .widgets import BannerOverlay, FadeOverlay, ScanlineOverlay, ToastManager, build_stylesheet, play, set_sound
@@ -48,13 +50,14 @@ def make_icon() -> QIcon:
 
 
 class MainWindow(QMainWindow):
-    PAGE_MENU, PAGE_FIRST, PAGE_LOADING, PAGE_SHELL, PAGE_STORY = range(5)
+    PAGE_MENU, PAGE_FIRST, PAGE_LOADING, PAGE_SHELL, PAGE_STORY, PAGE_LICENSE = range(6)
 
     def __init__(self, settings: SettingsStore, saves: SaveSystem, sound):
         super().__init__()
         self.settings, self.saves, self.sound = settings, saves, sound
         self.data = get_data()
         self.engine: GameEngine | None = None
+        self._license_refused = ""
         self.shell: AppShell | None = None
         self.tutorial: TutorialOverlay | None = None
         self.pending_ending: str | None = None
@@ -78,6 +81,8 @@ class MainWindow(QMainWindow):
         lay = QVBoxLayout(central)
         lay.setContentsMargins(0, 0, 0, 0)
         self.stack = QStackedWidget()
+        self.stack.currentChanged.connect(lambda _i: self._update_music())
+        self.stack.currentChanged.connect(lambda _i: self._show_license_if_idle())
         lay.addWidget(self.stack)
         self.menu = MainMenu()
         self.first = FirstLaunchScreen()
@@ -85,8 +90,14 @@ class MainWindow(QMainWindow):
         self.shell_holder = QWidget()
         QVBoxLayout(self.shell_holder).setContentsMargins(0, 0, 0, 0)
         self.story = CinematicScreen()
-        for page in (self.menu, self.first, self.loading, self.shell_holder, self.story):
+        self.license_screen = LicenseScreen(self.settings)
+        self.license_screen.activated.connect(self._after_license)
+        for page in (self.menu, self.first, self.loading, self.shell_holder, self.story, self.license_screen):
             self.stack.addWidget(page)
+        self._license_jobs: list = []
+        self._license_refused = ""                     # a refusal that arrived while playing: shown as soon as the player is back in the menu
+        self._license_timer = QTimer(self, interval=6 * 3600 * 1000)
+        self._license_timer.timeout.connect(self._renew_license)
 
         self.toasts = ToastManager(central, top_offset=72)
         self.banner = BannerOverlay(central)
@@ -126,22 +137,97 @@ class MainWindow(QMainWindow):
 
     # -------------------------------------------------------------- start --
     def startup(self) -> None:
-        """Called once after show(): first-launch flow or straight to the menu with the latest profile."""
+        """Called once after show(): the game key first (when this build needs one), then the first-launch flow or the menu."""
+        status = license.check(self.settings)
+        if not status.ok:
+            self.stack.setCurrentIndex(self.PAGE_LICENSE)
+            self.license_screen.start(status.message, auto=status.reason == "expired")      # an expired licence renews itself if a connection exists
+            return
+        self._begin_session()
+        self._renew_license()
+        self._license_timer.start()
+
+    def _after_license(self) -> None:
+        self._begin_session()
+        self._license_timer.start()
+
+    def _begin_session(self) -> None:
         latest = self.saves.latest_profile()
         if latest is None:
             self.stack.setCurrentIndex(self.PAGE_FIRST)
             self.first.start()
             return
-        self._attach_engine(self.saves.open_profile(latest.path))
+        self._teardown()                    # a game that is still open keeps its save locked (the key screen can come back while playing)
+        db = self._open_with_retry(latest.path)
+        if db is None:
+            QApplication.instance().quit()
+            return
+        self._attach_engine(db)
         self.stack.setCurrentIndex(self.PAGE_MENU)
-        self.sound.start_ambient()
+        self._update_music()
         self.updates.start()
+
+    # ------------------------------------------------------------ licence --
+    def _renew_license(self) -> None:
+        """Silently renew the licence (30 days of offline play from now). A key that was deactivated or deleted ends the licence."""
+        key = self.settings.get("license_key")
+        if not license.enabled() or not key:
+            return
+        from .online_page import Job
+        client = online.OnlineClient(self.settings)
+        job = Job(lambda: client.activate_license(key), self)
+        job.done.connect(lambda token: license.store(self.settings, token, key))
+        job.refused.connect(self._license_refused_by_server)       # the server said no: this key is not valid any more
+        job.failed.connect(lambda _m: None)                         # no connection: keep playing on the current licence
+        job.finished.connect(lambda j=job: self._license_jobs.remove(j) if j in self._license_jobs else None)
+        self._license_jobs.append(job)
+        job.start()
+
+    def _license_refused_by_server(self, message: str) -> None:
+        license.clear(self.settings)
+        self._license_refused = message
+        self._show_license_if_idle()
+
+    def _show_license_if_idle(self) -> None:
+        if self._license_refused and self.stack.currentIndex() == self.PAGE_MENU:
+            message, self._license_refused = self._license_refused, ""
+            self.stack.setCurrentIndex(self.PAGE_LICENSE)
+            self.license_screen.start(message)
+
+    def _update_music(self) -> None:
+        """Menu music in the menus, calm terminal music while playing, tension music when the heat is high."""
+        in_shell = self.stack.currentIndex() == self.PAGE_SHELL
+        mood = "menu"
+        if in_shell:
+            heat = self.engine.heat if self.engine else 0
+            mood = "tension" if heat >= (50 if self.sound.mood == "tension" else 70) else "terminal"
+        self.sound.set_music(mood)
+
+    def _open_with_retry(self, path):
+        """Open a save; if another program holds it (second NEXUS window, sync tool), explain and let the player retry."""
+        while True:
+            try:
+                return self.saves.open_profile(path)
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc).lower():
+                    raise
+                box = QMessageBox(self)
+                box.setIcon(QMessageBox.Icon.Warning)
+                box.setWindowTitle("NEXUS")
+                box.setText("Your save file is in use by another program.")
+                box.setInformativeText("Close every other NEXUS window (Task Manager → Details → NEXUS.exe) and pause "
+                                       "cloud-sync tools such as OneDrive, then try again. Your progress is not damaged.")
+                retry = box.addButton("Try again", QMessageBox.ButtonRole.AcceptRole)
+                box.addButton("Quit", QMessageBox.ButtonRole.RejectRole)
+                box.exec()
+                if box.clickedButton() is not retry:
+                    return None
 
     def _on_profile_created(self, name: str) -> None:
         db = self.saves.create_profile(name)
         self._attach_engine(db)
         self._first_run = True
-        self.sound.start_ambient()
+        self._update_music()
         self.updates.start()
         self._transition(self._start_loading)
 
@@ -156,6 +242,7 @@ class MainWindow(QMainWindow):
         e.banner.connect(lambda k, lines, opts: self.banner.push(k, lines))
         e.sound.connect(play)
         e.heat_changed.connect(lambda h: setattr(self.scan, "alert", h >= 70))
+        e.heat_changed.connect(lambda _h: self._update_music())
         e.ending_reached.connect(self._on_ending)
         e.state_changed.connect(self._refresh_menu_card)
         self._apply_theme()

@@ -10,6 +10,7 @@ from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "windows")
 os.environ["NEXUS_NO_AUDIO"] = "1"
+os.environ["NEXUS_LICENSE_PUBKEY"] = ""                      # these scripts test other things: no game key needed (tests/ui_license.py covers it)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import uvicorn
@@ -126,17 +127,18 @@ pump(300)
 check(panel.stack.currentIndex() == 0, "the admin panel starts at the login form")
 panel.login_btn.click()
 pump(300)
-check("Enter the admin user name" in panel.status.text(), "empty admin login is refused locally")
+check("Enter the admin user name" in panel.notice.text(), "empty admin login is refused locally")
 panel.user_edit.setText(ADMIN_USER)
 panel.pass_edit.setText("wrong password!!")
 panel.login_btn.click()
 pump(1500)
-check("Wrong user name or password" in panel.status.text() and panel.stack.currentIndex() == 0, "wrong admin credentials are refused by the server")
+check("Wrong user name or password" in panel.notice.text() and panel.stack.currentIndex() == 0, "wrong admin credentials are refused by the server")
 panel.pass_edit.setText(ADMIN_PASSWORD)
 panel.login_btn.click()
 pump(1500)
 check(panel.stack.currentIndex() == 1 and panel.client.admin_logged_in, "right credentials open the key manager")
 check(not panel.pass_edit.text(), "the password field is cleared after login")
+panel.tabs.setCurrentIndex(1)                                             # GAME KEYS tab
 check(panel.table.rowCount() >= 1, "existing keys are listed")
 panel.label_edit.setText("Mira")
 panel.count.setValue(2)
@@ -156,7 +158,7 @@ status = {k["id"]: k["status"] for k in admin("GET", "/admin/keys")["keys"]}
 check(status[newest_id] == "revoked", "REVOKE blocks the selected key on the server")
 panel.table.clearSelection()
 panel.revoke_btn.click()
-check("Select a key" in panel.status.text(), "revoking without a selection asks for one")
+check("Select a key" in panel.notice.text(), "revoking without a selection asks for one")
 win.grab().save(str(OUT / "admin_panel.png"))
 panel.grab().save(str(OUT / "admin_panel_dialog.png"))
 panel.logout_btn.click()

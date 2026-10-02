@@ -11,21 +11,29 @@ DISCORD_ROLE_ID, if set) and (2) a key that an admin created. Keys are checked a
 """
 from __future__ import annotations
 
+import base64
 import hashlib
+import json
 import os
 import re
 import secrets
 import sqlite3
+import threading
 import time
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, timedelta
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictInt
 
-from .validation import Rejected, validate
+try:                                              # in the Docker image the file is copied next to this one
+    from . import ed25519
+except ImportError:
+    from nexus import ed25519
+from .players import ACCOUNT_STATUSES, EditError, clean_details, key_status as _key_status, mask_key, validate_edit
+from .validation import Rejected, cumulative_xp, validate
 
 DB_PATH = os.environ.get("NEXUS_DB", os.path.join(os.path.dirname(__file__), "nexus_online.db"))
 DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")
@@ -39,9 +47,19 @@ ADMIN_USER = os.environ.get("NEXUS_ADMIN_USER", "").strip()        # optional: a
 ADMIN_PASSWORD = os.environ.get("NEXUS_ADMIN_PASSWORD", "")        # (kept only on the server, never in the game); 12+ characters
 ADMIN_LOGIN = bool(ADMIN_USER) and len(ADMIN_PASSWORD) >= 12
 ADMIN_SESSION_MINUTES = 60
-GATED = bool(GUILD_ID) or os.environ.get("NEXUS_REQUIRE_KEY", "") == "1"      # invite-only: a key is required to log in
+OPEN_LOGIN = os.environ.get("NEXUS_OPEN_LOGIN", "") == "1"         # explicit opt-out: anybody may register without a key
+# A key is required before an account can be created: always on a real Discord server (secure by default), on request elsewhere.
+GATED = bool(GUILD_ID) or os.environ.get("NEXUS_REQUIRE_KEY", "") == "1" or (bool(DISCORD_CLIENT_ID) and not DEV_LOGIN and not OPEN_LOGIN)
 SESSION_DAYS = int(os.environ.get("NEXUS_SESSION_DAYS", "30"))     # gated servers re-check membership at least this often
 KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"                  # no 0/O/1/I
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()     # optional: weekly winners are posted into your Discord server
+CHALLENGES = [("xp", "XP RUSH", "Earn the most XP this week."),
+              ("missions", "OPERATOR", "Complete the most missions this week."),
+              ("credits", "PAYDAY", "Earn the most credits this week."),
+              ("perfect", "GHOST", "Finish the most missions without a single mistake this week.")]
+LICENSE_DAYS = int(os.environ.get("NEXUS_LICENSE_DAYS", "30"))      # how long a signed licence lets the game run offline before it must renew
+_seed_hex = os.environ.get("NEXUS_LICENSE_SEED", "").strip()
+LICENSE_SEED = bytes.fromhex(_seed_hex) if re.fullmatch(r"[0-9a-fA-F]{64}", _seed_hex) else b""      # secret: the key the licences are signed with
 ONLINE_WINDOW = 120            # seconds since last heartbeat that count as "online"
 STATE_TTL = 600
 BOARDS = {"level": "level DESC, xp_total DESC", "missions": "missions DESC, level DESC", "credits": "credits_earned DESC",
@@ -60,17 +78,33 @@ CREATE TABLE IF NOT EXISTS access_keys (id INTEGER PRIMARY KEY AUTOINCREMENT, ke
 CREATE TABLE IF NOT EXISTS scores (user_id INTEGER PRIMARY KEY, level INTEGER, xp_total INTEGER, missions INTEGER, credits_earned INTEGER,
     perfect INTEGER, playtime INTEGER, ng_plus INTEGER, rank TEXT, updated_at REAL, week TEXT, week_base_xp INTEGER);
 CREATE TABLE IF NOT EXISTS friends (user_id INTEGER, friend_id INTEGER, status TEXT, created_at REAL, PRIMARY KEY (user_id, friend_id));
+CREATE TABLE IF NOT EXISTS week_results (week TEXT NOT NULL, user_id INTEGER NOT NULL,
+    base_xp INTEGER, base_missions INTEGER, base_credits INTEGER, base_perfect INTEGER,
+    xp INTEGER, missions INTEGER, credits INTEGER, perfect INTEGER, PRIMARY KEY (week, user_id));
+CREATE TABLE IF NOT EXISTS announcements (week TEXT PRIMARY KEY, posted_at REAL);
+CREATE TABLE IF NOT EXISTS edits (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, ops TEXT NOT NULL, created_at REAL, applied_at REAL);
+CREATE TABLE IF NOT EXISTS admin_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, action TEXT, user_id INTEGER, key_id INTEGER, detail TEXT);
 """
+
+# Columns added after the first release: databases created earlier get them without losing any data.
+NEW_COLUMNS = {
+    "auth_states": {"key_id": "INTEGER", "error": "TEXT"},
+    "users": {"account_status": "TEXT DEFAULT 'active'", "status_reason": "TEXT DEFAULT ''", "last_login": "REAL DEFAULT 0",
+              "login_count": "INTEGER DEFAULT 0"},
+    "access_keys": {"expires_at": "REAL", "device_id": "TEXT", "device_at": "REAL"},
+    "scores": {"details": "TEXT DEFAULT '{}'"},
+}
 
 
 def init_db() -> None:
     conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.execute("PRAGMA journal_mode=WAL")
     conn.executescript(SCHEMA)
-    cols = {r[1] for r in conn.execute("PRAGMA table_info(auth_states)")}          # databases created before the key system
-    for col, decl in (("key_id", "INTEGER"), ("error", "TEXT")):
-        if col not in cols:
-            conn.execute(f"ALTER TABLE auth_states ADD COLUMN {col} {decl}")
+    for table, columns in NEW_COLUMNS.items():
+        have = {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}
+        for col, decl in columns.items():
+            if col not in have:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
     conn.commit()
     conn.close()
 
@@ -112,6 +146,8 @@ def current_user(authorization: str = Header(default="")) -> sqlite3.Row:
         row = conn.execute("SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token=?", (token,)).fetchone()
     if row is None:
         raise HTTPException(401, "Session expired — please log in again.")
+    if problem := account_problem(row):
+        raise HTTPException(401, problem)
     if GATED:
         with db() as conn:
             session = conn.execute("SELECT created_at FROM sessions WHERE token=?", (token,)).fetchone()
@@ -121,6 +157,17 @@ def current_user(authorization: str = Header(default="")) -> sqlite3.Row:
         if key is None or key["revoked"]:
             raise HTTPException(401, "Your access key is no longer valid.")
     return row
+
+
+def account_problem(row) -> str:
+    """Why an account may not play right now ('' when it may). ``row`` = a users row."""
+    status = row["account_status"] or "active"
+    reason = f" Reason: {row['status_reason']}" if row["status_reason"] else ""
+    if status == "banned":
+        return "This account has been banned." + reason
+    if status == "disabled":
+        return "This account has been deactivated by an administrator." + reason
+    return ""
 
 
 def clean_name(name: str) -> str:
@@ -140,6 +187,7 @@ def login_user(conn: sqlite3.Connection, discord_id: str, name: str) -> str:
         user_id = cur.lastrowid
     else:
         user_id = row["id"]
+    conn.execute("UPDATE users SET last_login=?, login_count=COALESCE(login_count, 0)+1 WHERE id=?", (time.time(), user_id))
     token = secrets.token_urlsafe(32)
     conn.execute("INSERT INTO sessions(token, user_id, created_at) VALUES(?,?,?)", (token, user_id, time.time()))
     return token
@@ -180,6 +228,8 @@ def key_problem(row) -> str:
         return "That key is not valid. Check it for typos or ask the staff on the Discord server."
     if row["revoked"]:
         return "This key has been revoked."
+    if _key_status(dict(row), time.time()) == "expired":
+        return "This key has expired. Ask the staff for a new one."
     return ""
 
 
@@ -198,7 +248,7 @@ def bind_key(conn: sqlite3.Connection, key_id: int, discord_id: str) -> str:
     if problem := key_problem(row):
         return problem
     if row["discord_id"] and row["discord_id"] != discord_id:
-        return "This key already belongs to another Discord account."
+        return "This key has already been used by another account."
     if not row["discord_id"]:
         other = conn.execute("SELECT 1 FROM access_keys WHERE discord_id=? AND revoked=0 AND id!=?", (discord_id, key_id)).fetchone()
         if other:
@@ -216,15 +266,70 @@ def state_row(conn: sqlite3.Connection, state: str):
                         (state, time.time() - STATE_TTL)).fetchone()
 
 
+# ------------------------------------------------------------------ licence --
+DEVICE_RE = re.compile(r"^[A-Za-z0-9\-]{16,64}$")
+
+
+def clean_device(device: str) -> str:
+    if not DEVICE_RE.match(device or ""):
+        raise HTTPException(422, "Invalid device id.")
+    return device
+
+
+def bind_device(conn: sqlite3.Connection, row, device: str) -> str:
+    """The first installation that activates a key owns it; the same installation may renew it any time. Returns an error text or ''."""
+    if row["device_id"] and row["device_id"] != device:
+        return "This key has already been used on another computer. Ask the staff to free it."
+    if not row["device_id"]:
+        conn.execute("UPDATE access_keys SET device_id=?, device_at=? WHERE id=?", (device, time.time(), row["id"]))
+    return ""
+
+
+def sign_licence(key_id: int, device: str) -> tuple[str, int]:
+    now = int(time.time())
+    payload = json.dumps({"v": 1, "kid": key_id, "dev": device, "iat": now, "exp": now + LICENSE_DAYS * 86400}, separators=(",", ":")).encode()
+    signature = ed25519.sign(LICENSE_SEED, payload)
+    b64 = lambda raw: base64.urlsafe_b64encode(raw).rstrip(b"=").decode()
+    return f"{b64(payload)}.{b64(signature)}", now + LICENSE_DAYS * 86400
+
+
+class ActivateBody(BaseModel):
+    key: str = Field(max_length=64)
+    device: str = Field(max_length=64)
+
+
+@app.post("/license/activate")
+def license_activate(body: ActivateBody, request: Request):
+    """Activates (or renews) the game on one computer: checks the key on the server and returns a signed licence the game can verify offline.
+    Deactivated, deleted, expired and already used keys get nothing, and banned accounts are refused too."""
+    if not LICENSE_SEED:
+        raise HTTPException(503, "Game activation is not set up on this server yet.")
+    rate_limit("license:" + client_ip(request), limit=12, window=60)                # also slows down key guessing
+    device = clean_device(body.device)
+    with db() as conn:
+        row = conn.execute("SELECT * FROM access_keys WHERE key_hash=?", (hash_key(body.key),)).fetchone() if normalize_key(body.key) else None
+        if problem := key_problem(row):
+            raise HTTPException(403, problem)
+        if problem := bind_device(conn, row, device):
+            raise HTTPException(403, problem)
+        owner = conn.execute("SELECT * FROM users WHERE discord_id=?", (row["discord_id"],)).fetchone() if row["discord_id"] else None
+        if owner is not None and (problem := account_problem(owner)):
+            raise HTTPException(403, problem)
+        token, expires = sign_licence(row["id"], device)
+    return {"token": token, "expires": expires, "days": LICENSE_DAYS}
+
+
 # --------------------------------------------------------------------- auth --
 @app.get("/health")
 def health():
-    return {"ok": True, "dev_login": DEV_LOGIN, "discord": bool(DISCORD_CLIENT_ID), "gated": GATED, "admin": bool(ADMIN_TOKEN or ADMIN_LOGIN)}
+    return {"ok": True, "dev_login": DEV_LOGIN, "discord": bool(DISCORD_CLIENT_ID), "gated": GATED, "admin": bool(ADMIN_TOKEN or ADMIN_LOGIN),
+            "license": bool(LICENSE_SEED)}
 
 
 class BeginBody(BaseModel):
     state: str
     key: str = Field(default="", max_length=64)
+    device: str = Field(default="", max_length=64)          # the activated game installation (older games send none)
 
 
 @app.post("/auth/begin")
@@ -238,6 +343,10 @@ def auth_begin(body: BeginBody, request: Request):
             row = conn.execute("SELECT * FROM access_keys WHERE key_hash=?", (hash_key(body.key),)).fetchone() if normalize_key(body.key) else None
         if problem := key_problem(row):
             raise HTTPException(403, problem)
+        if body.device:
+            with db() as conn:
+                if problem := bind_device(conn, row, clean_device(body.device)):
+                    raise HTTPException(403, problem)
         key_id = row["id"]
     with db() as conn:
         conn.execute("INSERT OR REPLACE INTO auth_states(state, token, created_at, key_id, error) VALUES(?,NULL,?,?,NULL)", (body.state, time.time(), key_id))
@@ -300,6 +409,10 @@ def auth_callback(code: str = "", state: str = "", error: str = ""):
         if problem:
             fail_state(conn, state, problem)
             return _page("NEXUS login refused.", f"{problem}<br>You can close this window.", False, 403)
+        existing = conn.execute("SELECT * FROM users WHERE discord_id=?", (str(profile["id"]),)).fetchone()
+        if existing is not None and (problem := account_problem(existing)):
+            fail_state(conn, state, problem)
+            return _page("NEXUS login refused.", f"{problem}<br>You can close this window.", False, 403)
         token = login_user(conn, str(profile["id"]), profile.get("global_name") or profile.get("username") or "operator")
         finish_state(conn, state, token)
     return _page("NEXUS login successful.", "You can close this window and return to the game.", True)
@@ -320,6 +433,10 @@ def auth_dev(name: str, state: str):
             if problem := (bind_key(conn, row["key_id"], discord_id) if row["key_id"] else "No access key was given."):
                 fail_state(conn, state, problem)
                 return HTMLResponse(problem, status_code=403)
+        existing = conn.execute("SELECT * FROM users WHERE discord_id=?", (discord_id,)).fetchone()
+        if existing is not None and (problem := account_problem(existing)):
+            fail_state(conn, state, problem)
+            return HTMLResponse(problem, status_code=403)
         token = login_user(conn, discord_id, name)
         finish_state(conn, state, token)
     return HTMLResponse("dev login ok")
@@ -360,7 +477,25 @@ def week_key() -> str:
 def me(user=Depends(current_user)):
     with db() as conn:
         score = conn.execute("SELECT * FROM scores WHERE user_id=?", (user["id"],)).fetchone()
-    return {"name": user["name"], "share": bool(user["share"]), "score": dict(score) if score else None}
+        edits = pending_edits(conn, user["id"])
+    shown = {k: v for k, v in dict(score).items() if k != "details"} if score else None
+    return {"name": user["name"], "share": bool(user["share"]), "score": shown, "edits": edits}
+
+
+def pending_edits(conn: sqlite3.Connection, user_id: int) -> list[dict]:
+    """Changes an administrator made on the server that the player's game has not applied to the save yet."""
+    rows = conn.execute("SELECT id, ops FROM edits WHERE user_id=? AND applied_at IS NULL ORDER BY id", (user_id,)).fetchall()
+    return [{"id": r["id"], "ops": json.loads(r["ops"])} for r in rows]
+
+
+@app.post("/me/edits/{edit_id}/ack")
+def ack_edit(edit_id: int, user=Depends(current_user)):
+    """The game applied an administrator's change to the local save."""
+    with db() as conn:
+        done = conn.execute("UPDATE edits SET applied_at=? WHERE id=? AND user_id=? AND applied_at IS NULL", (time.time(), edit_id, user["id"])).rowcount
+    if not done:
+        raise HTTPException(404, "No such pending change.")
+    return {"ok": True}
 
 
 class ShareBody(BaseModel):
@@ -379,7 +514,7 @@ def delete_me(user=Depends(current_user)):
     """Delete the account and every stored row about it (GDPR-style erasure)."""
     with db() as conn:
         uid = user["id"]
-        for table, col in (("sessions", "user_id"), ("scores", "user_id"), ("friends", "user_id"), ("friends", "friend_id"), ("users", "id")):
+        for table, col in (("sessions", "user_id"), ("scores", "user_id"), ("week_results", "user_id"), ("edits", "user_id"), ("friends", "user_id"), ("friends", "friend_id"), ("users", "id")):
             conn.execute(f"DELETE FROM {table} WHERE {col}=?", (uid,))
     return {"deleted": True}
 
@@ -393,11 +528,15 @@ class ScoreBody(BaseModel):
     playtime: int = 0
     ng_plus: int = 0
     rank: str = Field(default="", max_length=24)
+    details: dict = Field(default_factory=dict)         # optional: balance, reputation, achievements, unlocks, counters (see players.clean_details)
 
 
 @app.post("/scores")
 def submit_score(body: ScoreBody, user=Depends(current_user)):
     with db() as conn:
+        waiting = pending_edits(conn, user["id"])
+        if waiting:                                     # the game must apply the administrator's change first; its old numbers would undo it
+            return {"ok": True, "ignored": True, "edits": waiting}
         old = conn.execute("SELECT * FROM scores WHERE user_id=?", (user["id"],)).fetchone()
         elapsed = (time.time() - old["updated_at"]) if old else None
         try:
@@ -406,13 +545,17 @@ def submit_score(body: ScoreBody, user=Depends(current_user)):
             raise HTTPException(422, str(exc))
         wk = week_key()
         base = old["week_base_xp"] if old and old["week"] == wk else (old["xp_total"] if old else clean["xp_total"])
-        conn.execute("""INSERT INTO scores(user_id, level, xp_total, missions, credits_earned, perfect, playtime, ng_plus, rank, updated_at, week, week_base_xp)
-                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET level=excluded.level, xp_total=excluded.xp_total,
+        details = json.dumps(clean_details(body.details), separators=(",", ":"))
+        conn.execute("""INSERT INTO scores(user_id, level, xp_total, missions, credits_earned, perfect, playtime, ng_plus, rank, updated_at, week, week_base_xp, details)
+                        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET level=excluded.level, xp_total=excluded.xp_total,
                         missions=excluded.missions, credits_earned=excluded.credits_earned, perfect=excluded.perfect, playtime=excluded.playtime,
-                        ng_plus=excluded.ng_plus, rank=excluded.rank, updated_at=excluded.updated_at, week=excluded.week, week_base_xp=excluded.week_base_xp""",
+                        ng_plus=excluded.ng_plus, rank=excluded.rank, updated_at=excluded.updated_at, week=excluded.week, week_base_xp=excluded.week_base_xp,
+                        details=excluded.details""",
                      (user["id"], clean["level"], clean["xp_total"], clean["missions"], clean["credits_earned"], clean["perfect"], clean["playtime"],
-                      clean["ng_plus"], clean["rank"], time.time(), wk, base))
-    return {"ok": True}
+                      clean["ng_plus"], clean["rank"], time.time(), wk, base, details))
+        record_week(conn, user["id"], wk, old, clean)
+        announce_last_week(conn)
+    return {"ok": True, "edits": []}
 
 
 # -------------------------------------------------------------- leaderboard --
@@ -432,6 +575,87 @@ def leaderboard(board: str = "level", limit: int = 50, user=Depends(current_user
         r["me"] = r.pop("id") == user["id"]
     mine = next((r for r in rows if r["me"]), None)
     return {"board": board, "entries": rows[:limit], "me": mine, "total": len(rows)}
+
+
+# -------------------------------------------------------- weekly challenge --
+def challenge_for(week: str) -> tuple[str, str, str]:
+    """The challenge of an ISO week ('2026-W40'): rotates through CHALLENGES, so everybody gets the same one."""
+    number = int(week.split("-W")[1])
+    return CHALLENGES[number % len(CHALLENGES)]
+
+
+def previous_week() -> str:
+    y, w, _ = (date.today() - timedelta(days=7)).isocalendar()
+    return f"{y}-W{w:02d}"
+
+
+def record_week(conn: sqlite3.Connection, user_id: int, week: str, old, clean: dict) -> None:
+    """Keep the player's start-of-week numbers and the current ones; the weekly result is the difference."""
+    cur = (clean["xp_total"], clean["missions"], clean["credits_earned"], clean["perfect"])
+    row = conn.execute("SELECT 1 FROM week_results WHERE week=? AND user_id=?", (week, user_id)).fetchone()
+    if row is None:
+        base = (old["xp_total"], old["missions"], old["credits_earned"], old["perfect"]) if old else cur
+        conn.execute("INSERT INTO week_results VALUES(?,?,?,?,?,?,?,?,?,?)", (week, user_id, *base, *cur))
+    else:
+        conn.execute("UPDATE week_results SET xp=?, missions=?, credits=?, perfect=? WHERE week=? AND user_id=?", (*cur, week, user_id))
+
+
+def week_table(conn: sqlite3.Connection, week: str, metric: str) -> list[dict]:
+    rows = conn.execute(f"""SELECT u.id, u.name, w.{metric} - w.base_{metric} AS value FROM week_results w
+                            JOIN users u ON u.id = w.user_id WHERE w.week=? AND u.share=1
+                            ORDER BY value DESC, u.name_lc""", (week,)).fetchall()
+    out = [dict(r) for r in rows]
+    for i, r in enumerate(out, 1):
+        r["position"] = i
+    return out
+
+
+def send_webhook(text: str) -> None:
+    """Post a message into the Discord server (server -> Discord only). Replaceable in tests."""
+    if not DISCORD_WEBHOOK_URL:
+        return
+
+    def work():
+        try:
+            httpx.post(DISCORD_WEBHOOK_URL, json={"content": text[:1900], "allowed_mentions": {"parse": []}}, timeout=8)
+        except httpx.HTTPError:
+            pass
+
+    threading.Thread(target=work, daemon=True).start()
+
+
+def announce_last_week(conn: sqlite3.Connection) -> None:
+    """Once per week (the first request after the rollover) tell the Discord server who won the last challenge."""
+    if not DISCORD_WEBHOOK_URL:
+        return
+    week = previous_week()
+    if conn.execute("INSERT OR IGNORE INTO announcements VALUES(?, ?)", (week, time.time())).rowcount == 0:
+        return
+    metric, title, _ = challenge_for(week)
+    table = [r for r in week_table(conn, week, metric) if r["value"] > 0][:3]
+    if not table:
+        return
+    medals = ("🥇", "🥈", "🥉")
+    lines = [f"{medals[i]} **{r['name']}** — {r['value']:,} {metric}" for i, r in enumerate(table)]
+    send_webhook(f"**NEXUS weekly challenge {title} ({week}) — results**\n" + "\n".join(lines))
+
+
+@app.get("/challenge")
+def challenge(user=Depends(current_user)):
+    week = week_key()
+    metric, title, text = challenge_for(week)
+    now = time.time()
+    next_monday = (date.today() + timedelta(days=7 - date.today().weekday()))
+    ends_in = int(time.mktime(next_monday.timetuple()) - now)
+    with db() as conn:
+        announce_last_week(conn)
+        rows = week_table(conn, week, metric)
+        total = conn.execute(f"SELECT COALESCE(SUM(w.{metric} - w.base_{metric}), 0) FROM week_results w WHERE w.week=?", (week,)).fetchone()[0]
+    for r in rows:
+        r["me"] = r.pop("id") == user["id"]
+    mine = next((r for r in rows if r["me"]), None)
+    return {"week": week, "metric": metric, "title": title, "text": text, "ends_in": max(0, ends_in),
+            "entries": rows[:20], "me": mine, "players": len(rows), "community_total": int(total)}
 
 
 # ------------------------------------------------------------------ friends --
@@ -575,34 +799,75 @@ def admin_logout(authorization: str = Header(default="")):
     return {"ok": True}
 
 
-class NewKeys(BaseModel):
-    label: str = Field(default="", max_length=60)
-    count: int = Field(default=1, ge=1, le=50)
+def audit(conn: sqlite3.Connection, action: str, user_id: int | None = None, key_id: int | None = None, detail: str = "") -> None:
+    """Every change an administrator makes is written down (who it affected, what, when)."""
+    conn.execute("INSERT INTO admin_audit(ts, action, user_id, key_id, detail) VALUES(?,?,?,?,?)", (time.time(), action, user_id, key_id, detail[:400]))
 
 
 def key_status(row) -> str:
-    return "revoked" if row["revoked"] else ("in use" if row["discord_id"] else "unused")
+    return _key_status(dict(row), time.time())
+
+
+def like_pattern(text: str) -> str:
+    return "%" + text.strip().lower().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+
+class NewKeys(BaseModel):
+    label: str = Field(default="", max_length=60)
+    count: int = Field(default=1, ge=1, le=50)
+    expires_days: int = Field(default=0, ge=0, le=3650)          # 0 = never expires; otherwise it can only be redeemed within that time
 
 
 @app.post("/admin/keys", dependencies=[Depends(admin_only)])
 def admin_create_keys(body: NewKeys):
     """Create keys. The plain text is returned exactly once; only a hash is stored."""
     made = []
+    expires = time.time() + body.expires_days * 86400 if body.expires_days else None
     with db() as conn:
         for _ in range(body.count):
             key = new_key()
-            cur = conn.execute("INSERT INTO access_keys(key_hash, tail, label, created_at) VALUES(?,?,?,?)",
-                               (hash_key(key), key[-5:], body.label.strip(), time.time()))
-            made.append({"id": cur.lastrowid, "key": key, "label": body.label.strip()})
+            cur = conn.execute("INSERT INTO access_keys(key_hash, tail, label, created_at, expires_at) VALUES(?,?,?,?,?)",
+                               (hash_key(key), key[-5:], body.label.strip(), time.time(), expires))
+            made.append({"id": cur.lastrowid, "key": key, "label": body.label.strip(), "expires_at": expires})
+        audit(conn, "keys.create", detail=f"{body.count} key(s), label '{body.label.strip()}', expires in {body.expires_days or 'never'} days")
     return {"keys": made}
 
 
+KEY_FILTERS = {
+    "revoked": "k.revoked = 1",
+    "in use": "k.revoked = 0 AND (k.discord_id IS NOT NULL OR k.device_id IS NOT NULL)",
+    "expired": "k.revoked = 0 AND k.discord_id IS NULL AND k.device_id IS NULL AND k.expires_at IS NOT NULL AND k.expires_at < :now",
+    "unused": "k.revoked = 0 AND k.discord_id IS NULL AND k.device_id IS NULL AND (k.expires_at IS NULL OR k.expires_at >= :now)",
+}
+
+
 @app.get("/admin/keys", dependencies=[Depends(admin_only)])
-def admin_list_keys():
+def admin_list_keys(search: str = "", status: str = "", page: int = 1, per_page: int = 200, newest_first: bool = False):
+    """Keys with search (label, last characters, player name, id), status filter and pagination. Never contains a full key."""
+    if status and status not in KEY_FILTERS:
+        raise HTTPException(400, "Unknown status filter.")
+    per_page, page = max(1, min(per_page, 200)), max(1, page)
+    params: dict = {"now": time.time()}
+    where = ["1=1"]
+    if status:
+        where.append(KEY_FILTERS[status])
+    if search.strip():
+        params["like"] = like_pattern(search)
+        params["tail"] = normalize_key(search)[-5:]
+        where.append("(LOWER(k.label) LIKE :like ESCAPE '\\' OR LOWER(COALESCE(u.name, '')) LIKE :like ESCAPE '\\' "
+                      "OR (:tail != '' AND k.tail = :tail) OR CAST(k.id AS TEXT) = :exact)")
+        params["exact"] = search.strip()
+    base = "FROM access_keys k LEFT JOIN users u ON u.discord_id = k.discord_id WHERE " + " AND ".join(where)
+    order = "DESC" if newest_first else "ASC"
     with db() as conn:
-        rows = conn.execute("SELECT k.*, u.name AS user_name FROM access_keys k LEFT JOIN users u ON u.discord_id = k.discord_id ORDER BY k.id").fetchall()
-    return {"keys": [{"id": r["id"], "key": f"NX-*****-*****-{r['tail']}", "label": r["label"], "status": key_status(r), "user": r["user_name"],
-                      "created_at": r["created_at"], "redeemed_at": r["redeemed_at"]} for r in rows]}
+        total = conn.execute("SELECT COUNT(*) " + base, params).fetchone()[0]
+        rows = conn.execute(f"SELECT k.*, u.name AS user_name, u.id AS user_id " + base + f" ORDER BY k.id {order} LIMIT :lim OFFSET :off",
+                            {**params, "lim": per_page, "off": (page - 1) * per_page}).fetchall()
+        counts = {name: conn.execute("SELECT COUNT(*) FROM access_keys k WHERE " + clause, {"now": params["now"]}).fetchone()[0]
+                  for name, clause in KEY_FILTERS.items()}
+    keys = [{"id": r["id"], "key": mask_key(r["tail"]), "label": r["label"], "status": key_status(r), "user": r["user_name"], "user_id": r["user_id"],
+             "created_at": r["created_at"], "redeemed_at": r["redeemed_at"], "expires_at": r["expires_at"], "device": bool(r["device_id"])} for r in rows]
+    return {"keys": keys, "total": total, "page": page, "pages": max(1, -(-total // per_page)), "counts": counts}
 
 
 def _end_sessions(conn: sqlite3.Connection, discord_id: str | None) -> None:
@@ -610,25 +875,238 @@ def _end_sessions(conn: sqlite3.Connection, discord_id: str | None) -> None:
         conn.execute("DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE discord_id=?)", (discord_id,))
 
 
+def _key_or_404(conn: sqlite3.Connection, key_id: int):
+    row = conn.execute("SELECT * FROM access_keys WHERE id=?", (key_id,)).fetchone()
+    if row is None:
+        raise HTTPException(404, "No such key.")
+    return row
+
+
 @app.post("/admin/keys/{key_id}/revoke", dependencies=[Depends(admin_only)])
 def admin_revoke_key(key_id: int):
-    """Blocks the key for good and logs its owner out immediately."""
+    """Deactivates the key and logs its owner out immediately. It can be activated again later."""
     with db() as conn:
-        row = conn.execute("SELECT * FROM access_keys WHERE id=?", (key_id,)).fetchone()
-        if row is None:
-            raise HTTPException(404, "No such key.")
+        row = _key_or_404(conn, key_id)
         conn.execute("UPDATE access_keys SET revoked=1 WHERE id=?", (key_id,))
         _end_sessions(conn, row["discord_id"])
+        audit(conn, "key.deactivate", key_id=key_id)
     return {"id": key_id, "status": "revoked"}
+
+
+@app.post("/admin/keys/{key_id}/activate", dependencies=[Depends(admin_only)])
+def admin_activate_key(key_id: int):
+    """Switches a deactivated key back on (its owner can log in again)."""
+    with db() as conn:
+        row = _key_or_404(conn, key_id)
+        if not row["revoked"]:
+            raise HTTPException(409, "This key is not deactivated.")
+        conn.execute("UPDATE access_keys SET revoked=0 WHERE id=?", (key_id,))
+        audit(conn, "key.activate", key_id=key_id)
+        status = key_status(conn.execute("SELECT * FROM access_keys WHERE id=?", (key_id,)).fetchone())
+    return {"id": key_id, "status": status}
 
 
 @app.post("/admin/keys/{key_id}/unbind", dependencies=[Depends(admin_only)])
 def admin_unbind_key(key_id: int):
     """Frees a key from its Discord account (e.g. the player switched accounts) and logs the old owner out."""
     with db() as conn:
-        row = conn.execute("SELECT * FROM access_keys WHERE id=?", (key_id,)).fetchone()
-        if row is None:
-            raise HTTPException(404, "No such key.")
-        conn.execute("UPDATE access_keys SET discord_id=NULL, redeemed_at=NULL WHERE id=?", (key_id,))
+        row = _key_or_404(conn, key_id)
+        conn.execute("UPDATE access_keys SET discord_id=NULL, redeemed_at=NULL, device_id=NULL, device_at=NULL WHERE id=?", (key_id,))
         _end_sessions(conn, row["discord_id"])
-    return {"id": key_id, "status": "unused"}
+        audit(conn, "key.free", key_id=key_id)
+        status = key_status(conn.execute("SELECT * FROM access_keys WHERE id=?", (key_id,)).fetchone())
+    return {"id": key_id, "status": status}
+
+
+class ExpiryBody(BaseModel):
+    days: int = Field(ge=0, le=3650)          # from now; 0 = never expires
+
+
+@app.post("/admin/keys/{key_id}/expiry", dependencies=[Depends(admin_only)])
+def admin_key_expiry(key_id: int, body: ExpiryBody):
+    with db() as conn:
+        _key_or_404(conn, key_id)
+        conn.execute("UPDATE access_keys SET expires_at=? WHERE id=?", (time.time() + body.days * 86400 if body.days else None, key_id))
+        audit(conn, "key.expiry", key_id=key_id, detail=f"{body.days or 'never'} days")
+        status = key_status(conn.execute("SELECT * FROM access_keys WHERE id=?", (key_id,)).fetchone())
+    return {"id": key_id, "status": status}
+
+
+@app.delete("/admin/keys/{key_id}", dependencies=[Depends(admin_only)])
+def admin_delete_key(key_id: int):
+    """Deletes the key for good. Its owner is logged out and cannot play until they get a new key (the account itself stays)."""
+    with db() as conn:
+        row = _key_or_404(conn, key_id)
+        _end_sessions(conn, row["discord_id"])
+        conn.execute("DELETE FROM access_keys WHERE id=?", (key_id,))
+        audit(conn, "key.delete", key_id=key_id, detail=f"tail {row['tail']}")
+    return {"id": key_id, "deleted": True}
+
+
+# ------------------------------------------------------------ player database --
+PLAYER_FILTERS = {
+    "active": "COALESCE(u.account_status, 'active') = 'active'",
+    "disabled": "u.account_status = 'disabled'",
+    "banned": "u.account_status = 'banned'",
+    "online": "u.last_seen > :online_since",
+    "no key": "NOT EXISTS (SELECT 1 FROM access_keys k WHERE k.discord_id = u.discord_id AND k.revoked = 0)",
+}
+PLAYER_SORTS = {"name": "u.name_lc", "level": "COALESCE(s.level, 0)", "xp": "COALESCE(s.xp_total, 0)", "earned": "COALESCE(s.credits_earned, 0)",
+                "registered": "u.created_at", "last login": "COALESCE(u.last_login, 0)", "playtime": "COALESCE(s.playtime, 0)"}
+
+
+def _details(row) -> dict:
+    try:
+        return json.loads(row["details"] or "{}")
+    except (TypeError, ValueError):
+        return {}
+
+
+def _player_key(conn: sqlite3.Connection, discord_id: str):
+    return conn.execute("SELECT * FROM access_keys WHERE discord_id=? ORDER BY revoked, id DESC", (discord_id,)).fetchone()
+
+
+def player_summary(conn: sqlite3.Connection, r) -> dict:
+    key = _player_key(conn, r["discord_id"])
+    details = _details(r)
+    online = bool(r["last_seen"]) and time.time() - r["last_seen"] < ONLINE_WINDOW
+    return {"id": r["id"], "name": r["name"], "account_status": r["account_status"] or "active", "online": online,
+            "key": ({"id": key["id"], "key": mask_key(key["tail"]), "label": key["label"], "status": key_status(key)} if key else None),
+            "registered": r["created_at"], "last_login": r["last_login"] or None, "last_seen": r["last_seen"] or None,
+            "level": r["level"], "rank": r["rank"], "xp_total": r["xp_total"], "credits": details.get("credits"), "credits_earned": r["credits_earned"],
+            "missions": r["missions"], "playtime": r["playtime"], "synced_at": r["updated_at"]}
+
+
+PLAYER_SELECT = """SELECT u.*, s.level, s.rank, s.xp_total, s.missions, s.credits_earned, s.perfect, s.playtime, s.ng_plus, s.updated_at, s.details
+                   FROM users u LEFT JOIN scores s ON s.user_id = u.id"""
+
+
+@app.get("/admin/players", dependencies=[Depends(admin_only)])
+def admin_players(search: str = "", status: str = "", sort: str = "registered", direction: str = "desc", page: int = 1, per_page: int = 25):
+    """The player database: search by name or account id, filter by status, sort, paginate."""
+    if status and status not in PLAYER_FILTERS:
+        raise HTTPException(400, "Unknown filter.")
+    if sort not in PLAYER_SORTS:
+        raise HTTPException(400, "Unknown sort column.")
+    per_page, page = max(1, min(per_page, 100)), max(1, page)
+    now = time.time()
+    params: dict = {"online_since": now - ONLINE_WINDOW}
+    where = ["1=1"]
+    if status:
+        where.append(PLAYER_FILTERS[status])
+    if search.strip():
+        text = search.strip()
+        params["like"] = like_pattern(text)
+        params["exact"] = text
+        where.append("(u.name_lc LIKE :like ESCAPE '\\' OR CAST(u.id AS TEXT) = :exact OR u.discord_id = :exact)")
+    clause = " WHERE " + " AND ".join(where)
+    order = "ASC" if direction.lower() == "asc" else "DESC"
+    with db() as conn:
+        total = conn.execute("SELECT COUNT(*) FROM users u LEFT JOIN scores s ON s.user_id = u.id" + clause, params).fetchone()[0]
+        rows = conn.execute(PLAYER_SELECT + clause + f" ORDER BY {PLAYER_SORTS[sort]} {order}, u.id LIMIT :lim OFFSET :off",
+                            {**params, "lim": per_page, "off": (page - 1) * per_page}).fetchall()
+        players = [player_summary(conn, r) for r in rows]
+        counts = {"all": conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]}
+        for name, filt in PLAYER_FILTERS.items():
+            counts[name] = conn.execute("SELECT COUNT(*) FROM users u WHERE " + filt, {"online_since": params["online_since"]}).fetchone()[0]
+    return {"players": players, "total": total, "page": page, "pages": max(1, -(-total // per_page)), "counts": counts}
+
+
+def _player_or_404(conn: sqlite3.Connection, user_id: int):
+    row = conn.execute(PLAYER_SELECT + " WHERE u.id=?", (user_id,)).fetchone()
+    if row is None:
+        raise HTTPException(404, "No such player.")
+    return row
+
+
+@app.get("/admin/players/{user_id}", dependencies=[Depends(admin_only)])
+def admin_player(user_id: int):
+    """Everything the server knows about one player (never a session token or a full key)."""
+    with db() as conn:
+        r = _player_or_404(conn, user_id)
+        out = player_summary(conn, r)
+        details = _details(r)
+        score = conn.execute("SELECT perfect, ng_plus FROM scores WHERE user_id=?", (user_id,)).fetchone()
+        out.update({
+            "discord_id": r["discord_id"], "status_reason": r["status_reason"] or "", "login_count": r["login_count"] or 0, "share": bool(r["share"]),
+            "presence": r["status"] if out["online"] else "",
+            "perfect": score["perfect"] if score else None, "ng_plus": score["ng_plus"] if score else None,
+            "reputation": details.get("reputation"), "heat": details.get("heat"),
+            "achievements": details.get("achievements", []), "unlocks": details.get("unlocks", []), "stats": details.get("stats", {}),
+            "friends": conn.execute("SELECT COUNT(*) FROM friends WHERE (user_id=? OR friend_id=?) AND status='accepted'", (user_id, user_id)).fetchone()[0],
+            "pending_edits": pending_edits(conn, user_id),
+            "weeks": [dict(w) for w in conn.execute("SELECT week, xp - base_xp AS xp, missions - base_missions AS missions, credits - base_credits AS credits, "
+                                                    "perfect - base_perfect AS perfect FROM week_results WHERE user_id=? ORDER BY week DESC LIMIT 6", (user_id,))],
+            "audit": [dict(a) for a in conn.execute("SELECT ts, action, detail FROM admin_audit WHERE user_id=? ORDER BY id DESC LIMIT 15", (user_id,))],
+        })
+    return out
+
+
+class EditBody(BaseModel):
+    level: StrictInt | None = None                      # strict: "7", 7.5 and true are refused instead of being converted
+    xp: StrictInt | None = None
+    credits: StrictInt | None = None
+    reputation: StrictInt | None = None
+    reset: list[str] = Field(default_factory=list, max_length=5)
+    reason: str = Field(default="", max_length=200)
+
+
+@app.post("/admin/players/{user_id}/edit", dependencies=[Depends(admin_only)])
+def admin_edit_player(user_id: int, body: EditBody):
+    """Change a player. The change is stored in the database right away (so the admin sees it and it survives a restart) and
+    queued for the player's game, which applies it to the local save at its next sync and then confirms it."""
+    with db() as conn:
+        _player_or_404(conn, user_id)
+        score = conn.execute("SELECT * FROM scores WHERE user_id=?", (user_id,)).fetchone()
+        try:
+            ops = validate_edit(body.model_dump(exclude={"reason"}, exclude_none=True), dict(score) if score else None)
+        except EditError as exc:
+            raise HTTPException(422, str(exc))
+        fields, details = {}, _details(score)
+        if "level" in ops:
+            fields["level"], fields["xp_total"] = ops["level"], cumulative_xp(ops["level"]) + ops["xp"]
+        for key in ("credits", "reputation"):
+            if key in ops:
+                details[key] = ops[key]
+        for reset in ops.get("reset", []):
+            if reset == "missions":
+                fields["missions"], fields["perfect"] = 0, 0
+            elif reset == "heat":
+                details["heat"] = 0
+        fields["details"] = json.dumps(details, separators=(",", ":"))
+        conn.execute("UPDATE scores SET " + ", ".join(f"{k}=?" for k in fields) + " WHERE user_id=?", (*fields.values(), user_id))
+        cur = conn.execute("INSERT INTO edits(user_id, ops, created_at) VALUES(?,?,?)", (user_id, json.dumps(ops), time.time()))
+        fresh = conn.execute("SELECT * FROM scores WHERE user_id=?", (user_id,)).fetchone()
+        wk = week_key()                                               # the weekly challenge counts from here, so an edit is no "progress"
+        conn.execute("UPDATE week_results SET base_xp=?, base_missions=?, base_credits=?, base_perfect=?, xp=?, missions=?, credits=?, perfect=? "
+                     "WHERE week=? AND user_id=?", (fresh["xp_total"], fresh["missions"], fresh["credits_earned"], fresh["perfect"],
+                                                    fresh["xp_total"], fresh["missions"], fresh["credits_earned"], fresh["perfect"], wk, user_id))
+        audit(conn, "player.edit", user_id=user_id, detail=json.dumps(ops) + (f" — {body.reason.strip()}" if body.reason.strip() else ""))
+    return {"ok": True, "edit_id": cur.lastrowid, "ops": ops}
+
+
+class StatusBody(BaseModel):
+    status: str
+    reason: str = Field(default="", max_length=200)
+
+
+@app.post("/admin/players/{user_id}/status", dependencies=[Depends(admin_only)])
+def admin_player_status(user_id: int, body: StatusBody):
+    """Activate / deactivate / ban an account. Deactivated and banned players are logged out at once and cannot log in again."""
+    if body.status not in ACCOUNT_STATUSES:
+        raise HTTPException(422, "Status must be one of: " + ", ".join(ACCOUNT_STATUSES) + ".")
+    with db() as conn:
+        _player_or_404(conn, user_id)
+        reason = "".join(c for c in body.reason if c.isprintable()).strip() if body.status != "active" else ""
+        conn.execute("UPDATE users SET account_status=?, status_reason=? WHERE id=?", (body.status, reason, user_id))
+        # no need to delete the sessions: current_user() refuses them at once and tells the player why
+        audit(conn, "player." + body.status, user_id=user_id, detail=reason)
+    return {"ok": True, "status": body.status}
+
+
+@app.get("/admin/audit", dependencies=[Depends(admin_only)])
+def admin_audit(limit: int = 50):
+    with db() as conn:
+        rows = conn.execute("SELECT a.ts, a.action, a.user_id, a.key_id, a.detail, u.name AS user FROM admin_audit a LEFT JOIN users u ON u.id = a.user_id "
+                            "ORDER BY a.id DESC LIMIT ?", (max(1, min(limit, 200)),)).fetchall()
+    return {"entries": [dict(r) for r in rows]}

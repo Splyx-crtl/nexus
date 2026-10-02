@@ -23,6 +23,7 @@ MISSIONS_DIR = RESOURCE_DIR / "missions"
 ASSETS_DIR = RESOURCE_DIR / "assets"
 FONTS_DIR = ASSETS_DIR / "fonts"
 SOUNDS_DIR = ASSETS_DIR / "sounds"
+MUSIC_DIR = ASSETS_DIR / "music"
 USER_SOUNDS_DIR = USER_DIR / "assets" / "sounds"   # generated fallback sounds
 
 SAVES_DIR = USER_DIR / "saves"
@@ -136,4 +137,8 @@ DEFAULT_SETTINGS = {
     "seen_tips": [],
     "online_enabled": False,
     "online_token": "",
+    "online_key": "",
+    "device_id": "",
+    "license_token": "",
+    "license_key": "",
 }

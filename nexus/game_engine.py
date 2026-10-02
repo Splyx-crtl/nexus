@@ -12,7 +12,7 @@ from PySide6.QtCore import QObject, Signal
 
 from .achievements import AchievementManager
 from .commands import CommandProcessor
-from .config import AUTOSAVE_INTERVAL, HEAT_DECAY_CONNECTED, HEAT_DECAY_IDLE, HEAT_MAX, rank_for_level
+from .config import AUTOSAVE_INTERVAL, HEAT_DECAY_CONNECTED, HEAT_DECAY_IDLE, HEAT_MAX, MAX_LEVEL, rank_for_level, xp_for_level
 from .data import GameData, get_data
 from .database import Database
 from .contracts import ContractManager
@@ -291,6 +291,50 @@ class GameEngine(QObject):
         self.achievements.check()
         self.state_changed.emit()
 
+    def apply_admin_edits(self, ops: dict) -> list[str]:
+        """Apply a change an administrator made on the online server to this save (level, XP, credits, reputation, resets).
+        Returns readable lines for the player; nothing is applied silently."""
+        p, lines = self.player, []
+        if "level" in ops:
+            level = max(1, min(MAX_LEVEL, int(ops["level"])))
+            xp = max(0, min(int(ops.get("xp", 0)), xp_for_level(level) - 1))
+            p._set(level=level, xp=xp)
+            self.db.set_stat("xp_earned", sum(xp_for_level(l) for l in range(1, level)) + xp)
+            lines.append(f"Level {level}, XP {xp}")
+        if "credits" in ops:
+            p._set(credits=max(0, int(ops["credits"])))
+            lines.append(f"Credits ${p.credits:,}")
+        if "reputation" in ops:
+            p._set(reputation=max(0, min(100, int(ops["reputation"]))))
+            lines.append(f"Reputation {p.reputation}")
+        for reset in ops.get("reset", []):
+            if reset == "missions":
+                self.db.conn.execute("DELETE FROM missions")
+                self.db.invalidate_caches()
+                self.missions._cache = None
+                self.missions.unregister_prefix("contract_")
+                p._set(completed_missions=0, failed_missions=0)
+                self.db.set_stat("perfect_missions", 0)
+                self.mission_changed.emit()
+                lines.append("Mission progress reset")
+            elif reset == "inventory":
+                for table in ("inventory", "upgrades", "equipment"):
+                    self.db.conn.execute(f"DELETE FROM {table}")
+                self.db.invalidate_caches()
+                self.inventory_changed.emit()
+                lines.append("Inventory and upgrades reset")
+            elif reset == "heat":
+                self.heat = 0.0
+                self.db.set_world("heat", 0.0)
+                self.heat_changed.emit(0.0)
+                lines.append("Trace alert cleared")
+        self.db.conn.commit()
+        self.db.flush()
+        self.notify("warn", "ADMIN ADJUSTMENT", "An administrator changed your save: " + "; ".join(lines), sound="notify")
+        self.snapshot_history()
+        self.state_changed.emit()
+        return lines
+
     def _announce_level_up(self, old: int, new: int) -> None:
         """Big level-up banner listing rank / item / mission unlocks."""
         lines = ["LEVEL UP", f"+{new - old} LEVEL  ->  {new}"]
@@ -305,6 +349,7 @@ class GameEngine(QObject):
         if missions:
             lines.append("NEW MISSION UNLOCKED: " + missions[0]["title"] + (f" (+{len(missions) - 1} more)" if len(missions) > 1 else ""))
         self.level_up.emit(new, rank_for_level(new))
+        self.sound.emit("levelup")
         self.banner.emit("levelup", lines, {})
         self.notify("ok", f"LEVEL UP — {new}", f"Rank: {rank_for_level(new)}", sound=None, log_only=True)
         self.snapshot_history()
