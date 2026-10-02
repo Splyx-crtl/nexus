@@ -2,7 +2,7 @@
 from nexus.shell import commands  # noqa: F401  (registers all commands)
 from nexus.shell.fs import VFS, User
 from nexus.shell.interp import Shell
-from nexus.shell.machine import Machine, Service, Session, World
+from nexus.shell.machine import Machine, Process, Service, Session, World
 
 EPOCH = 2524608000.0          # 2050-01-01 00:00:00 UTC
 
@@ -53,6 +53,36 @@ def add_web_target(world: World, source: Machine, ip: str = "10.0.0.5", hostname
     world.dns[domain] = ip
     world.whois[domain] = "Domain Name: NEXUS-COMPANY.COM\nRegistrar: NEXUS REGISTRAR\nUpdated Date: 2049-11-03T00:00:00Z\nCreation Date: 2041-02-17T00:00:00Z"
     return target
+
+
+def windows_tree() -> dict:
+    return {
+        "Users": {"admin": {"_owner": "admin", "_group": "admin", "notes.txt": ["buy milk", "patch the server", "rotate the backup keys"],
+                            "docs": {"a.txt": "alpha\n", "b.txt": "beta\nbeta two\n", "c.log": "gamma\n"}},
+                 "Public": {}},
+        "Windows": {"System32": {}},
+        "inetpub": {"wwwroot": {}},
+    }
+
+
+def make_windows(clock=lambda: EPOCH, level=lambda: 10**6, hostname: str = "winbox", ip: str = "10.0.0.9") -> tuple:
+    """A standalone Windows machine with its own world: used by the PowerShell/cmd command tests."""
+    world = World(clock=clock)
+    m = Machine(hostname, hostname, ip, "windows", VFS("windows", clock=clock))
+    m.domain = "NEXUSCORP"
+    m.fs.load(windows_tree(), "C:\\")
+    m.add_user(User("Administrator", 500, 500, ("Administrators",), "C:\\Users\\admin", admin=True, password="Winter2050!"))
+    m.add_user(User("admin", 1000, 1000, ("Users",), "C:\\Users\\admin", password="Winter2050!"))
+    m.add_user(User("guest", 1001, 1001, ("Guests",), "C:\\Users\\guest", locked=True))
+    m.processes = [Process(1, "SYSTEM", "lsass.exe", "C:\\Windows\\System32\\lsass.exe", cpu=0.1, mem=0.05),
+                   Process(820, "admin", "notepad.exe", "notepad.exe", cpu=0.0, mem=0.02),
+                   Process(1240, "SYSTEM", "spoolsv.exe", "C:\\Windows\\System32\\spoolsv.exe", cpu=12.5, mem=0.08)]
+    m.data["winservices"] = [{"Status": "Running", "Name": "Spooler", "DisplayName": "Print Spooler"},
+                             {"Status": "Stopped", "Name": "wuauserv", "DisplayName": "Windows Update"}]
+    world.add(m)
+    session = Session(m, m.users["admin"], m.shell)
+    shell = Shell(world, session, level=level)
+    return world, m, session, shell
 
 
 def sh(shell, line):

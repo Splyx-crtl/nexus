@@ -139,10 +139,18 @@ class Shell:
         self._extra_err: list[str] = []
         self.tty = True               # is the command being run writing to the terminal (not a pipe or substitution)?
         self._cmd_tty = True
+        self.ps_pipeline_item = None  # PowerShell only: the $_ of the stage currently running
+        self.ps_exit = None           # PowerShell only: set by `exit` at the top level (no session to pop back to)
 
     # ----------------------------------------------------------------------------- public
     def run(self, src: str) -> Result:
-        """Run a command line or script and collect everything it printed."""
+        """Run a command line or script and collect everything it printed. Dispatches to PowerShell/cmd for a Windows session."""
+        if self.session.shell in ("powershell", "cmd"):
+            from . import winshell
+            runner = winshell.run_ps if self.session.shell == "powershell" else winshell.run_cmd
+            self.ps_exit = None
+            result = runner(self, src)
+            return Result(result.chunks, result.status, result.delay_ms, result.interactive, result.events)
         self.steps = 0
         self.delay_ms, self.interactive, self.events = 0, [], []
         res = Result()
@@ -171,7 +179,13 @@ class Shell:
         return res
 
     def run_inner(self, src: str) -> tuple[int, list[tuple[int, str]]]:
-        """Run a command line for another command (find -exec, xargs, sudo, ssh, sshpass): returns (exit status, output chunks)."""
+        """Run a command line for another command (find -exec, xargs, sudo, ssh, sshpass): returns (exit status, output chunks).
+        Follows the current session's shell, so a one-shot `ssh admin@winbox dir` runs `dir` as cmd.exe, not bash."""
+        if self.session.shell in ("powershell", "cmd"):
+            from . import winshell
+            runner = winshell.run_ps if self.session.shell == "powershell" else winshell.run_cmd
+            result = runner(self, src)
+            return result.status, result.chunks
         sink: list[tuple[int, str]] = []
         try:
             status = self.exec_seq(parse(src), None, sink)
