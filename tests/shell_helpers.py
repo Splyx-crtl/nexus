@@ -23,7 +23,7 @@ def kali_tree() -> dict:
     }
 
 
-def make_kali(clock=lambda: EPOCH):
+def make_kali(clock=lambda: EPOCH, level=lambda: 10**6):
     world = World(clock=clock)
     m = Machine("kali", "kali", "10.0.0.2", "linux", VFS("posix", clock=clock))
     m.fs.load(kali_tree())
@@ -31,8 +31,24 @@ def make_kali(clock=lambda: EPOCH):
     m.add_user(User("player", 1000, 1000, ("player", "sudo"), "/home/player", password="hunter2"))
     world.add(m)
     session = Session(m, m.users["player"], "bash")
-    shell = Shell(world, session)
+    shell = Shell(world, session, level=level)
     return world, m, session, shell
+
+
+def add_web_target(world: World, source: Machine, ip: str = "10.0.0.5", hostname: str = "portal", domain: str = "nexus-company.com", open_80: bool = True) -> Machine:
+    """A second machine, reachable from ``source``, serving one web page. Used by the network-command tests."""
+    target = Machine(hostname, hostname, ip, "linux", VFS("posix", clock=world.clock))
+    target.domain = domain
+    target.add_user(User("root", 0, 0, ("root",), "/root", admin=True, password="toor"))
+    target.services = [Service(80, "http", "Apache/2.4.58", "open" if open_80 else "closed", banner="Apache/2.4.58 (Debian)",
+                               data={"pages": {"/": {"body": "<html><body>Welcome to NEXUS COMPANY</body></html>", "status": 200}}}),
+                       Service(22, "ssh", "OpenSSH 9.6", "open")]
+    world.add(target)
+    source.neighbors.append(target.id)
+    world.dns[hostname] = ip
+    world.dns[domain] = ip
+    world.whois[domain] = "Domain Name: NEXUS-COMPANY.COM\nRegistrar: NEXUS REGISTRAR\nUpdated Date: 2049-11-03T00:00:00Z\nCreation Date: 2041-02-17T00:00:00Z"
+    return target
 
 
 def sh(shell, line):
