@@ -1,6 +1,7 @@
-"""Act I — Awakening (levels 1-20, docs/story/02-acts-and-levels.md). Levels 1-14 are written: ten hand-written missions
-closing "Chapter 1" (first contact with NEXUS, then Mira, then a first real result) plus four generated Minis for extra
-practice/replay value. Levels 15-20 (the rest of Act I, up to the TRACER rank) are not written yet.
+"""Act I — Awakening (levels 1-20, docs/story/02-acts-and-levels.md), now fully written. Chapter 1 (1-10) is first contact
+with NEXUS, then Mira, then a first real result. Levels 11-14 are generated Minis for extra practice/replay value. Chapter 2
+(15-20) is Mira's first real client work, teaching sort/uniq/cut/tr/diff/sed/awk, and closes on a milestone that chains all
+of it together — the Act's promotion to TRACER and the hook into Act II.
 
 Every mission's 'number' must be >= the engine level of every command its solution uses (checked by
 validator.check_command_levels and by solver.solve(), which solves at the mission's own level by default) — a mission a
@@ -141,4 +142,106 @@ ACT1_GENERATED = [
     *generate_batch("hidden_file_mini", count=2, start_id=13, act=1, base_level=13, seed=2),
 ]
 
-ACT1 = [*ACT1_HAND_WRITTEN, *ACT1_GENERATED]
+# Chapter 2: Mira's first real client work. Each mission below introduces one text-processing tool as a technique that
+# actually matters, not a flashcard — and the Level 20 milestone chains all of them together.
+ACT1_CHAPTER2 = [
+    Mission(
+        id="act1_m15", number=15, act=1, size="mini", title="Counting the Noise", scenario="awakening_signal",
+        requires=["act1_m10"],
+        briefing=["MIRA: First real job. A client says their portal keeps getting hammered. I don't want a guess, I want "
+                  "numbers — sort the log so repeats sit together, then count them."],
+        debrief=["MIRA: Four hits from the same address in under a minute. That's not curiosity, that's a script.",
+                 "NEXUS: Welcome to paid work. It's the same job, it just matters more if you get it wrong now."],
+        objectives=[
+            Objective(event="command", match={"name": "sort", "status": 0}, text="Sort access.log",
+                     hints=["sort puts matching lines next to each other, which is what uniq needs.", "Try: sort access.log", "sort access.log"]),
+            Objective(event="command", match={"name": "uniq", "args__contains": "-c", "status": 0}, text="Count the repeats (uniq -c)",
+                     hints=["uniq -c counts how many times each line repeats, but only if they're already next to each other.",
+                           "Try: sort access.log | uniq -c", "sort access.log | uniq -c"]),
+        ],
+        solution=["sort access.log | uniq -c"], reward_xp=50, tags=["bash", "act1", "sort", "uniq"],
+    ),
+    Mission(
+        id="act1_m16", number=16, act=1, size="mini", title="Extract and Clean", scenario="awakening_ledger",
+        requires=["act1_m15"],
+        briefing=["MIRA: I need just the callsigns out of that roster, in caps, for my own ledger. Nothing else — not "
+                  "the role, not the status."],
+        debrief=["MIRA: Clean. You're learning to give people exactly what they asked for and nothing they didn't."],
+        objectives=[
+            Objective(event="command", match={"name": "cut", "args__contains": "-f1", "status": 0}, text="Pull out just the callsigns (cut -f1)",
+                     hints=["cut -d: -f1 prints the first field of each colon-separated line.", "Try: cut -d: -f1 contacts.roster",
+                           "cut -d: -f1 contacts.roster"]),
+            Objective(event="command", match={"name": "tr", "args__contains": "A-Z", "status": 0}, text="Convert them to upper case (tr a-z A-Z)",
+                     hints=["tr a-z A-Z upper-cases whatever text flows through it.", "Try: cut -d: -f1 contacts.roster | tr a-z A-Z",
+                           "cut -d: -f1 contacts.roster | tr a-z A-Z"]),
+        ],
+        solution=["cut -d: -f1 contacts.roster | tr a-z A-Z"], reward_xp=45, tags=["bash", "act1", "cut", "tr"],
+    ),
+    Mission(
+        id="act1_m17", number=17, act=1, size="standard", title="What Changed", scenario="awakening_manifest",
+        requires=["act1_m16"],
+        briefing=["MIRA: Remember that 'decommissioned' server's manifest from the dead drop? I got a second copy through "
+                  "a different route. Compare them."],
+        debrief=["MIRA: 'Active, restricted access.' Someone rewrote the official paperwork and left the old copy lying "
+                 "around for us to find. That's not a mistake, that's sloppy — which is useful.",
+                 "NEXUS: Noted. 'Decommissioned' was never true. Someone's been lying in writing."],
+        objectives=[Objective(event="command", match={"name": "diff", "args__contains": "-u"}, text="Compare the two manifests (diff -u)",
+                              hints=["diff -u shows exactly which lines differ between two files.",
+                                    "Try: diff -u official_manifest.txt leaked_manifest.txt", "diff -u official_manifest.txt leaked_manifest.txt"])],
+        solution=["diff -u official_manifest.txt leaked_manifest.txt"], reward_xp=65, tags=["bash", "act1", "diff", "story"],
+    ),
+    Mission(
+        id="act1_m18", number=18, act=1, size="story", title="Rewriting the Record", scenario="awakening_coverup",
+        requires=["act1_m17"],
+        briefing=["MIRA: Before you touch that box again — you left your real address sitting in its session log last "
+                  "time. Scrub the line. In place. Now."],
+        debrief=["NEXUS: Congratulations, you're now someone who edits history on request. I have opinions about that. "
+                 "I'm keeping them to myself. For now.",
+                 "MIRA: Don't make a habit of needing this."],
+        objectives=[Objective(event="command", match={"name": "sed", "args__contains": "-i", "status": 0}, text="Delete your trace from session.log in place (sed -i)",
+                              hints=["sed -i '/pattern/d' file deletes every line matching pattern, directly in the file.",
+                                    "Your real address is 10.44.0.7 — try: sed -i '/10.44.0.7/d' session.log",
+                                    "sed -i '/10.44.0.7/d' session.log"])],
+        solution=["sed -i '/10.44.0.7/d' session.log"], reward_xp=70, tags=["bash", "act1", "sed", "story"],
+    ),
+    Mission(
+        id="act1_m19", number=19, act=1, size="standard", title="Patterns in the Chaos", scenario="awakening_pattern",
+        requires=["act1_m18"],
+        briefing=["MIRA: Pull every address that failed a login this week. Just the addresses — I don't need the "
+                  "timestamps or the service name."],
+        debrief=["MIRA: One of these isn't like the others. We'll get to that.",
+                 "NEXUS: You just wrote your first real filter instead of reading one off a hint card. That's the job, "
+                 "from here on."],
+        objectives=[Objective(event="command", match={"name": "awk", "status": 0}, text="Print the address from every failed-login line",
+                              hints=["awk reads the file by column: $3 is the third word on a line, $4 the fourth.",
+                                    """Try: awk '$3=="FAIL" {print $4}' weekly.log""", """awk '$3=="FAIL" {print $4}' weekly.log"""])],
+        solution=["""awk '$3=="FAIL" {print $4}' weekly.log"""], reward_xp=75, tags=["bash", "act1", "awk"],
+    ),
+    Mission(
+        id="act1_m20", number=20, act=1, size="milestone", title="The Pattern Holds", scenario="awakening_convergence",
+        requires=["act1_m19"],
+        briefing=["NEXUS: Three days of logs off that same server. Somewhere in there is a pattern, not just noise. "
+                  "Everything you've learned this week, use it."],
+        debrief=["NEXUS: Same address, three separate days, never more than once a day. That's not a script hammering a "
+                 "door — that's someone patient, checking back.",
+                 "MIRA: Patient is worse than noisy. Noisy is a script. Patient is a person who knows exactly what "
+                 "they're looking for and isn't in a hurry to find it.",
+                 "NEXUS: Chapter closed. Rank up — you've earned TRACER. There's someone I think Mira should put you in "
+                 "touch with. This gets bigger from here."],
+        objectives=[
+            Objective(event="command", match={"name": "grep", "args__contains": "-h", "status": 0}, text="Search every log at once (grep -h ... logs/*.log)",
+                     hints=["-h stops grep printing which file a line came from, so three files read like one.",
+                           """Try: grep -h "failed login" logs/*.log""", """grep -h "failed login" logs/*.log"""]),
+            Objective(event="command", match={"name": "awk", "status": 0}, text="Pull out just the address (awk '{print $NF}')",
+                     hints=["$NF always means 'the last field', however many fields a line has.", "Try: ... | awk '{print $NF}'", "awk '{print $NF}'"]),
+            Objective(event="command", match={"name": "uniq", "args__contains": "-c", "status": 0}, text="Count how often each address shows up (uniq -c)",
+                     hints=["Sort first, then uniq -c counts the repeats.", "Try: ... | sort | uniq -c", "sort | uniq -c"]),
+            Objective(event="command", match={"name": "sort", "args__contains": "-nr", "status": 0}, text="Rank the counts, highest first (sort -nr)",
+                     hints=["sort -nr sorts numbers in reverse — biggest first.", "Try: ... | sort -nr", "sort -nr"]),
+        ],
+        solution=["""grep -h "failed login" logs/*.log | awk '{print $NF}' | sort | uniq -c | sort -nr"""],
+        reward_xp=150, tags=["bash", "act1", "milestone", "grep", "awk", "sort", "uniq"],
+    ),
+]
+
+ACT1 = [*ACT1_HAND_WRITTEN, *ACT1_GENERATED, *ACT1_CHAPTER2]

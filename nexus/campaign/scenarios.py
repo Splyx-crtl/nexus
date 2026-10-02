@@ -147,3 +147,90 @@ def awakening_logs() -> tuple[World, Session]:
                         root_extra={"var": {"log": {"system.log": log}}})
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ----------------------------------------------------------------------------------------- Act I, Chapter 2 (levels 15-20)
+@scenario("awakening_signal")
+def awakening_signal() -> tuple[World, Session]:
+    """Level 15: Mira's first real client job. Teaches sort+uniq -c as a pair (sort's own lesson recommends exactly this
+    combination) to turn a flat log into a count."""
+    world = World(clock=lambda: EPOCH)
+    log = ["203.0.113.9 - login attempt", "198.51.100.4 - login attempt", "203.0.113.9 - login attempt",
+           "203.0.113.9 - login attempt", "198.51.100.4 - login attempt", "203.0.113.9 - login attempt",
+           "192.0.2.15 - login attempt", "203.0.113.9 - login attempt"]
+    m = _player_machine({"access.log": log,
+                         "notes.txt": "MIRA: A client says their portal keeps getting hammered. I want numbers, not guesses.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_ledger")
+def awakening_ledger() -> tuple[World, Session]:
+    """Level 16: prepping a report for Mira's own ledger — teaches cut (pick a field) and tr (reformat it)."""
+    world = World(clock=lambda: EPOCH)
+    roster = ["wraith:fixer:active", "cipher:broker:active", "echo-two:lookout:benched", "vantage:courier:active"]
+    m = _player_machine({"contacts.roster": roster,
+                         "notes.txt": "MIRA: I need just the callsigns out of that roster, in caps, for my ledger. Nothing else.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_manifest")
+def awakening_manifest() -> tuple[World, Session]:
+    """Level 17 (standard): the Level-3 dead-drop manifest, and a second copy Mira got her hands on independently. diff
+    proves the official paperwork was quietly rewritten — the Act's first hard evidence that "decommissioned" was a lie."""
+    world = World(clock=lambda: EPOCH)
+    official = ["TARGET: a Nexus Company contractor's test server", "STATUS: decommissioned, allegedly", "NOTE: allegedly."]
+    leaked = ["TARGET: a Nexus Company contractor's test server", "STATUS: active, restricted access",
+             "NOTE: do not log this anywhere."]
+    m = _player_machine({"official_manifest.txt": official, "leaked_manifest.txt": leaked,
+                         "notes.txt": "MIRA: Same server, two manifests. One's ours from the dead drop. One isn't. Compare them.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_coverup")
+def awakening_coverup() -> tuple[World, Session]:
+    """Level 18 (story): the first morally uncomfortable ask — scrub the player's own access trace with sed before someone
+    on the other end notices. NEXUS has opinions about this that it mostly keeps to itself."""
+    world = World(clock=lambda: EPOCH)
+    log = ["09:58:01 svc[auth]: session renewed for operator",
+           "09:59:40 svc[auth]: login success for operator from 10.44.0.7",
+           "10:00:02 svc[cron]: backup job completed (0 errors)"]
+    m = _player_machine({"session.log": log,
+                         "notes.txt": "MIRA: You forgot to scrub your access line last time. There's a trace with your real address on it. Fix that.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_pattern")
+def awakening_pattern() -> tuple[World, Session]:
+    """Level 19 (standard): a week's combined auth log — teaches awk (pull a column out by a condition) to separate one
+    real pattern from routine noise."""
+    world = World(clock=lambda: EPOCH)
+    log = ["2050-01-03 auth FAIL 203.0.113.9", "2050-01-03 auth OK 198.51.100.4",
+           "2050-01-04 auth FAIL 203.0.113.9", "2050-01-04 auth FAIL 203.0.113.9",
+           "2050-01-05 auth OK 192.0.2.15"]
+    m = _player_machine({"weekly.log": log,
+                         "notes.txt": "MIRA: Pull every address that failed a login this week. Just the addresses — I don't need the rest of the line.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_convergence")
+def awakening_convergence() -> tuple[World, Session]:
+    """Level 20 (milestone): three days of logs across the same "decommissioned" server. Chains grep/awk/sort/uniq — every
+    technique Chapter 2 taught — to prove one address has been patient and consistent where everything else was noise.
+    Closes Act I, Chapter 2: promotion to TRACER, and the hook into Act II."""
+    world = World(clock=lambda: EPOCH)
+    day1 = ["09:58:01 svc[auth]: failed login for admin from 203.0.113.9",
+            "10:02:04 svc[auth]: session renewed for operator",
+            "10:15:30 svc[auth]: failed login for admin from 198.51.100.4"]
+    day2 = ["08:40:12 svc[auth]: failed login for admin from 203.0.113.9",
+            "09:00:00 svc[cron]: backup job completed (0 errors)"]
+    day3 = ["23:58:59 svc[auth]: failed login for admin from 203.0.113.9",
+            "00:02:10 svc[auth]: failed login for admin from 192.0.2.15"]
+    m = _player_machine({"logs": {"day1.log": day1, "day2.log": day2, "day3.log": day3},
+                         "notes.txt": "NEXUS: Three days of logs off that server. Somewhere in there is a pattern, not just noise. Find it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
