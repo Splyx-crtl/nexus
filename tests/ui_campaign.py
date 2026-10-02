@@ -135,6 +135,29 @@ for n in range(1, 7):
 check(e.player.completed_missions == 6, "six real missions counted, the tutorial is not one of them")
 print("mini-games solved:", solved)
 
+# ------------------------------------------------------------------ banners must disappear (level-up animation bug)
+win.banner.queue.clear()
+win.banner.hide()
+win.banner.push("levelup", ["LEVEL UP", "+1 LEVEL  ->  2"])
+check(win.banner.isVisible(), "level-up banner is shown")
+deadline = time.time() + 9
+while win.banner.isVisible() and time.time() < deadline:
+    pump(100)
+check(not win.banner.isVisible(), "level-up banner fades out by itself")
+win.banner.push("complete", ["MISSION COMPLETE", "+100 XP"])
+win.banner.push("levelup", ["LEVEL UP"])
+pump(1500)
+win.banner._skip()
+win.banner._skip()
+deadline = time.time() + 3
+while win.banner.isVisible() and win.banner.kind == "complete" and time.time() < deadline:
+    pump(100)
+check(win.banner.kind == "levelup", "skipping a banner moves on to the next queued one")
+deadline = time.time() + 9
+while win.banner.isVisible() and time.time() < deadline:
+    pump(100)
+check(not win.banner.isVisible(), "queued banners all disappear")
+
 # ------------------------------------------------------------------ responsiveness
 import statistics
 frames = []

@@ -452,6 +452,7 @@ class BannerOverlay(QWidget):
         self.reveal = 0.0
         self.hold = 0.0
         self.alpha = 0.0
+        self.fading = False
         self.shake = 0.0
         self.glitch_enabled = True
         self.sound_cb = None
@@ -481,7 +482,7 @@ class BannerOverlay(QWidget):
             self.finished.emit()
             return
         self.kind, self.lines = self.queue.pop(0)
-        self.reveal, self.hold, self.alpha = 0.0, 0.0, 0.0
+        self.reveal, self.hold, self.alpha, self.fading = 0.0, 0.0, 0.0, False
         self.shake = 1.0 if self.kind in ("critical", "failure", "zero") else 0.3
         self.resize(self.parent().size())
         self.raise_()
@@ -496,18 +497,22 @@ class BannerOverlay(QWidget):
 
     def _tick(self) -> None:
         dt = 0.033
-        self.alpha = min(1.0, self.alpha + dt * 4)
         self.shake = max(0.0, self.shake - dt * 0.5)
-        if self.reveal < self.total_chars():
-            self.reveal += dt * 38
-            if self.sound_cb and self.rng.random() < 0.35:
-                self.sound_cb("type")
+        if self.fading:                                   # fade-out: alpha must only go down here (it used to be pushed back
+            self.alpha = max(0.0, self.alpha - dt * 3.5)  # up by the fade-in every frame, so banners never disappeared)
+            if self.alpha <= 0:
+                self._next()
+                return
         else:
-            self.hold += dt
-            if self.hold > (3.2 if self.kind in ("complete", "critical", "blackout") else 2.4):
-                self.alpha = max(0.0, self.alpha - dt * 3.5)
-                if self.alpha <= 0:
-                    self._next()
+            self.alpha = min(1.0, self.alpha + dt * 4)
+            if self.reveal < self.total_chars():
+                self.reveal += dt * 38
+                if self.sound_cb and self.rng.random() < 0.35:
+                    self.sound_cb("type")
+            else:
+                self.hold += dt
+                if self.hold > (3.2 if self.kind in ("complete", "critical", "blackout") else 2.4):
+                    self.fading = True
         self.update()
 
     def mousePressEvent(self, _):

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.3 — Banner fix
+
+### Fixed
+- **Level-up (and every other) banner never went away.** The fade-in raised the opacity again on every frame while the
+  fade-out lowered it, so the opacity got stuck at ~88% and clicking/Space/Esc could not dismiss it either. Fade-in and
+  fade-out are now separate states; skipping moves on to the next queued banner.
+
 ## 2.2.2 — Boot camp, mission fixes, big speed-up
 
 ### Added
