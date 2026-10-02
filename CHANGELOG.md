@@ -14,12 +14,29 @@
   The game crossfades between them: menu music in the menus, calm terminal music while playing, tension music when the heat
   reaches 70 % (back to calm below 50 %). New sound effects for level-up, purchases and friends coming online.
 
+- **Game key before registration, enforced by the server**: a missing, invalid, revoked, expired or already used key is refused and no account is
+  created; on a real server this is on by default (`NEXUS_OPEN_LOGIN=1` opts out). Keys now have an optional expiry date.
+- **Admin panel rebuilt** (PLAYERS / GAME KEYS / ACTIVITY): player database with search by name or account ID, filters, sorting and
+  pagination; detail view (key, registration, last login, level, XP, balance, unlocks, counters, status); editing of level, XP, credits,
+  reputation and resets with confirmation dialogs (type the player's name for dangerous changes); deactivate / activate / ban / unban with a reason;
+  key management with bulk creation, search, status filter (unused / active / deactivated / expired), deactivate, activate, expiry and delete;
+  an activity log of everything an administrator did.
+- **Admin changes reach the player's save**: an edit is stored in the server database at once, queued for the player's game, applied to the local save at
+  the next sync (the player gets a notification) and confirmed; the server ignores old numbers from the game until then. The game also sends
+  a few save details (balance, reputation, achievement/unlock names, counters) that administrators can see; the consent text says so.
+- `python -m server.seed_demo` fills a local test database with demo players; `python -m server.keys` got `activate`, `delete`, `--days`, `--status`.
+
 ### Changed
+- Existing server databases are upgraded automatically (new columns and tables, no data lost).
 - A save file that is locked by another program (second NEXUS window, OneDrive, virus scanner) is waited for up to 30 s and then
   explained with a **Try again** button instead of a crash.
 - The old drone ambience was replaced by the music; the MUSIC VOLUME slider controls it.
 
 ### Tests
+- `tests/test_admin.py` (key-first registration, key rules and management, player list / search / sort / pagination, details, edits incl. restart persistence,
+  deactivate / ban, access protection between players and administrators, upgrade of an old database), `tests/test_edits.py` (how the game applies an edit,
+  plus the whole path key -> account -> save -> admin edit -> player's save -> restart against a real server), `tests/ui_admin.py` (the panel and the player's
+  game end to end), `tests/ui_audio.py`.
 - `tests/test_v24.py` (challenge maths, baseline per week, privacy, once-per-week Discord announcement, music files and loop seams);
   `tests/ui_online.py` also covers the challenge tab and the friends bar.
 

@@ -61,6 +61,7 @@ class OnlinePage(QWidget):
         self.gated: bool | None = None          # None = not asked yet; the key field is shown unless the server says it is open
         self._last_sync = 0.0
         self._friends_seen: set[str] | None = None
+        self._applied_edits: set[int] = set()       # administrator changes already applied to this save (a lost confirmation is only retried)
         self.lay = QVBoxLayout(self)
         self.lay.setContentsMargins(14, 10, 14, 10)
         title = QLabel(f"// {tr('online')}")
@@ -100,7 +101,7 @@ class OnlinePage(QWidget):
             join.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(DISCORD_URL)))
             kl.addWidget(join)
         ol.addWidget(self.key_row)
-        self.consent = QCheckBox("I agree to share my display name, level, rank, mission count and credits earned with other players (leaderboards, friends).")
+        self.consent = QCheckBox("I agree to share my display name, level, rank, mission count and credits earned with other players (leaderboards, friends), and my account and save details (balance, achievements, unlocks, statistics) with the server administrators.")
         ol.addWidget(self.consent)
         self.login_btn = NeonButton("LOGIN WITH DISCORD", "Opens your browser for a Discord login. NEXUS never sees your password.", "cyan")
         self.login_btn.clicked.connect(self._login)
@@ -215,8 +216,10 @@ class OnlinePage(QWidget):
         self.share_box = QCheckBox("Show me on leaderboards and to friends")
         self.share_box.toggled.connect(self._set_share)
         lay.addWidget(self.share_box)
-        note = QLabel("Only these numbers leave your PC: display name, level, rank, XP, missions, credits earned, playtime and a short status line "
-                      "(like 'Mission 007'). Never your saves or files. You can delete everything the server stored about you below.")
+        note = QLabel("Only these numbers leave your PC: display name, level, rank, XP, missions, credits earned, playtime, your balance, reputation, "
+                      "achievement and unlock names, game counters and a short status line (like 'Mission 007'). Never your save files or anything on your PC. "
+                      "The server administrators can see them and can adjust your level, XP and credits; you are told whenever that happens. "
+                      "You can delete everything the server stored about you below.")
         note.setWordWrap(True)
         note.setObjectName("dim")
         lay.addWidget(note)
@@ -293,7 +296,9 @@ class OnlinePage(QWidget):
         self.share_box.blockSignals(True)
         self.share_box.setChecked(bool(data["share"]))
         self.share_box.blockSignals(False)
-        if not data.get("score"):
+        if data.get("edits"):
+            self._apply_edits(data["edits"])
+        elif not data.get("score"):
             self._sync()
 
     # --------------------------------------------------------------- login --
@@ -365,8 +370,34 @@ class OnlinePage(QWidget):
             return
         self._last_sync = time.time()
         snap = online.snapshot(self.engine)
-        self._run(lambda: self.client.submit_scores(snap), lambda _r: (self._info("Score synced."), self._load_board()) if manual else None,
-                  self._error if manual else (lambda m: None))
+        self._run(lambda: self.client.submit_scores(snap), lambda r: self._after_sync(r, manual), self._error if manual else (lambda m: None))
+
+    def _after_sync(self, result: dict, manual: bool) -> None:
+        if result.get("edits"):
+            self._apply_edits(result["edits"])                      # an administrator changed this save: apply it before anything else
+        elif manual:
+            self._info("Score synced.")
+            self._load_board()
+
+    def _apply_edits(self, edits: list[dict]) -> None:
+        """Apply the administrator's changes to the local save, tell the server they are done, then sync the new numbers."""
+        fresh = [e for e in edits if e["id"] not in self._applied_edits]
+        lines: list[str] = []
+        for edit in fresh:
+            lines += self.engine.apply_admin_edits(edit["ops"])
+            self._applied_edits.add(edit["id"])
+        ids = [e["id"] for e in edits]
+
+        def ack() -> None:
+            for edit_id in ids:
+                self.client.ack_edit(edit_id)
+
+        def done(_r) -> None:
+            if lines:
+                self._info("An administrator adjusted your save: " + "; ".join(lines))
+            self._sync()
+            self._load_board()
+        self._run(ack, done, self._error)
 
     def _heartbeat(self) -> None:
         if self.client.logged_in:
