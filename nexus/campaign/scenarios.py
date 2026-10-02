@@ -491,3 +491,82 @@ def traces_audit() -> tuple[World, Session]:
                                      "the scratch files when you're done.\n"})
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ---------------------------------------------------------------------------------------------- Act II — Traces, Chapter 3
+@scenario("traces_dossier")
+def traces_dossier() -> tuple[World, Session]:
+    """Level 41 (standard): Reyes delivers on their Level-35 offer — a dossier folder worth searching all at once.
+    Teaches grep -r, the first recursive search of the campaign."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"dossier": {
+        "jan03.log": ["09:14 svc[auth]: probe from 203.0.113.9", "09:15 svc[auth]: probe rejected"],
+        "jan04.log": ["02:14 svc[auth]: session opened from 203.0.113.9", "02:55 svc[auth]: session closed"],
+        "misc": {"contractor_notes.txt": ["Follow-up needed: 203.0.113.9 flagged twice this month.",
+                                          "Internal routing suggests it's not external. Can't confirm yet."]},
+    }, "inbox": {"reyes_followup.txt": ["- R.", "", "Told you I'd find out. Everything I've got on that address is in the folder "
+                                        "I dropped in your jobs directory. It's not much, but it's not nothing either.", "---"]},
+                         "notes.txt": "NEXUS: Reyes actually came through. There's a dossier folder — search all of it at once, "
+                                     "not file by file.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_timeline")
+def traces_timeline() -> tuple[World, Session]:
+    """Level 42: a quick follow-up — how many times total, across everything, not just where."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"dossier": {
+        "jan03.log": ["09:14 svc[auth]: probe from 203.0.113.9", "09:15 svc[auth]: probe rejected"],
+        "jan04.log": ["02:14 svc[auth]: session opened from 203.0.113.9", "02:55 svc[auth]: session closed"],
+        "misc": {"contractor_notes.txt": ["Follow-up needed: 203.0.113.9 flagged twice this month.",
+                                          "Internal routing suggests it's not external. Can't confirm yet."]},
+    }, "notes.txt": "MIRA: Don't just tell me where it shows up. Tell me how many times, total, across everything.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_personal")
+def traces_personal() -> tuple[World, Session]:
+    """Level 43 (story): Mira checks in directly — this stopped being a routine client job a while ago."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"inbox": {"mira_checkin.txt": [
+        "MIRA:", "", "This isn't just a client job anymore. Somebody's been patient enough to wait weeks, careful enough to "
+        "only show up when nobody's watching, and interested enough to follow you home, metaphorically speaking.",
+        "", "I want to know who's doing this. I think you do too. But I'm not deciding that for you — tell me if you're in, "
+        "all the way, or if you want to hand this off to someone else before it gets complicated.", "---",
+    ]}, "notes.txt": "NEXUS: Mira wants a straight answer. Read it, then give her one.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_harden")
+def traces_harden() -> tuple[World, Session]:
+    """Level 44: before going further, lock the dossier down — chmod -R, the recursive flag on an already-known command."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"dossier": {
+        "jan03.log": ["09:14 svc[auth]: probe from 203.0.113.9", "09:15 svc[auth]: probe rejected"],
+        "jan04.log": ["02:14 svc[auth]: session opened from 203.0.113.9", "02:55 svc[auth]: session closed"],
+        "misc": {"contractor_notes.txt": ["Follow-up needed: 203.0.113.9 flagged twice this month."]},
+    }, "notes.txt": "NEXUS: If we're taking this further, that whole dossier folder needs to be locked down first. All of "
+                   "it, not file by file.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_handoff")
+def traces_handoff() -> tuple[World, Session]:
+    """Level 45 (milestone): closes Act II — assemble the case file, save it, and archive it somewhere only root can
+    touch. Promotion to NETRUNNER, and the handoff into Act III's direct look at Nexus Company's own infrastructure."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"dossier": {
+        "jan03.log": ["09:14 svc[auth]: probe from 203.0.113.9", "09:15 svc[auth]: probe rejected"],
+        "jan04.log": ["02:14 svc[auth]: session opened from 203.0.113.9", "02:55 svc[auth]: session closed"],
+        "misc": {"contractor_notes.txt": ["Follow-up needed: 203.0.113.9 flagged twice this month.",
+                                          "Internal routing suggests it's not external. Can't confirm yet."]},
+    }, "notes.txt": "MIRA: Pull everything on 203.0.113.9 into one file, keep a copy where only root can touch it, and "
+                   "we're done with this chapter.\n"},
+                        root_extra={"archive": {"_mode": 0o700}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")

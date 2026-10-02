@@ -1,8 +1,10 @@
-"""Act II — Traces (levels 21-45, docs/story/02-acts-and-levels.md). No new commands unlock in this act (every bash
-command up to engine level 13 already exists from B3) — "new" here means technique: permissions actually mattering,
-pipes/redirection used for a reason, and reading a system's history instead of just its files. Chapter 1 (21-30) is
-written: Reyes is introduced, and the chapter closes on the Level-20 "patient address" resurfacing on the player's own
-machine. Chapters 2-3 (31-45) are not written yet.
+"""Act II — Traces (levels 21-45, docs/story/02-acts-and-levels.md), now complete. No new commands unlock in this act
+(every bash command up to engine level 13 already exists from B3) — "new" here means technique: permissions actually
+mattering, pipes/redirection used for a reason, and reading a system's history instead of just its files. Chapter 1
+(21-30) introduces Reyes and closes on the Level-20 "patient address" resurfacing on the player's own machine. Chapter 2
+(31-40) is redirection/tee/xargs plus Reyes' first real offer (Level 35, the story bible's first player decision — no
+branching engine exists yet, so it's a free-form reply, same mechanism as Mira's first contact). Chapter 3 (41-45) closes
+the act: Reyes delivers on that offer, Mira checks in personally, and the Level-45 milestone promotes to NETRUNNER.
 """
 from __future__ import annotations
 
@@ -312,4 +314,83 @@ ACT2_CHAPTER2 = [
     ),
 ]
 
-ACT2 = [*ACT2_CHAPTER1, *ACT2_CHAPTER2]
+ACT2_CHAPTER3 = [
+    Mission(
+        id="act2_m41", number=41, act=2, size="standard", title="What Reyes Found", scenario="traces_dossier",
+        requires=["act2_m40"],
+        briefing=["NEXUS: Reyes actually came through. There's a dossier folder — search all of it at once, not file "
+                  "by file."],
+        debrief=["NEXUS: Not external, not random, and flagged more than once. Reyes wasn't exaggerating.",
+                 "MIRA: That's more than I expected them to actually hand over."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*reyes_followup.txt"}, text="Read Reyes' follow-up",
+                     hints=["Check your inbox first.", "Try: cat inbox/reyes_followup.txt", "cat inbox/reyes_followup.txt"]),
+            Objective(event="command", match={"name": "grep", "args__contains": "-r", "status": 0}, text="Search the whole dossier at once for 203.0.113.9 (grep -r)",
+                     hints=["-r makes grep search every file under a folder, not just one.",
+                           "Try: grep -r 203.0.113.9 dossier", "grep -r 203.0.113.9 dossier"]),
+        ],
+        solution=["cat inbox/reyes_followup.txt", "grep -r 203.0.113.9 dossier"], reward_xp=75, tags=["bash", "act2", "grep", "reyes"],
+    ),
+    Mission(
+        id="act2_m42", number=42, act=2, size="mini", title="How Many Times", scenario="traces_timeline",
+        requires=["act2_m41"],
+        briefing=["MIRA: Don't just tell me where it shows up. Tell me how many times, total, across everything."],
+        debrief=["MIRA: Four. Spread out, patient, never in a hurry. That matches everything else we've seen."],
+        objectives=[Objective(event="command", match={"name": "wc", "args__contains": "-l", "status": 0}, text="Count every mention across the whole dossier",
+                              hints=["Pipe the recursive grep into wc -l to total the matches.",
+                                    "Try: grep -r 203.0.113.9 dossier | wc -l", "grep -r 203.0.113.9 dossier | wc -l"])],
+        solution=["grep -r 203.0.113.9 dossier | wc -l"], reward_xp=40, tags=["bash", "act2", "grep", "wc"],
+    ),
+    Mission(
+        id="act2_m43", number=43, act=2, size="story", title="A Straight Answer", scenario="traces_personal",
+        requires=["act2_m42"],
+        briefing=["NEXUS: Mira wants a straight answer. Read it, then give her one."],
+        debrief=["MIRA: Noted. Whatever happens next, that's the line you drew, not me.",
+                 "NEXUS: For what it's worth — I'd have answered the same way. Don't quote me on having 'worth.'"],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*mira_checkin.txt"}, text="Read Mira's check-in",
+                     hints=["Check your inbox.", "Try: cat inbox/mira_checkin.txt", "cat inbox/mira_checkin.txt"]),
+            Objective(event="command", match={"name": "echo", "status": 0}, text="Give her a straight answer",
+                     hints=["Same move as before — write it, append it to the file.",
+                           'echo "your answer here" >> inbox/mira_checkin.txt', 'echo "I\'m in. All the way." >> inbox/mira_checkin.txt']),
+        ],
+        solution=["cat inbox/mira_checkin.txt", 'echo "I\'m in. All the way." >> inbox/mira_checkin.txt'],
+        reward_xp=85, tags=["bash", "act2", "story", "decision:1"],
+    ),
+    Mission(
+        id="act2_m44", number=44, act=2, size="mini", title="Lock the Whole Folder", scenario="traces_harden",
+        requires=["act2_m43"],
+        briefing=["NEXUS: If we're taking this further, that whole dossier folder needs to be locked down first. All "
+                  "of it, not file by file. Use 700, not 600 — a folder needs its own execute bit just to be entered, "
+                  "even by its owner. Strip that and you'd lock yourself out along with everyone else."],
+        debrief=["NEXUS: Good. Whatever happens next, that folder isn't the weak point."],
+        objectives=[Objective(event="command", match={"name": "chmod", "args__contains": "-R", "status": 0}, text="Lock the whole dossier folder down (chmod -R 700)",
+                              hints=["-R applies chmod to a folder and everything inside it. Use 700, not 600 — directories need "
+                                    "their own execute bit to be entered, even by the owner.",
+                                    "Try: chmod -R 700 dossier", "chmod -R 700 dossier"])],
+        solution=["chmod -R 700 dossier"], reward_xp=40, tags=["bash", "act2", "chmod"],
+    ),
+    Mission(
+        id="act2_m45", number=45, act=2, size="milestone", title="Case Closed, For Now", scenario="traces_handoff",
+        requires=["act2_m44"],
+        briefing=["MIRA: Pull everything on 203.0.113.9 into one file, keep a copy where only root can touch it, and "
+                  "we're done with this chapter."],
+        debrief=["MIRA: Filed, locked, and backed up. That's everything we can learn from the outside.",
+                 "NEXUS: Whoever's behind that address isn't going to volunteer more than this. Which means the next "
+                 "move is going straight at the source — their own infrastructure, not just its shadow in a log file.",
+                 "MIRA: Rank up. NETRUNNER. You've earned it, and you're going to need it — this is where it stops "
+                 "being footprints and starts being the actual building."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*case_summary.txt"}, text="Assemble the case file and review it (grep -r ... | tee)",
+                     hints=["Same trick from before — search, and save a copy while you're looking at it.",
+                           "Try: grep -r 203.0.113.9 dossier | tee case_summary.txt", "grep -r 203.0.113.9 dossier | tee case_summary.txt\ncat case_summary.txt"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive a copy somewhere only root can reach (sudo cp)",
+                     hints=["The archive folder is root-only — you'll need sudo to put anything in it.",
+                           "Try: sudo cp case_summary.txt archive/case_summary.txt", "sudo cp case_summary.txt archive/case_summary.txt"]),
+        ],
+        solution=["grep -r 203.0.113.9 dossier | tee case_summary.txt", "cat case_summary.txt", "sudo cp case_summary.txt archive/case_summary.txt"],
+        reward_xp=200, tags=["bash", "act2", "milestone", "grep", "tee", "sudo"],
+    ),
+]
+
+ACT2 = [*ACT2_CHAPTER1, *ACT2_CHAPTER2, *ACT2_CHAPTER3]
