@@ -84,6 +84,8 @@ class World:
         self.clock = clock
         self.flags: dict[str, object] = {}                # free game state (discovered hosts, alarms ...)
         self.discovered: set[str] = set()
+        self.dns: dict[str, str] = {}                     # extra DNS names -> ip (hostnames of machines resolve automatically)
+        self.whois: dict[str, str] = {}                   # domain or ip -> whois text
         for m in machines or []:
             self.add(m)
 
@@ -98,6 +100,13 @@ class World:
             if low in (m.id.lower(), m.hostname.lower(), m.ip, (m.hostname + "." + m.domain).lower() if m.domain else "-"):
                 return m
         return None
+
+    def resolve(self, name: str) -> str | None:
+        """Hostname or ip -> ip (None = the name does not exist)."""
+        if name in self.dns:
+            return self.dns[name]
+        m = self.find(name)
+        return m.ip if m else None
 
     def reachable_from(self, source: Machine, ref: str) -> Machine | None:
         """A target the player's machine may talk to: itself, its neighbours, and anything already discovered."""
@@ -132,6 +141,8 @@ class Session:
     aliases: dict[str, str] = field(default_factory=dict)
     parent: "Session | None" = None                      # the session we came from (ssh chain)
     pid: int = 1000
+    saved_state: dict = field(default_factory=dict)      # shell variables of the parent shell while this one is active
+    origin: str = ""                                     # how we got here, e.g. "10.0.0.2" (for `who`/last login lines)
 
     def __post_init__(self) -> None:
         if not self.cwd:

@@ -807,7 +807,33 @@ class Shell:
     b_local = b_declare = b_readonly = b_typeset = _declare
 
     def b_exit(self, args, stdin, chunks) -> int:
-        raise _Exit(int(args[0]) if args and args[0].lstrip("-").isdigit() else self.session.last_status)
+        status = int(args[0]) if args and args[0].lstrip("-").isdigit() else self.session.last_status
+        if self.session.parent is not None:                      # leaving an ssh session: back to the machine we came from
+            host = self.session.machine.ip
+            self.pop_session()
+            chunks.append((1, f"logout\nConnection to {host} closed.\n"))
+            return status
+        raise _Exit(status)
+
+    def push_session(self, machine, user, shell_name: str = "", origin: str = "") -> Session:
+        """Open a new login on another machine (ssh): own variables, own cwd, own prompt. exit goes back."""
+        new = Session(machine, user, shell_name or machine.shell, parent=self.session, origin=origin or self.session.machine.ip)
+        new.saved_state = {"vars": self.vars, "funcs": self.funcs, "positional": self.positional}
+        self.vars, self.funcs, self.positional = {}, {}, []
+        self.session = new
+        self.emit("session_start", machine=machine.id, user=user.name, shell=new.shell)
+        return new
+
+    def pop_session(self) -> Session:
+        old = self.session
+        parent = old.parent
+        if parent is None:
+            return old
+        state = old.saved_state
+        self.vars, self.funcs, self.positional = state.get("vars", {}), state.get("funcs", {}), state.get("positional", [])
+        self.session = parent
+        self.emit("session_end", machine=old.machine.id, user=old.user.name)
+        return parent
 
     def b_return(self, args, stdin, chunks) -> int:
         raise _Return(int(args[0]) if args and args[0].isdigit() else self.session.last_status)
