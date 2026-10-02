@@ -102,6 +102,16 @@ class HostDiscovery(NetBase):
         r = self.run_("ss -tl")
         self.assertIn(":22", r.out)
 
+    def test_netstat_tulpn_shows_tcp_services_not_just_udp(self):
+        """Regression: -t and -u together used to AND their exclusions, so a tcp service was wrongly dropped by the -u
+        filter (and vice versa) instead of both protocols being shown — '-tulpn' is the single most common real
+        invocation, so this silently broke the common case."""
+        from nexus.shell.machine import Service
+        self.machine.services.append(Service(22, "ssh", "OpenSSH 9.6", "open"))
+        r = self.run_("netstat -tulpn")
+        self.assertIn(":22", r.out)
+        self.assertIn("LISTEN", r.out)
+
     def test_traceroute(self):
         r = self.run_("traceroute portal")
         self.assertIn("traceroute to portal (10.0.0.5)", r.out)

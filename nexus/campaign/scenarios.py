@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Callable
 
 from ..shell.fs import User, VFS
-from ..shell.machine import Machine, Process, Session, World
+from ..shell.machine import Machine, Process, Service, Session, World
 
 EPOCH = 2524608000.0          # 2050-01-01 00:00:00 UTC, see docs/story/00-bible.md
 
@@ -570,3 +570,109 @@ def traces_handoff() -> tuple[World, Session]:
     m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ============================================================================================ Act III — The Network
+NX_IP = "203.0.113.9"              # the "patient address" from Act I/II, confirmed in Act III as Nexus Company's own edge server
+NX_DOMAIN = "nexus-company.com"
+NX_HOST = "cloud-edge"
+
+
+def _recon_world(services: list[Service] | None = None, extra_target_fs: dict | None = None, discovered: bool = False) -> tuple[World, Machine, Machine]:
+    """Player's home-rig plus the Nexus Company edge server at NX_IP, linked as neighbours — the shared setup for every
+    Act III, Chapter 1 recon mission. ``discovered`` pre-populates world.discovered, for missions that assume an earlier
+    ping/lookup already happened."""
+    world = World(clock=lambda: EPOCH)
+    player = _player_machine({"notes.txt": "NEXUS: Time to stop reading about that address secondhand.\n"})
+    target = Machine(NX_HOST, NX_HOST, NX_IP, "linux", VFS("posix", clock=lambda: EPOCH))
+    target.domain = NX_DOMAIN
+    target.add_user(User("root", 0, 0, ("root",), "/root", admin=True, password="toor"))
+    target.add_user(User("deploy", 1000, 1000, ("deploy",), "/home/deploy", password="n3xus-deploy!"))
+    target.fs.load(extra_target_fs or {"home": {"deploy": {"_owner": "deploy", "_group": "deploy"}}})
+    target.services = services if services is not None else [Service(80, "http", "nginx/1.24.0", "open",
+                      data={"pages": {"/": {"body": "<html><body><h1>Nexus Company</h1><p>Edge relay — internal use only.</p></body></html>", "status": 200}}})]
+    world.add(player)
+    world.add(target)
+    player.neighbors.append(target.id)
+    world.dns[NX_HOST] = NX_IP
+    world.dns[NX_DOMAIN] = NX_IP
+    world.whois[NX_DOMAIN] = ("Domain Name: NEXUS-COMPANY.COM\nRegistrar: MERIDIAN DOMAIN REGISTRY\n"
+                              "Updated Date: 2049-11-03T00:00:00Z\nCreation Date: 2031-06-04T00:00:00Z\nRegistry Expiry Date: 2052-06-04T00:00:00Z")
+    if discovered:
+        world.discovered.add(target.id)
+    return world, player, target
+
+
+@scenario("network_ping")
+def network_ping() -> tuple[World, Session]:
+    """Level 46: confirm the address is actually alive before anything else — the first ping against a real destination."""
+    world, player, _target = _recon_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_resolve")
+def network_resolve() -> tuple[World, Session]:
+    """Level 47: dig/nslookup/host — resolve nexus-company.com and confirm it lands on the same address that's been
+    showing up in logs since Act I."""
+    world, player, _target = _recon_world(discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_whois")
+def network_whois() -> tuple[World, Session]:
+    """Level 48: whois — the domain's own paperwork. Registered 2031, years before any of this started."""
+    world, player, _target = _recon_world(discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_selfcheck")
+def network_selfcheck() -> tuple[World, Session]:
+    """Level 49 (standard): ip/ifconfig/arp — a look at the player's own network position before going further out."""
+    world, player, _target = _recon_world(discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_oduya")
+def network_oduya() -> tuple[World, Session]:
+    """Level 50 (story): Oduya, Mira's more experienced asset, is introduced — a warning before the player goes any
+    further at a company target directly."""
+    world, player, _target = _recon_world(discovered=True)
+    player.fs.load({"home": {"operator": {"inbox": {"oduya_intro.txt": [
+        "FROM: Oduya", "", "Mira asked me to say something before you go further. I've worked Nexus Company targets "
+        "longer than you've been doing this at all.", "",
+        "They notice. Not always fast, but they notice. Confirm what you're looking at before you touch it, keep your "
+        "footprint boring, and if something looks too easy, it probably is.",
+        "", "Welcome to the part of the job that can actually go wrong.", "- O.",
+    ]}}}})
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_fetch")
+def network_fetch() -> tuple[World, Session]:
+    """Level 51: curl against the exposed edge page — the first look at what the server is actually showing the public."""
+    world, player, _target = _recon_world(discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_download")
+def network_download() -> tuple[World, Session]:
+    """Level 52 (standard): wget — a changelog file left reachable on the same web root, saved and read locally."""
+    services = [Service(80, "http", "nginx/1.24.0", "open", data={"pages": {
+        "/": {"body": "<html><body><h1>Nexus Company</h1><p>Edge relay — internal use only.</p></body></html>", "status": 200},
+        "/changelog.txt": {"body": "2049-12-20 - rotated edge credentials\n2049-12-28 - disabled legacy telemetry relay\n"
+                                   "2050-01-02 - re-enabled relay 'for diagnostics' (temporary)\n", "status": 200, "headers": {"Content-Type": "text/plain"}},
+    }})]
+    world, player, _target = _recon_world(services=services, discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_services")
+def network_services() -> tuple[World, Session]:
+    """Level 53 (milestone): netstat/ss on the player's own machine, plus what's actually open on the target — a full
+    picture of the edge server before Chapter 2 goes after what's actually running on it. Closes Chapter 1."""
+    services = [Service(80, "http", "nginx/1.24.0", "open", data={"pages": {
+        "/": {"body": "<html><body><h1>Nexus Company</h1><p>Edge relay — internal use only.</p></body></html>", "status": 200}}}),
+        Service(22, "ssh", "OpenSSH 9.6", "closed"), Service(443, "https", "nginx/1.24.0", "open")]
+    world, player, target = _recon_world(services=services, discovered=True)
+    player.services = [Service(22, "ssh", "OpenSSH 9.6", "open")]
+    return world, Session(player, player.users["operator"], "bash")

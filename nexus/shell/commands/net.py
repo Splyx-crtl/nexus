@@ -291,11 +291,12 @@ def netstat(ctx, args):
         return 2
     ctx.out("Active Internet connections" + (" (servers and established)" if o.has("a") else " (only servers)" if o.has("l") else ""))
     ctx.out("Proto Recv-Q Send-Q Local Address           Foreign Address         State" + ("       PID/Program name" if o.has("p") else ""))
+    protos_wanted = {p for p, flag in (("tcp", "t"), ("udp", "u")) if o.has(flag)}
     for svc in ctx.machine.services:
         if svc.state != "open":
             continue
         proto = "tcp" if svc.proto == "tcp" else "udp"
-        if (o.has("t") and proto != "tcp") or (o.has("u") and proto != "udp"):
+        if protos_wanted and proto not in protos_wanted:
             continue
         pid = f"       {1000 + svc.port}/{svc.name}" if o.has("p") else ""
         ctx.out(f"{proto:<5} {0:>6} {0:>6} {ctx.machine.ip}:{svc.port}{'':<13} 0.0.0.0:*{'':<15} LISTEN{pid}")
