@@ -4,7 +4,7 @@ from __future__ import annotations
 import random
 
 from PySide6.QtCore import QPointF, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from nexus import reputation
@@ -28,7 +28,8 @@ class BackgroundCanvas(QWidget):
         self.cols: list[dict] = []
         self.animated = True
         self.nodes: list[list[float]] = [[self.rng.random(), self.rng.random(), self.rng.uniform(-.03, .03), self.rng.uniform(-.03, .03)] for _ in range(26)]
-        self.timer = QTimer(self, interval=45)
+        self._glyphs: dict[tuple, QPixmap] = {}
+        self.timer = QTimer(self, interval=50)
         self.timer.timeout.connect(self._tick)
         self.timer.start()
 
@@ -55,23 +56,50 @@ class BackgroundCanvas(QWidget):
             n[1] = (n[1] + n[3] * 0.05) % 1.0
         self.update()
 
+    LEVELS = 8                       # alpha steps of the fading trail; the bright head is level LEVELS
+
+    def _glyph(self, ch: str, level: int) -> QPixmap:
+        """Pre-rendered character: drawing ~400 glyphs per frame with drawText is what made the menu eat a CPU core."""
+        dpr = self.devicePixelRatioF()
+        key = (ch, level, COLORS["green"], dpr)
+        pm = self._glyphs.get(key)
+        if pm is None:
+            font = mono_font(12)
+            fm = QFontMetrics(font)
+            pm = QPixmap(int(16 * dpr), int(20 * dpr))
+            pm.setDevicePixelRatio(dpr)
+            pm.fill(Qt.GlobalColor.transparent)
+            g = QColor(COLORS["green"])
+            painter = QPainter(pm)
+            painter.setFont(font)
+            if level >= self.LEVELS:
+                painter.setPen(QColor(220, 255, 240, 120))
+            else:
+                painter.setPen(QColor(g.red(), g.green(), g.blue(), int(60 * (level + 1) / self.LEVELS)))
+            painter.drawText(0, fm.ascent() + 1, ch)
+            painter.end()
+            if len(self._glyphs) > 800:
+                self._glyphs.clear()
+            self._glyphs[key] = pm
+        return pm
+
     def paintEvent(self, _):
         p = QPainter(self)
         p.fillRect(self.rect(), QColor(COLORS["bg"]))
-        p.setFont(mono_font(12))
         w, h = self.width(), self.height()
         self._ensure()
-        g, c = QColor(COLORS["green"]), QColor(COLORS["cyan"])
+        c = QColor(COLORS["cyan"])
+        asc = QFontMetrics(mono_font(12)).ascent() + 1
         for i, col in enumerate(self.cols):
             x = i * 22 + 4
             head = int(col["y"])
-            for t in range(col["trail"]):
+            chars, trail = col["chars"], col["trail"]
+            for t in range(trail):
                 row = head - t
                 if row < 0 or row * 18 > h:
                     continue
-                alpha = int(60 * (1 - t / col["trail"])) if t else 120
-                p.setPen(QColor(g.red(), g.green(), g.blue(), alpha) if t else QColor(220, 255, 240, alpha))
-                p.drawText(x, row * 18, col["chars"][row % len(col["chars"])])
+                level = self.LEVELS if t == 0 else max(0, min(self.LEVELS - 1, int(self.LEVELS * (1 - t / trail))))
+                p.drawPixmap(x, row * 18 - asc, self._glyph(chars[row % len(chars)], level))
         pts = [QPointF(n[0] * w, n[1] * h) for n in self.nodes]
         for i, a in enumerate(pts):
             for b in pts[i + 1:]:

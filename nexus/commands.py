@@ -185,6 +185,7 @@ class CommandProcessor(MetaCommandsMixin, GameCommandsMixin):
 
     # ------------------------------------------------------- basic commands ---
     def cmd_help(self, args):
+        self.e.event("help")
         cmds = self.e.data.commands
         if args:
             c = next((c for c in cmds if args[0].lower() in [c["name"], *c.get("aliases", [])]), None)
@@ -490,13 +491,13 @@ class CommandProcessor(MetaCommandsMixin, GameCommandsMixin):
         e, w = self.e, self.e.world
         if not w.server:
             return (yield dim("Not connected."))
-        name = w.server.name
+        name, left = w.server.name, w.current
         yield Out(f"> CLOSING TUNNEL TO {name}...", "info")
         yield Progress("DISCONNECTING", 700)
         w.disconnect()
         e.reduce_heat(8)
         yield ok("DISCONNECTED. Back on the local node.")
-        e.event("disconnect", server=w.current)
+        e.event("disconnect", server=left)
         e.server_changed.emit()
 
     def cmd_logout(self, args):

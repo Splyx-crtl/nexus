@@ -94,7 +94,7 @@ win.story._end()
 pump(2500)
 check(win.engine is not None and win.engine.player.username == "TESTER", "profile created from first-launch form")
 check(win.stack.currentIndex() == win.PAGE_SHELL, "shell visible after intro")
-check(win.engine.missions.active()["id"] == "mission_001", "mission 001 auto-started")
+check(win.engine.missions.active()["id"] == "mission_000", "tutorial mission (boot camp) auto-started")
 check(win.tutorial is not None and win.tutorial.isVisible(), "tutorial overlay shown")
 win.tutorial.close_tutorial()
 shell = win.shell
@@ -114,6 +114,14 @@ def type_cmd(cmd, wait=2200, answer=None):
     win.banner.queue.clear()
     win.banner.hide()
 
+
+# ----------------------------------------------------------- tutorial via UI
+for cmd in ["help", "connect echo", "scan", "ls", "cd training", "cat lesson.txt", "ls -a", "cat .keycard",
+            "download field_notes.dat", "hint", "disconnect"]:
+    type_cmd(cmd)
+check(win.engine.missions.is_complete("mission_000"), "tutorial completed via real terminal input")
+check(win.engine.missions.active()["id"] == "mission_001", "mission 001 starts right after the tutorial")
+check(win.engine.player.completed_missions == 0, "tutorial does not count as a completed mission")
 
 # ----------------------------------------------------------- missions via UI
 for cmd in ["connect echo", "scan", "ls", "cat readme.txt"]:

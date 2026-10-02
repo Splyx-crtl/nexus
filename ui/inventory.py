@@ -9,7 +9,7 @@ from nexus.config import COLORS
 from nexus.i18n import tr
 from nexus.market import STAT_LABELS
 
-from .widgets import Chip, ItemIcon, NeonBar, NeonButton, Panel, hline, rarity_color
+from .widgets import Chip, Deferred, ItemIcon, NeonBar, NeonButton, Panel, hline, rarity_color
 
 FILTERS = ["ALL", "TOOLS", "UPGRADES", "ACCESS", "COSMETICS", "SPECIAL"]
 
@@ -119,7 +119,7 @@ class InventoryPanel(QWidget):
         fl.addLayout(fr, 1)
         self.tabs.addTab(files, "LOCAL FILES")
 
-        engine.inventory_changed.connect(self.refresh)
+        engine.inventory_changed.connect(Deferred(self, self.refresh))
         self.set_filter("ALL")
 
     # ------------------------------------------------------------ entries --

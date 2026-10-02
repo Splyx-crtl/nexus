@@ -24,6 +24,9 @@ class EventManager:
         e = self.e
         if e.busy or not e.settings_value("random_events"):
             return
+        active = e.missions.active()
+        if active and active.get("tutorial"):            # nothing may interrupt the guided tutorial
+            return
         if time.time() - self.last_fired < EVENT_MIN_INTERVAL:
             return
         if self.rng.random() < EVENT_CHANCE_PER_TICK:
@@ -34,7 +37,7 @@ class EventManager:
         for ev in self.defs:
             if ev.get("requires") and not self.e.check_requirement(ev["requires"]):
                 continue
-            if ev["kind"] == "firewall_update" and not self.e.world.db.get_world("breached", []):
+            if ev["kind"] == "firewall_update" and not self._rearm_candidates():
                 continue
             if ev["kind"] in ("server_offline", "blackout", "server_migration") and not self._offline_candidates():
                 continue
@@ -51,10 +54,29 @@ class EventManager:
         self.fire(ev["id"])
         return ev
 
+    def _needed_servers(self) -> set:
+        """Servers the open connection, the current mission or the upcoming story missions depend on.
+        Random events must never take these away from the player."""
+        ms = self.e.missions
+        active = ms.active()
+        needed = {self.e.world.current}
+        completed = {m["id"] for m in ms.defs if ms.is_complete(m["id"])}
+        reachable = completed | ({active["id"]} if active else set())
+        for m in ms.defs:
+            if m.get("contract") or not m.get("main") or m["id"] in completed:
+                continue
+            if all(r in reachable for r in m.get("requires", [])):      # active, startable, or unlocked by the active one
+                needed.update(o.get("server") for o in m["objectives"])
+        return needed
+
+    def _rearm_candidates(self) -> list[str]:
+        needed = self._needed_servers()
+        return [s for s in self.e.world.db.get_world("breached", []) if s not in needed]
+
     def _offline_candidates(self) -> list[str]:
         w = self.e.world
-        needed = {o.get("server") for m in [self.e.missions.active()] if m for o in m["objectives"]}
-        return [s for s in w.discovered() if s != w.current and s not in needed and w.is_online(s)
+        needed = self._needed_servers()
+        return [s for s in w.discovered() if s not in needed and w.is_online(s)
                 and s not in ("echo", "nexus_core")]
 
     def fire(self, event_id: str) -> None:
@@ -84,10 +106,10 @@ class EventManager:
             e.alert(title, text, "warn", sound="warning")
             e.add_heat(rng.randint(2, 5), "system alert")
         elif kind == "firewall_update":
-            breached = e.world.db.get_world("breached", [])
-            if not breached:
+            candidates = self._rearm_candidates()
+            if not candidates:
                 return
-            sid = rng.choice(breached)
+            sid = rng.choice(candidates)
             e.world.rearm_firewall(sid)
             name = e.world.servers[sid].name
             e.alert(title, f"{name} firewall re-armed. Breach required again.", "warn", sound="warning")

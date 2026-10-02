@@ -9,7 +9,7 @@ from nexus.config import COLORS
 from nexus.i18n import tr
 from nexus.market import CATEGORIES
 
-from .widgets import Chip, ItemIcon, NeonButton, hline, play, rarity_color
+from .widgets import Chip, Deferred, ItemIcon, NeonButton, hline, play, rarity_color
 
 
 class MarketRow(QWidget):
@@ -137,7 +137,8 @@ class MarketPage(QWidget):
         body.addWidget(self.detail, 2)
         lay.addLayout(body, 1)
 
-        engine.inventory_changed.connect(self.refresh)
+        self._sig: tuple | None = None
+        engine.inventory_changed.connect(Deferred(self, self.refresh))
         engine.state_changed.connect(self._update_header)
         self.set_category("ALL")
 
@@ -165,15 +166,21 @@ class MarketPage(QWidget):
             self.deal.hide()
         row = max(0, self.list.currentRow())
         self.entries = e.market.catalogue(None if self.category == "ALL" else self.category)
-        self.list.blockSignals(True)
-        self.list.clear()
-        for entry in self.entries:
-            item = QListWidgetItem()
-            widget = MarketRow(entry)
-            item.setSizeHint(widget.sizeHint())
-            self.list.addItem(item)
-            self.list.setItemWidget(item, widget)
-        self.list.blockSignals(False)
+        sig = (self.category, COLORS["green"], tuple((x["id"], x["name"], x["final_price"], x["owned"], x["locked_level"], x["equipped"], x["deal"],
+                                      x.get("maxed", False)) for x in self.entries))
+        if sig != self._sig:                         # rebuilding ~200 row widgets is the expensive part: only when content changed
+            self._sig = sig
+            self.list.setUpdatesEnabled(False)
+            self.list.blockSignals(True)
+            self.list.clear()
+            for entry in self.entries:
+                item = QListWidgetItem()
+                widget = MarketRow(entry)
+                item.setSizeHint(widget.sizeHint())
+                self.list.addItem(item)
+                self.list.setItemWidget(item, widget)
+            self.list.blockSignals(False)
+            self.list.setUpdatesEnabled(True)
         if self.entries:
             self.list.setCurrentRow(min(row, len(self.entries) - 1))
         self._show(self.list.currentRow())

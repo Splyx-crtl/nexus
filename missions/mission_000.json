@@ -1,0 +1,42 @@
+{
+ "id": "mission_000",
+ "number": 0,
+ "title": "BOOT CAMP",
+ "difficulty": 1,
+ "description": "A two-minute guided tour of the terminal: the commands you need for every mission that follows.",
+ "goal": "Follow MIRA's instructions step by step. Nothing here can go wrong.",
+ "reward": {"xp": 60, "credits": 150, "reputation": 0},
+ "requires": [],
+ "hint": "Do what the current objective says. 'hint' tells you the exact command.",
+ "tutorial": true,
+ "story_start": [
+  "MIRA: \"Welcome to NEXUS, {player}. Before your first real job we do a short warm-up. It takes about two minutes.\"",
+  "MIRA: \"Type the commands yourself. Each step tells you what to do, and 'hint' repeats the exact command.\""
+ ],
+ "objectives": [
+  {"id": "help", "text": "Open the command index", "event": "help", "hint": "Type: help"},
+  {"id": "connect", "text": "Connect to the training node ECHO", "event": "connect", "server": "echo", "hint": "Type: connect echo"},
+  {"id": "scan", "text": "Scan the node to see what runs on it", "event": "scan", "server": "echo", "hint": "Type: scan"},
+  {"id": "ls", "text": "List the files in the root folder", "event": "ls", "server": "echo", "hint": "Type: ls"},
+  {"id": "lesson", "text": "Read training/lesson.txt", "event": "read", "server": "echo", "path": "/training/lesson.txt",
+   "hint": "Type: cd training   then: cat lesson.txt   (or in one go: cat training/lesson.txt)"},
+  {"id": "hidden", "text": "Find and read the hidden file in training/", "event": "read", "server": "echo", "path": "/training/.keycard",
+   "hint": "Type: ls -a   then: cat .keycard   (make sure you are inside the training folder: cd training)"},
+  {"id": "download", "text": "Download field_notes.dat", "event": "download", "server": "echo", "file": "field_notes.dat",
+   "hint": "Type: download field_notes.dat   (from inside the training folder)"},
+  {"id": "hint", "text": "Ask for a hint", "event": "hint", "hint": "Type: hint"},
+  {"id": "leave", "text": "Disconnect from ECHO", "event": "disconnect", "server": "echo", "hint": "Type: disconnect"}
+ ],
+ "story_end": [
+  "MIRA: \"That's the whole toolkit: connect, scan, ls, cd, cat, download, hint, disconnect. Everything else is built from these.\"",
+  "MIRA: \"Your first real assignment is already loaded.\""
+ ],
+ "on_complete": {
+  "flags": {"tutorial_done": true},
+  "start_next": "mission_001"
+ },
+ "type": "TRAINING",
+ "chapter": 1,
+ "main": false,
+ "required_level": 1
+}

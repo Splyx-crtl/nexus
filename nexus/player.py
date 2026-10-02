@@ -78,7 +78,7 @@ class Player:
         return self.db.get_inventory()
 
     def qty(self, item_id: str) -> int:
-        return self.db.get_inventory().get(item_id, 0)
+        return self.db.item_qty(item_id)
 
     def has(self, item_id: str, qty: int = 1) -> bool:
         return self.qty(item_id) >= qty

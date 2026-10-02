@@ -4,8 +4,8 @@ from __future__ import annotations
 import math
 import random
 
-from PySide6.QtCore import Property, QEasingCurve, QPoint, QPointF, QPropertyAnimation, QRectF, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont, QFontDatabase, QLinearGradient, QPainter, QPen, QRadialGradient
+from PySide6.QtCore import Property, QEvent, QObject, QEasingCurve, QPoint, QPointF, QPropertyAnimation, QRect, QRectF, QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QFont, QFontDatabase, QLinearGradient, QPainter, QPen, QPixmap, QRadialGradient
 from PySide6.QtWidgets import (QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QPushButton, QSizePolicy,
                                QVBoxLayout, QWidget)
 
@@ -208,9 +208,41 @@ def hline() -> QFrame:
     return line
 
 
+class Deferred(QObject):
+    """Signal slot that only does its work while ``widget`` is visible.
+
+    Engine signals fire many times per second; rebuilding a page nobody is looking at is wasted time. A hidden page
+    just remembers that it is stale and refreshes once, the moment it is shown."""
+
+    def __init__(self, widget: QWidget, fn):
+        super().__init__(widget)
+        self._widget, self._fn, self.stale = widget, fn, True
+        widget.installEventFilter(self)
+
+    def __call__(self, *_args) -> None:
+        if self._widget.isVisible():
+            self.stale = False
+            self._fn()
+        else:
+            self.stale = True
+
+    def eventFilter(self, obj, ev):
+        if ev.type() == QEvent.Type.Show and self.stale:
+            self.stale = False
+            self._fn()
+        return False
+
+
 # --------------------------------------------------------------------- overlays
 class ScanlineOverlay(QWidget):
-    """CRT scanlines + vignette + refresh band, plus glitch bursts and a red alert pulse. Click-through."""
+    """CRT scanlines + vignette + refresh band, plus glitch bursts and a red alert pulse. Click-through.
+
+    Performance: this widget covers the whole window, so every repaint of it also repaints everything below it.
+    The static layers (scanlines, vignette, alert glow) are therefore rendered once into cached pixmaps, and the
+    moving refresh band only invalidates its own stripe. Nothing is repainted while there is nothing to animate.
+    """
+
+    BAND_H = 90
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -222,6 +254,9 @@ class ScanlineOverlay(QWidget):
         self._pulse = 0.0
         self._glitch = 0
         self.rng = random.Random()
+        self._static: QPixmap | None = None      # scanlines + vignette
+        self._glow: QPixmap | None = None        # red alert vignette (full alpha, faded with setOpacity)
+        self._cache_key: tuple = ()
         self._timer = QTimer(self, interval=60)
         self._timer.timeout.connect(self._tick)
         self._timer.start()
@@ -236,38 +271,81 @@ class ScanlineOverlay(QWidget):
 
     def glitch(self, frames: int = 6) -> None:
         self._glitch = frames
+        self.update()
+
+    def _band_rect(self) -> QRect:
+        y = int((self._band - 0.1) * self.height())
+        return QRect(0, y, self.width(), self.BAND_H)
 
     def _tick(self):
-        if self.isVisible():
-            self._band = (self._band + 0.006) % 1.2
-            self._pulse = (self._pulse + 0.2) % (2 * math.pi)
-            if self._glitch:
-                self._glitch -= 1
+        if not self.isVisible():
+            return
+        old = self._band_rect()
+        self._band = (self._band + 0.006) % 1.2
+        self._pulse = (self._pulse + 0.2) % (2 * math.pi)
+        if self._glitch:
+            self._glitch -= 1
             self.update()
+        elif self.alert:
+            self._alert_tick = not getattr(self, "_alert_tick", False)
+            if self._alert_tick:                         # the red pulse is slow: every other frame is plenty
+                self.update()
+        elif self.show_lines:
+            self.update(old.united(self._band_rect()))      # only the stripe the band moved through
 
-    def paintEvent(self, _):
-        p = QPainter(self)
+    def _build_cache(self) -> None:
         w, h = self.width(), self.height()
+        dpr = self.devicePixelRatioF()
+        key = (w, h, dpr)
+        if key == self._cache_key:
+            return
+        self._cache_key = key
+
+        def layer() -> QPixmap:
+            pm = QPixmap(int(w * dpr), int(h * dpr))
+            pm.setDevicePixelRatio(dpr)
+            pm.fill(Qt.GlobalColor.transparent)
+            return pm
+
+        pm = layer()
+        p = QPainter(pm)
+        p.setPen(QPen(QColor(0, 0, 0, 38), 1))
+        for y in range(0, h, 3):
+            p.drawLine(0, y, w, y)
+        vg = QRadialGradient(QPointF(w / 2, h / 2), max(w, h) * 0.75)
+        vg.setColorAt(0.6, QColor(0, 0, 0, 0))
+        vg.setColorAt(1.0, QColor(0, 0, 0, 120))
+        p.fillRect(0, 0, w, h, vg)
+        p.end()
+        self._static = pm
+        pm = layer()
+        p = QPainter(pm)
+        vg = QRadialGradient(QPointF(w / 2, h / 2), max(w, h) * 0.7)
+        vg.setColorAt(0.55, QColor(255, 56, 96, 0))
+        vg.setColorAt(1.0, QColor(255, 56, 96, 100))
+        p.fillRect(0, 0, w, h, vg)
+        p.end()
+        self._glow = pm
+
+    def paintEvent(self, ev):
+        w, h = self.width(), self.height()
+        self._build_cache()
+        p = QPainter(self)
+        clip = ev.rect()
         if self.show_lines:
-            p.setPen(QPen(QColor(0, 0, 0, 38), 1))
-            for y in range(0, h, 3):
-                p.drawLine(0, y, w, y)
+            r = self._static.devicePixelRatio()
+            p.drawPixmap(clip, self._static, QRect(int(clip.x() * r), int(clip.y() * r), int(clip.width() * r), int(clip.height() * r)))
             band_y = (self._band - 0.1) * h
-            grad = QLinearGradient(0, band_y, 0, band_y + 90)
+            grad = QLinearGradient(0, band_y, 0, band_y + self.BAND_H)
             band = QColor(C["green"])
             grad.setColorAt(0, QColor(band.red(), band.green(), band.blue(), 0))
             grad.setColorAt(0.5, QColor(band.red(), band.green(), band.blue(), 12))
             grad.setColorAt(1, QColor(band.red(), band.green(), band.blue(), 0))
-            p.fillRect(0, int(band_y), w, 90, grad)
-            vg = QRadialGradient(QPointF(w / 2, h / 2), max(w, h) * 0.75)
-            vg.setColorAt(0.6, QColor(0, 0, 0, 0))
-            vg.setColorAt(1.0, QColor(0, 0, 0, 120))
-            p.fillRect(self.rect(), vg)
+            p.fillRect(0, int(band_y), w, self.BAND_H, grad)
         if self.alert:
-            vg = QRadialGradient(QPointF(w / 2, h / 2), max(w, h) * 0.7)
-            vg.setColorAt(0.55, QColor(255, 56, 96, 0))
-            vg.setColorAt(1.0, QColor(255, 56, 96, int(60 + 40 * math.sin(self._pulse))))
-            p.fillRect(self.rect(), vg)
+            p.setOpacity((60 + 40 * math.sin(self._pulse)) / 100)
+            p.drawPixmap(0, 0, self._glow)
+            p.setOpacity(1.0)
         if self._glitch:
             for _i in range(7):
                 y = self.rng.randrange(h)
@@ -579,6 +657,8 @@ class GlitchTitle(QWidget):
         self.glitch = 0
         self.rng = random.Random()
         self.enabled = True
+        self._cache: QPixmap | None = None
+        self._cache_key: tuple = ()
         self.setMinimumHeight(170)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.timer = QTimer(self, interval=70)
@@ -591,26 +671,34 @@ class GlitchTitle(QWidget):
     def _tick(self):
         if not self.isVisible():
             return
+        was = self.glitch
         if self.glitch > 0:
             self.glitch -= 1
         elif self.enabled and self.rng.random() < 0.04:
             self.glitch = self.rng.randint(2, 6)
-        self.update()
+        if was or self.glitch:                       # idle frames need no repaint: the title is a cached pixmap
+            self.update()
 
-    def paintEvent(self, _):
-        p = QPainter(self)
+    def _title_layout(self) -> tuple[int, QFont, QRectF]:
         w, h = self.width(), self.height()
         size = max(36, min(int(h * 0.55), int(w / (len(self.text) * 0.75))))
         font = mono_font(size, True)
         font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, size * 0.25)
+        return size, font, QRectF(0, 0, w, h * 0.72)
+
+    def _render_static(self) -> QPixmap:
+        """Glow + title + subtitle, drawn once per size/theme instead of 15 drawText calls every frame."""
+        w, h = self.width(), self.height()
+        dpr = self.devicePixelRatioF()
+        key = (w, h, dpr, C["green"], C["cyan"], self.text, self.subtitle)
+        if self._cache is not None and self._cache_key == key:
+            return self._cache
+        pm = QPixmap(int(w * dpr), int(h * dpr))
+        pm.setDevicePixelRatio(dpr)
+        pm.fill(Qt.GlobalColor.transparent)
+        p = QPainter(pm)
+        size, font, rect = self._title_layout()
         p.setFont(font)
-        rect = QRectF(0, 0, w, h * 0.72)
-        if self.glitch:
-            dx = self.rng.randint(4, 12)
-            p.setPen(QColor(255, 56, 96, 150))
-            p.drawText(rect.translated(-dx, self.rng.randint(-2, 2)), Qt.AlignmentFlag.AlignCenter, self.text)
-            p.setPen(QColor(34, 211, 238, 150))
-            p.drawText(rect.translated(dx, self.rng.randint(-2, 2)), Qt.AlignmentFlag.AlignCenter, self.text)
         glow = QColor(C["green"])
         for spread, alpha in ((6, 18), (3, 30)):                    # cheap glow
             p.setPen(QColor(glow.red(), glow.green(), glow.blue(), alpha))
@@ -624,6 +712,21 @@ class GlitchTitle(QWidget):
             p.setFont(sub)
             p.setPen(QColor(C["cyan"]))
             p.drawText(QRectF(0, h * 0.70, w, h * 0.28), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop, self.subtitle)
+        p.end()
+        self._cache, self._cache_key = pm, key
+        return pm
+
+    def paintEvent(self, _):
+        p = QPainter(self)
+        if self.glitch:
+            size, font, rect = self._title_layout()
+            p.setFont(font)
+            dx = self.rng.randint(4, 12)
+            p.setPen(QColor(255, 56, 96, 150))
+            p.drawText(rect.translated(-dx, self.rng.randint(-2, 2)), Qt.AlignmentFlag.AlignCenter, self.text)
+            p.setPen(QColor(34, 211, 238, 150))
+            p.drawText(rect.translated(dx, self.rng.randint(-2, 2)), Qt.AlignmentFlag.AlignCenter, self.text)
+        p.drawPixmap(0, 0, self._render_static())
 
 
 def labeled_row(label: str, widget: QWidget, hint: str = "") -> QWidget:

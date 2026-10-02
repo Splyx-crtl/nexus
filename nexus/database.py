@@ -84,6 +84,10 @@ class Database:
         self.conn.execute("PRAGMA synchronous=NORMAL")       # fast commits; still safe against app crashes
         self.conn.executescript(SCHEMA)
         self.migrated_from: int | None = None
+        self._inv: dict[str, int] | None = None            # read caches: these are asked for many times per second
+        self._equip: dict[str, str] | None = None
+        self._upgrades: dict[str, int] | None = None
+        self._mission_status: dict[str, str] | None = None
         self._migrate(existed)
 
     def _migrate(self, existed: bool) -> None:
@@ -223,29 +227,56 @@ class Database:
         self._kv_set("world", key, value)
 
     # -- inventory -----------------------------------------------------
+    def _inventory(self) -> dict[str, int]:
+        if self._inv is None:
+            self._inv = {r["item_id"]: r["qty"] for r in self.conn.execute("SELECT * FROM inventory WHERE qty > 0")}
+        return self._inv
+
     def get_inventory(self) -> dict[str, int]:
-        return {r["item_id"]: r["qty"] for r in self.conn.execute("SELECT * FROM inventory WHERE qty > 0")}
+        return dict(self._inventory())
+
+    def item_qty(self, item_id: str) -> int:
+        return self._inventory().get(item_id, 0)
 
     def set_item(self, item_id: str, qty: int) -> None:
         if qty <= 0:
             self.conn.execute("DELETE FROM inventory WHERE item_id=?", (item_id,))
+            self._inventory().pop(item_id, None)
         else:
             self.conn.execute("INSERT OR REPLACE INTO inventory(item_id, qty) VALUES(?, ?)", (item_id, qty))
+            self._inventory()[item_id] = qty
         self._commit()
 
     # -- upgrades ------------------------------------------------------
+    def _upgrade_levels(self) -> dict[str, int]:
+        if self._upgrades is None:
+            self._upgrades = {r["id"]: r["level"] for r in self.conn.execute("SELECT id, level FROM upgrades")}
+        return self._upgrades
+
     def get_upgrade(self, upgrade_id: str) -> int:
-        row = self.conn.execute("SELECT level FROM upgrades WHERE id=?", (upgrade_id,)).fetchone()
-        return row["level"] if row else 0
+        return self._upgrade_levels().get(upgrade_id, 0)
 
     def set_upgrade(self, upgrade_id: str, level: int) -> None:
         self.conn.execute("INSERT OR REPLACE INTO upgrades(id, level) VALUES(?, ?)", (upgrade_id, level))
+        self._upgrade_levels()[upgrade_id] = level
         self._commit()
 
     # -- missions ------------------------------------------------------
+    def _statuses(self) -> dict[str, str]:
+        if self._mission_status is None:
+            self._mission_status = {r["mission_id"]: r["status"] for r in self.conn.execute("SELECT mission_id, status FROM missions")}
+        return self._mission_status
+
+    def mission_status(self, mission_id: str) -> str | None:
+        """Cheap status lookup ('active' / 'completed' / 'failed' / 'available' / None) without parsing the progress."""
+        return self._statuses().get(mission_id)
+
     def active_mission_id(self) -> str | None:
-        row = self.conn.execute("SELECT mission_id FROM missions WHERE status='active' LIMIT 1").fetchone()
-        return row["mission_id"] if row else None
+        return next((mid for mid, status in self._statuses().items() if status == "active"), None)
+
+    def invalidate_caches(self) -> None:
+        """Call after writing to the database behind this class' back (raw SQL)."""
+        self._inv = self._equip = self._upgrades = self._mission_status = None
 
     def get_mission(self, mission_id: str) -> dict | None:
         row = self.conn.execute("SELECT * FROM missions WHERE mission_id=?", (mission_id,)).fetchone()
@@ -267,6 +298,7 @@ class Database:
             " VALUES(?, ?, ?, ?, ?, ?, ?)",
             (mission_id, status, json.dumps(progress), result, att, started, completed),
         )
+        self._statuses()[mission_id] = status
         self._commit()
 
     def all_missions(self) -> dict[str, dict]:
@@ -352,13 +384,16 @@ class Database:
 
     # -- equipment (loadout) ---------------------------------------------
     def get_equipment(self) -> dict[str, str]:
-        return {r["slot"]: r["item_id"] for r in self.conn.execute("SELECT * FROM equipment")}
+        if self._equip is None:
+            self._equip = {r["slot"]: r["item_id"] for r in self.conn.execute("SELECT * FROM equipment")}
+        return dict(self._equip)
 
     def set_equipment(self, slot: str, item_id: str | None) -> None:
         if item_id is None:
             self.conn.execute("DELETE FROM equipment WHERE slot=?", (slot,))
         else:
             self.conn.execute("INSERT OR REPLACE INTO equipment(slot, item_id) VALUES(?, ?)", (slot, item_id))
+        self._equip = None
         self._commit()
 
     # -- unlocks (themes, market access, secret content) -------------------
@@ -391,6 +426,12 @@ class Database:
         self.conn.execute("INSERT INTO notifications(ts, kind, title, text) VALUES(?,?,?,?)", (time.time(), kind, title, text))
         self.conn.execute("DELETE FROM notifications WHERE id NOT IN (SELECT id FROM notifications ORDER BY id DESC LIMIT 200)")
         self._commit()
+
+    def count_notifications_after(self, last_id: int, limit: int = 60) -> int:
+        """How many of the newest ``limit`` notifications are newer than ``last_id`` (the bell counter), without fetching rows."""
+        row = self.conn.execute(
+            "SELECT COUNT(*) c FROM (SELECT id FROM notifications ORDER BY id DESC LIMIT ?) WHERE id > ?", (limit, last_id)).fetchone()
+        return row["c"]
 
     def get_notifications(self, limit: int = 60) -> list[dict]:
         rows = self.conn.execute("SELECT * FROM notifications ORDER BY id DESC LIMIT ?", (limit,)).fetchall()

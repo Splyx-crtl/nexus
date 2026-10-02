@@ -190,6 +190,7 @@ class GameEngine(QObject):
         self.db.conn.execute("DELETE FROM missions")
         self.db.conn.execute("DELETE FROM decisions")
         self.db.conn.commit()
+        self.db.invalidate_caches()
         for key in ("discovered", "breached", "routed", "decrypted", "compromised", "offline", "contract", "roles", "current", "cwd"):
             self.db.set_world(key, None if key in ("current", "contract") else ({} if key in ("offline", "roles") else ([] if key != "cwd" else "/")))
         once = [k for k in self.db.get_world("once", []) if k.startswith(("secret:", "egg:", "secretfx:", "topic:"))]
@@ -502,6 +503,6 @@ class GameEngine(QObject):
         self.db.set_flag("initialized", True)
         self.db.set_flag("intro_pending", True)
         self.send_message("mira", "Welcome to NEXUS, {player}. I'm MIRA, your handler. "
-                                  "Open your terminal and type 'mission start 1' whenever you're ready.")
+                                  "Your boot camp starts automatically in the terminal. If you already know the ropes, type 'mission abort' and then 'mission start 1'.")
         self.db.conn.execute("UPDATE messages SET read=0")
         self.db.conn.commit()

@@ -66,7 +66,8 @@
    "text": "Download the manifest",
    "event": "download",
    "server": "blackvault",
-   "file": "manifest.txt"
+   "file": "manifest.txt",
+   "hint": "Type: download manifest.txt  (while connected to BLACKVAULT, from /srv/db or with the full path)"
   },
   {
    "id": "dave",

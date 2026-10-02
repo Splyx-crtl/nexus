@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
 from nexus.config import COLORS
 from nexus.i18n import tr
 
-from .widgets import Chip, NeonButton
+from .widgets import Chip, Deferred, NeonButton
 
 STATUS_STYLE = {
     "completed": ("✔", "green"), "active": ("▶", "amber"), "available": ("●", "cyan"),
@@ -60,7 +60,7 @@ class MissionPanel(QWidget):
         self.start_btn.clicked.connect(self._start)
         self.abort_btn.clicked.connect(lambda: self.run_command("mission abort"))
         self.chips["ALL"].setChecked(True)
-        engine.mission_changed.connect(self.refresh)
+        engine.mission_changed.connect(Deferred(self, self.refresh))
         self.refresh()
 
     def set_filter(self, key: str) -> None:
