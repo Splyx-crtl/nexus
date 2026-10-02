@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Callable
 
 from ..shell.fs import User, VFS
-from ..shell.machine import Machine, Session, World
+from ..shell.machine import Machine, Process, Session, World
 
 EPOCH = 2524608000.0          # 2050-01-01 00:00:00 UTC, see docs/story/00-bible.md
 
@@ -232,5 +232,135 @@ def awakening_convergence() -> tuple[World, Session]:
             "00:02:10 svc[auth]: failed login for admin from 192.0.2.15"]
     m = _player_machine({"logs": {"day1.log": day1, "day2.log": day2, "day3.log": day3},
                          "notes.txt": "NEXUS: Three days of logs off that server. Somewhere in there is a pattern, not just noise. Find it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+# ---------------------------------------------------------------------------------------------- Act II — Traces, Chapter 1
+@scenario("traces_permissions")
+def traces_permissions() -> tuple[World, Session]:
+    """Level 21: a leaked key with loose permissions — teaches chmod. The file is owned by operator, so no sudo is needed
+    yet; that comes next."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"vault.key": "-----BEGIN KEY-----\nNX7-CONTACT-PRIVATE\n-----END KEY-----\n",
+                         "notes.txt": "MIRA: That key's world-readable right now. Anyone on this box could read it. Lock it to yourself only — 600.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_ownership")
+def traces_ownership() -> tuple[World, Session]:
+    """Level 22: a root-owned stray file — teaches chown, and that it (unlike chmod) always needs sudo."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"notes.txt": "MIRA: There's a leftover config under /opt, still owned by root. I need it under your "
+                         "name so you can actually work with it. chown needs sudo — chmod doesn't, this does.\n"},
+                        root_extra={"opt": {"orphan.cfg": "last_touched_by: unknown\nstatus: orphaned\n"}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_protected")
+def traces_protected() -> tuple[World, Session]:
+    """Level 23: a root-only config file — teaches sudo's general purpose (running ANY command as root), not just chown."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"notes.txt": "MIRA: Everything I know about our other contacts is in /etc/nexus_contacts.conf. "
+                         "You don't have permission to just read it — you'll need to borrow root's.\n"},
+                        root_extra={"etc": {"nexus_contacts.conf": {"content": ["wraith: courier, low-risk jobs only",
+                                            "cipher: broker, verify everything twice", "echo-two: benched, don't contact"], "mode": 0o600}}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_process")
+def traces_process() -> tuple[World, Session]:
+    """Level 24 (standard): an unwanted process eating resources — teaches ps (find it) and kill (stop it)."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"notes.txt": "NEXUS: Your fans have been spinning for an hour and you're not doing anything. "
+                         "Something's running that shouldn't be. Find it, then stop it.\n"})
+    m.processes.append(Process(pid=4821, user="operator", name="xmr-helper", cmd="/tmp/.sys/xmr-helper --silent --pool pool.example:3333", cpu=97.8, mem=4.2))
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_whosthere")
+def traces_whosthere() -> tuple[World, Session]:
+    """Level 25: who/last — the home-rig has a login history worth reading, not just the active session."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"notes.txt": "MIRA: Habit worth building: check who's logged in, and who's logged in recently, "
+                         "every time you sit down at a box. Even your own.\n"})
+    m.data["last"] = ["operator pts/0    10.44.0.7        Thu Jan  8 09:12 - 09:50  (00:38)",
+                      "operator pts/0    10.44.0.7        Wed Jan  7 18:03 - 18:40  (00:37)",
+                      "operator pts/0    10.44.0.7        Wed Jan  7 08:55 - 09:15  (00:20)"]
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_rival")
+def traces_rival() -> tuple[World, Session]:
+    """Level 26 (story): Reyes, introduced — a rival independent operator who beat the player to a contract and left a
+    calling card about it. Mira fills in who they are."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"jobs": {"job_007": {"claimed.txt": ["Cute try. Already cleared this one an hour ago.",
+                                                              "You'll want to be faster than that if you're going to make a name for yourself.",
+                                                              "- R."]}},
+                         "inbox": {"about_reyes.txt": ["MIRA: That's Reyes. Another independent, works the same kind of contracts we do.",
+                                                       "Not an enemy. A competitor. Sharp, fast, and insufferably pleased about it.",
+                                                       "You'll cross paths again. Get used to it."]},
+                         "notes.txt": "NEXUS: Someone got to job_007 before you. There's a note.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_disk")
+def traces_disk() -> tuple[World, Session]:
+    """Level 27: disk filling up for no obvious reason — teaches df (how full) and du (what's actually taking the space)."""
+    world = World(clock=lambda: EPOCH)
+    filler = "X" * 200
+    m = _player_machine({".cache": {"spool": {f"part_{i:03d}.tmp": filler for i in range(6)}},
+                         "notes.txt": "NEXUS: Disk's filling up and I don't know why. Check how much space is left, then "
+                                     "find what's actually eating it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_symlink")
+def traces_symlink() -> tuple[World, Session]:
+    """Level 28 (standard): a file that isn't what it claims to be — teaches file (identify it) and readlink (see where
+    it really points)."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"backup_link": {"link": "/opt/real_backup.tar"},
+                         "notes.txt": "MIRA: That backup file in your workspace isn't a real file. Find out what it "
+                                     "actually is, and where it actually points.\n"},
+                        root_extra={"opt": {"real_backup.tar": "(binary archive, not for reading)\n"}})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_housekeeping")
+def traces_housekeeping() -> tuple[World, Session]:
+    """Level 29: a light, mostly comic NEXUS-driven beat — uptime and whereis, the two commands too small for their own
+    standard mission."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"notes.txt": "NEXUS: Idle curiosity: how long has this machine been up? And where does the "
+                         "system actually keep the 'grep' binary? I like knowing where things live.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("traces_incident")
+def traces_incident() -> tuple[World, Session]:
+    """Level 30 (milestone): a full, small incident response on the player's own machine, chaining Chapter 1's tools —
+    ps/kill, last, chmod. The login history quietly reuses 203.0.113.9, the patient address from Act I's Level 20, now
+    probing the player directly instead of the old dead-drop server. Closes Act II, Chapter 1."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"access.token": "OP-TOKEN-7734-ACTIVE\n",
+                         "notes.txt": "NEXUS: Something's running that neither of us started. Full check — what's "
+                                     "running, who's been logging in, and lock down anything loose when you're done.\n"})
+    m.processes.append(Process(pid=6650, user="operator", name="relay", cmd="/tmp/.sys/relay --beacon 203.0.113.9:4444", cpu=12.0, mem=1.5))
+    m.data["last"] = ["operator pts/1    203.0.113.9      Fri Jan  9 02:14   still logged in",
+                      "operator pts/0    10.44.0.7        Fri Jan  9 09:00 - 09:41  (00:41)",
+                      "operator pts/0    10.44.0.7        Thu Jan  8 09:12 - 09:50  (00:38)"]
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
