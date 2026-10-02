@@ -109,4 +109,129 @@ ACT4_CHAPTER1 = [
     ),
 ]
 
-ACT4 = [*ACT4_CHAPTER1]
+ACT4_CHAPTER2 = [
+    Mission(
+        id="act4_m79", number=79, act=4, size="mini", title="A Policy Nobody Questions", scenario="keys_unzip",
+        requires=["act4_m78"],
+        briefing=["MIRA: Priya forwarded something else — a policy doc, zipped. See what it actually says."],
+        debrief=["MIRA: 'Escalation routes through Compliance, not IT.' That's not standard. That's a wall built on "
+                 "purpose."],
+        objectives=[
+            Objective(event="command", match={"name": "unzip", "status": 0}, text="Unzip the policy doc (unzip)",
+                     hints=["unzip reverses zip.", "Try: unzip tickets/policy.zip", "unzip tickets/policy.zip"]),
+            Objective(event="file_read", match={"path__glob": "*architect_staging_policy.txt"}, text="Read it",
+                     hints=["It extracted into the current folder.", "Try: cat architect_staging_policy.txt", "cat architect_staging_policy.txt"]),
+        ],
+        solution=["unzip tickets/policy.zip", "cat architect_staging_policy.txt"], reward_xp=60, tags=["bash", "act4", "zip"],
+    ),
+    Mission(
+        id="act4_m80", number=80, act=4, size="standard", title="Locked Before She'd Even Send It", scenario="keys_gpg",
+        requires=["act4_m79"],
+        briefing=["MIRA: Priya's actual contact gave us the phrase for this one: 'threshold-protocol'. She encrypted "
+                  "this note before she'd even forward it to someone she trusted."],
+        debrief=["MIRA: Someone on an 'ARCHITECT distribution list.' She has the name. She's not writing it down "
+                 "anywhere we can read yet."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*escalation_note.txt.gpg"}, text="Decrypt Priya's note (gpg --decrypt)",
+                              hints=["gpg --decrypt needs the passphrase and, usually, an output file.",
+                                    "Try: gpg --decrypt --batch --passphrase threshold-protocol tickets/escalation_note.txt.gpg",
+                                    "gpg --decrypt --batch --passphrase threshold-protocol tickets/escalation_note.txt.gpg"])],
+        solution=["gpg --decrypt --batch --passphrase threshold-protocol tickets/escalation_note.txt.gpg"],
+        reward_xp=100, tags=["bash", "act4", "gpg"],
+    ),
+    Mission(
+        id="act4_m81", number=81, act=4, size="story", title="Not a Ticket, a Phone Call", scenario="keys_watched",
+        requires=["act4_m80"],
+        briefing=["NEXUS: She's getting nervous. Read the latest thread."],
+        debrief=["NEXUS: 'Probably paranoid. Probably fine.' People only say that when it's neither.",
+                 "MIRA: She doesn't know we exist. She's not being careful because of us. That should worry you more, "
+                 "not less."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*thread_priya_244.txt"}, text="Read Priya's latest thread",
+                              hints=["It's in the tickets folder.", "Try: cat tickets/thread_priya_244.txt", "cat tickets/thread_priya_244.txt"])],
+        solution=["cat tickets/thread_priya_244.txt"], reward_xp=85, tags=["bash", "act4", "story", "priya-shah"],
+    ),
+    Mission(
+        id="act4_m82", number=82, act=4, size="mini", title="The Published Number Lies", scenario="keys_tamper_check",
+        requires=["act4_m81"],
+        briefing=["MIRA: The internal wiki publishes a checksum for that config, supposedly so people can verify it "
+                  "hasn't changed. Check it against the real thing."],
+        debrief=["MIRA: Doesn't match. The published hash is for a version that doesn't exist on disk anymore. "
+                 "Someone updated the file and never touched the public record."],
+        objectives=[Objective(event="command", match={"name": "openssl", "args__contains": "dgst", "status": 0}, text="Hash the real config (openssl dgst)",
+                              hints=["openssl dgst -sha256 hashes a file the way sha256sum does, just spelled differently.",
+                                    "Try: openssl dgst -sha256 tickets/staging_config.txt", "openssl dgst -sha256 tickets/staging_config.txt"])],
+        solution=["openssl dgst -sha256 tickets/staging_config.txt", "cat tickets/wiki_published_hash.txt"],
+        reward_xp=65, tags=["bash", "act4", "openssl"],
+    ),
+    Mission(
+        id="act4_m83", number=83, act=4, size="standard", title="A Department, Not Just a Project", scenario="keys_exif",
+        requires=["act4_m82"],
+        briefing=["MIRA: There's a quarterly review document in the export. Check what it's actually carrying in its "
+                  "metadata, not just what it says on the page."],
+        debrief=["NEXUS: 'ARCHITECT Program Office.' Not a project codename anymore. An actual department, with "
+                 "actual staff, doing actual work. Someone built an org chart around this."],
+        objectives=[Objective(event="file_identified", match={"path__glob": "*quarterly_review.doc"}, text="Check the document's metadata (exiftool)",
+                              hints=["exiftool reads metadata a document carries that isn't part of the visible text.",
+                                    "Try: exiftool tickets/quarterly_review.doc", "exiftool tickets/quarterly_review.doc"])],
+        solution=["exiftool tickets/quarterly_review.doc"], reward_xp=95, tags=["bash", "act4", "exiftool"],
+    ),
+    Mission(
+        id="act4_m84", number=84, act=4, size="mini", title="A Strange Size for a Photo", scenario="keys_binwalk",
+        requires=["act4_m83"],
+        briefing=["NEXUS: That photo is a strange size for what it's supposed to be. Scan it."],
+        debrief=["NEXUS: Something's embedded in there. Nothing here to pull it out with yet — but now we know to "
+                 "come back for it."],
+        objectives=[Objective(event="command", match={"name": "binwalk", "status": 0}, text="Scan the photo for hidden data (binwalk)",
+                              hints=["binwalk looks for the telltale first bytes of other file formats hidden inside a file.",
+                                    "Try: binwalk tickets/quarterly_photo.jpg", "binwalk tickets/quarterly_photo.jpg"])],
+        solution=["binwalk tickets/quarterly_photo.jpg"], reward_xp=50, tags=["bash", "act4", "binwalk"],
+    ),
+    Mission(
+        id="act4_m85", number=85, act=4, size="standard", title="Locked Twice", scenario="keys_layered",
+        requires=["act4_m84"],
+        briefing=["MIRA: This one's locked twice. Peel it back one layer at a time — the zip first, then whatever "
+                  "it points you at."],
+        debrief=["MIRA: 'Compliance review requested for ARCHITECT distribution list, flagged urgent.' Two locks for "
+                 "one paragraph. That's not bureaucracy. That's someone being careful."],
+        objectives=[
+            Objective(event="command", match={"name": "unzip", "status": 0}, text="Unzip the outer layer (unzip)",
+                     hints=["Same as before — unzip the archive first.", "Try: unzip tickets/compliance_review.zip", "unzip tickets/compliance_review.zip"]),
+            Objective(event="file_read", match={"path__glob": "*compliance_note.txt.gpg"}, text="Decrypt what's inside (gpg --decrypt)",
+                     hints=["The README the zip extracts points at where the real encrypted note actually is. The passphrase "
+                           "from Level 80 still works — Priya reuses it.",
+                           "Try: gpg --decrypt --batch --passphrase threshold-protocol tickets/compliance_note.txt.gpg",
+                           "gpg --decrypt --batch --passphrase threshold-protocol tickets/compliance_note.txt.gpg"]),
+        ],
+        solution=["unzip tickets/compliance_review.zip", "cat README.txt", "gpg --decrypt --batch --passphrase threshold-protocol tickets/compliance_note.txt.gpg"],
+        reward_xp=110, tags=["bash", "act4", "zip", "gpg"],
+    ),
+    Mission(
+        id="act4_m86", number=86, act=4, size="story", title="Signing Off", scenario="keys_farewell",
+        requires=["act4_m85"],
+        briefing=["NEXUS: One more message from Priya. Probably her last."],
+        debrief=["NEXUS: 'Staging-vault.' A name, finally, instead of a codename for a codename.",
+                 "MIRA: That's where we go next. Carefully. She warned us for a reason, even if she didn't mean to."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*thread_priya_final.txt"}, text="Read Priya's final message",
+                              hints=["It's in the tickets folder.", "Try: cat tickets/thread_priya_final.txt", "cat tickets/thread_priya_final.txt"])],
+        solution=["cat tickets/thread_priya_final.txt"], reward_xp=120, tags=["bash", "act4", "story", "priya-shah"],
+    ),
+    Mission(
+        id="act4_m87", number=87, act=4, size="milestone", title="Before Staging-Vault", scenario="keys_dossier2",
+        requires=["act4_m86"],
+        briefing=["MIRA: Everything from this chapter, one file, before we go after staging-vault itself."],
+        debrief=["MIRA: Filed and locked. Chapter closed.",
+                 "NEXUS: Walled-off escalation routes, a department with a name, a vault nobody on the inside was "
+                 "trusted with. Whatever's actually in it, it's not a routine backup. Let's go find out."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*keys_summary.txt"}, text="Assemble the chapter's findings (grep -r ... | tee)",
+                     hints=["Same habit as every chapter close so far.", "Try: grep -r staging-vault keysnotes | tee keys_summary.txt",
+                           "grep -r staging-vault keysnotes | tee keys_summary.txt\ncat keys_summary.txt"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive it (sudo cp)",
+                     hints=["It lives at /archive, at the filesystem root.", "Try: sudo cp keys_summary.txt /archive/keys_summary.txt",
+                           "sudo cp keys_summary.txt /archive/keys_summary.txt"]),
+        ],
+        solution=["grep -r staging-vault keysnotes | tee keys_summary.txt", "cat keys_summary.txt", "sudo cp keys_summary.txt /archive/keys_summary.txt"],
+        reward_xp=220, tags=["bash", "act4", "milestone", "grep", "tee", "sudo"],
+    ),
+]
+
+ACT4 = [*ACT4_CHAPTER1, *ACT4_CHAPTER2]

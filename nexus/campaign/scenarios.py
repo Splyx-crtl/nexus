@@ -1293,3 +1293,135 @@ def keys_dossier() -> tuple[World, Session]:
     m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ----------------------------------------------------------------------------------------------- Act IV — The Keys, Chapter 2
+@scenario("keys_unzip")
+def keys_unzip() -> tuple[World, Session]:
+    """Level 79: unzip — Priya forwarded an internal policy document, zipped."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"tickets": {}, "notes.txt": "MIRA: Priya forwarded something else — a policy doc, zipped. See what it actually says.\n"})
+    world.add(m)
+    from ..shell.commands.crypto import _pack
+    policy = ["ARCHITECT-STAGING BACKUP POLICY (internal, do not forward)", "",
+             "Standard retention rules do not apply to this environment. Escalation routes through Compliance, not IT.",
+             "Questions regarding this policy should be directed to your manager, not Compliance directly."]
+    inner = [("architect_staging_policy.txt", "\n".join(policy) + "\n")]
+    m.fs.write(m.users["operator"], "tickets/policy.zip", "NXZIP1\n" + _pack(None, inner)[len("NXTAR1\n"):], "/home/operator")
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_gpg")
+def keys_gpg() -> tuple[World, Session]:
+    """Level 80 (standard): gpg --decrypt — an escalation note Priya locked before forwarding, passphrase supplied
+    through Mira's own contact, not found lying around."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"tickets": {}, "notes.txt": "MIRA: Priya's actual contact gave us the phrase for this one: 'threshold-protocol'. "
+                       "She encrypted this note before she'd even forward it to someone she trusted.\n"})
+    world.add(m)
+    from ..shell.commands.crypto import _scramble
+    plain = ("Escalated to Compliance per policy. They forwarded it to someone named on the ARCHITECT distribution "
+            "list — I'm not supposed to have that name, but I do now. Not writing it here. Ask me properly.\n")
+    node = m.fs.write(m.users["operator"], "tickets/escalation_note.txt.gpg", _scramble(plain), "/home/operator")
+    node.meta["gpg_pass"] = "threshold-protocol"
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_watched")
+def keys_watched() -> tuple[World, Session]:
+    """Level 81 (story): Priya, getting nervous — not about the player specifically, just about being watched at all."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"tickets": {"thread_priya_244.txt": [
+        "P.SHAH: Compliance called me directly this time. Not a ticket, a phone call. Nobody calls about a backup policy.",
+        "", "P.SHAH: I don't think I'm supposed to keep asking. I'm going to keep a copy of everything anyway, just in case "
+        "'just in case' ever becomes relevant. Probably paranoid. Probably fine.",
+    ]}, "notes.txt": "NEXUS: She's getting nervous. Read the latest thread.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_tamper_check")
+def keys_tamper_check() -> tuple[World, Session]:
+    """Level 82: openssl dgst — a published hash on an internal wiki page doesn't match the file it claims to describe."""
+    world = World(clock=lambda: EPOCH)
+    actual_content = "ARCHITECT-STAGING config v4 -- rotation disabled by request\n"
+    published_hash = hashlib.sha256(b"ARCHITECT-STAGING config v3 -- standard rotation\n").hexdigest()
+    m = _keys_machine({"tickets": {"staging_config.txt": actual_content,
+                                   "wiki_published_hash.txt": f"Published checksum for staging_config.txt: {published_hash}\n"},
+                       "notes.txt": "MIRA: The internal wiki publishes a checksum for that config, supposedly so people can "
+                                   "verify it hasn't changed. Check it against the real thing.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_exif")
+def keys_exif() -> tuple[World, Session]:
+    """Level 83 (standard): exiftool — a document's metadata names a department, not just a project codename."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"notes.txt": "MIRA: There's a quarterly review document in the export. Check what it's actually "
+                       "carrying in its metadata, not just what it says on the page.\n"})
+    world.add(m)
+    m.fs.load({"tickets": {"quarterly_review.doc": {
+        "content": "Quarterly infrastructure review. Nothing of note this cycle.\n",
+        "meta": {"Author": "arch-svc-01", "Department": "ARCHITECT Program Office", "LastModified": "2050-01-04"},
+    }}}, base="/home/operator")
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_binwalk")
+def keys_binwalk() -> tuple[World, Session]:
+    """Level 84: binwalk — something's hidden inside an ordinary-looking image. Not something there's a tool here to
+    carve out yet — just confirmation it's there."""
+    world = World(clock=lambda: EPOCH)
+    content = "JPEGDATAJPEGDATA" + "NXTAR1" + "hidden payload, not accessible yet" + "JPEGDATATRAILER"
+    m = _keys_machine({"tickets": {"quarterly_photo.jpg": content},
+                       "notes.txt": "NEXUS: That photo is a strange size for what it's supposed to be. Scan it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_layered")
+def keys_layered() -> tuple[World, Session]:
+    """Level 85 (standard): unzip, then gpg --decrypt — two layers of protection, stacked, on the same document.
+    The encrypted file lives directly on disk (its meta carries the real gpg passphrase gate, same as Level 80) — the
+    zip just points at it, since this engine's toy zip format only preserves file content, not node metadata, so a
+    gpg-encrypted file can't be nested *inside* an archive and still come back out gpg-decryptable."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"tickets": {}, "notes.txt": "MIRA: This one's locked twice. Peel it back one layer at a time.\n"})
+    world.add(m)
+    from ..shell.commands.crypto import _pack, _scramble
+    plain = "Compliance review requested for ARCHITECT distribution list, flagged urgent, no further detail provided.\n"
+    inner = [("README.txt", "The actual note is encrypted separately: compliance_note.txt.gpg, same folder.\n")]
+    m.fs.write(m.users["operator"], "tickets/compliance_review.zip", "NXZIP1\n" + _pack(None, inner)[len("NXTAR1\n"):], "/home/operator")
+    node = m.fs.write(m.users["operator"], "tickets/compliance_note.txt.gpg", _scramble(plain), "/home/operator")
+    node.meta["gpg_pass"] = "threshold-protocol"
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_farewell")
+def keys_farewell() -> tuple[World, Session]:
+    """Level 86 (story): Priya's last message before reassignment — one more detail, offered freely, before she goes
+    quiet for good."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"tickets": {"thread_priya_final.txt": [
+        "P.SHAH: Reassigned, effective today. Someone finally gave me a straight answer, sort of: 'need to know.' I don't.",
+        "", "P.SHAH: Last thing, for whoever eventually reads this instead of me: whatever's on 'staging-vault' isn't a "
+        "normal backup target. I was never given access to it myself. Make of that what you will. Signing off.",
+    ]}, "notes.txt": "NEXUS: One more message from Priya. Probably her last.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_dossier2")
+def keys_dossier2() -> tuple[World, Session]:
+    """Level 87 (milestone): closes Act IV, Chapter 2 — everything gathered, before Chapter 3 goes after staging-vault
+    itself."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"keysnotes": {
+        "policy.txt": "Escalation for ARCHITECT-staging routes through Compliance, not IT — deliberately walled off.",
+        "farewell.txt": "Priya, reassigned: 'staging-vault' isn't a normal backup target, and she never had access to it.",
+    }, "notes.txt": "MIRA: Everything from this chapter, one file, before we go after staging-vault itself.\n"},
+                        root_extra={"archive": {"_mode": 0o700}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
