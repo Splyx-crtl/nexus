@@ -236,4 +236,131 @@ ACT5_CHAPTER2 = [
     ),
 ]
 
-ACT5 = [*ACT5_CHAPTER1, *ACT5_CHAPTER2]
+ACT5_CHAPTER3 = [
+    Mission(
+        id="act5_m112", number=112, act=5, size="mini", title="Still Connected", scenario="win_ping",
+        requires=["act5_m111"],
+        briefing=["MIRA: Check on the legacy box from inside the network this time, not from outside looking in."],
+        debrief=["MIRA: Still up, still answering. Still years behind on patches, too."],
+        objectives=[Objective(event="command", match={"name": "Test-Connection", "status": 0}, text="Ping LEGACY-SRV (Test-Connection)",
+                              hints=["Test-Connection is PowerShell's ping.", "Try: Test-Connection 10.20.30.9", "Test-Connection 10.20.30.9"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Test-Connection 10.20.30.9"],
+        reward_xp=50, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m113", number=113, act=5, size="standard", title="What Nobody Mentioned", scenario="win_webapp",
+        requires=["act5_m112"],
+        briefing=["NEXUS: This console runs a web service too, not just file shares. Nobody put that in any memo. "
+                  "See what it's serving."],
+        debrief=["NEXUS: 'Ticket queue, relay health, account audit' — an actual internal dashboard. That's worth a "
+                 "much closer look, later, when it's not the only thing on the agenda."],
+        objectives=[Objective(event="command", match={"name": "Invoke-WebRequest", "status": 0}, text="Fetch the dashboard (Invoke-WebRequest)",
+                              hints=["Invoke-WebRequest is PowerShell's curl.", "Try: Invoke-WebRequest -Uri http://10.20.30.5/", "Invoke-WebRequest -Uri http://10.20.30.5/"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Invoke-WebRequest -Uri http://10.20.30.5/"],
+        reward_xp=85, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m114", number=114, act=5, size="mini", title="Add It Up", scenario="win_measure",
+        requires=["act5_m113"],
+        briefing=["MIRA: Don't eyeball the process list and guess. Get an actual total."],
+        debrief=["MIRA: A number, not an impression. That's the difference between a report and a hunch."],
+        objectives=[Objective(event="command", match={"name": "Measure-Object", "status": 0}, text="Total the CPU usage across processes (Measure-Object)",
+                              hints=["Measure-Object -Sum adds up a numeric property across every object.",
+                                    "Try: Get-Process | Measure-Object CPU -Sum", "Get-Process | Measure-Object CPU -Sum"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-Process | Measure-Object CPU -Sum"],
+        reward_xp=45, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m115", number=115, act=5, size="story", title="Someone Else's Login", scenario="win_origin",
+        requires=["act5_m114"],
+        briefing=["NEXUS: If svc_update logged in, it came from somewhere. Find out where."],
+        debrief=["NEXUS: 198.51.100.231. Not Kade Voss's documented range. Not us.",
+                 "MIRA: So there's a third party, already inside, and we don't know who. Noted. Filed. Not solved "
+                 "today — we don't have enough to chase it yet."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*auth_history.txt"}, text="Find where svc_update logged in from",
+                              hints=["There's an auth history log at the system root.", "Try: Get-Content C:\\Windows\\Logs\\auth_history.txt",
+                                    "Get-Content C:\\Windows\\Logs\\auth_history.txt"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-Content C:\\Windows\\Logs\\auth_history.txt"],
+        reward_xp=115, tags=["bash", "act5", "story"],
+    ),
+    Mission(
+        id="act5_m116", number=116, act=5, size="standard", title="Not Right Now, Anyway", scenario="win_quiet",
+        requires=["act5_m115"],
+        briefing=["MIRA: Check that account again. I want to know if it's still a live concern or just a loose end "
+                  "for now."],
+        debrief=["MIRA: Still there, still enabled. Not actively doing anything we can see right now. That's not "
+                 "the same as gone."],
+        objectives=[
+            Objective(event="command", match={"name": "Get-LocalUser", "status": 0}, text="Check the account list (Get-LocalUser)",
+                     hints=["Same command as before.", "Try: Get-LocalUser", "Get-LocalUser"]),
+            Objective(event="command", match={"name": "Where-Object", "status": 0}, text="Filter to just that account (Where-Object)",
+                     hints=["Where-Object Name -eq svc_update filters by a property directly, no scriptblock needed.",
+                           "Try: Get-LocalUser | Where-Object Name -eq svc_update", "Get-LocalUser | Where-Object Name -eq svc_update"]),
+        ],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-LocalUser | Where-Object Name -eq svc_update"],
+        reward_xp=80, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m117", number=117, act=5, size="story", title="The Net Closing", scenario="win_tightening",
+        requires=["act5_m116"],
+        briefing=["NEXUS: Broadcast memo, all console admins. Read it — it affects you too, now."],
+        debrief=["NEXUS: 'Closer than people think.' He's not wrong. Every session logged from here on, reviewed "
+                 "daily. We don't get to be sloppy anymore, if we ever did."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*voss_broadcast.txt"}, text="Read Kade Voss's broadcast memo",
+                              hints=["Check your inbox.", "Try: cat inbox/voss_broadcast.txt", "cat inbox/voss_broadcast.txt"])],
+        solution=["cat inbox/voss_broadcast.txt"], reward_xp=100, tags=["bash", "act5", "story", "kade-voss"],
+    ),
+    Mission(
+        id="act5_m118", number=118, act=5, size="mini", title="What's Not Running", scenario="win_banner",
+        requires=["act5_m117"],
+        briefing=["MIRA: One more pass — which services are supposed to be running and aren't? A stopped service is "
+                  "sometimes a weakness, sometimes just neglect. Worth knowing either way."],
+        debrief=["MIRA: Filed. Doesn't matter today. Might matter later."],
+        objectives=[Objective(event="command", match={"name": "Where-Object", "status": 0}, text="Filter services to the stopped ones",
+                              hints=["Where-Object Status -eq Stopped filters the service list by that property.",
+                                    "Try: Get-Service | Where-Object Status -eq Stopped", "Get-Service | Where-Object Status -eq Stopped"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Get-Service | Where-Object Status -eq Stopped"],
+        reward_xp=50, tags=["bash", "act5", "ps"],
+    ),
+    Mission(
+        id="act5_m119", number=119, act=5, size="story", title="Push or Pull Back", scenario="win_pullback",
+        requires=["act5_m118"],
+        briefing=["NEXUS: Mira wants a real decision this time, not just an opinion. Read it."],
+        debrief=["NEXUS: On the record, then. Whatever happens from here, that's the call you made, with everything "
+                 "you actually knew at the time.",
+                 "MIRA: That's all any of us get."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*mira_pullback.txt"}, text="Read Mira's question",
+                     hints=["Check your inbox.", "Try: cat inbox/mira_pullback.txt", "cat inbox/mira_pullback.txt"]),
+            Objective(event="command", match={"name": "echo", "status": 0}, text="Give her a real answer",
+                     hints=["Same move as always — write it, append it to the file.",
+                           'echo "your answer here" >> inbox/mira_pullback.txt', 'echo "We keep pushing." >> inbox/mira_pullback.txt']),
+        ],
+        solution=["cat inbox/mira_pullback.txt", 'echo "We keep pushing." >> inbox/mira_pullback.txt'],
+        reward_xp=130, tags=["bash", "act5", "story", "decision:3"],
+    ),
+    Mission(
+        id="act5_m120", number=120, act=5, size="milestone", title="Everything This Act Found", scenario="win_handoff2",
+        requires=["act5_m119"],
+        briefing=["MIRA: Full record before we close this out: Voss, the dashboard, svc_update, all of it, one file, "
+                  "archived properly."],
+        debrief=["MIRA: Filed and locked. Act closed.",
+                 "NEXUS: Rank up — ENGINEER. A named hunter closing in, an unidentified third party already inside, "
+                 "and a dashboard we haven't even really looked at yet. None of that went away. It just got written "
+                 "down properly, which is the only way to carry this much forward.",
+                 "MIRA: Next time we touch that edge server infrastructure for real, we go in knowing what we're "
+                 "dealing with. That's worth more than it sounds like."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*act5_summary.txt"}, text="Assemble everything (grep -r ... | tee)",
+                     hints=["Same habit as every chapter close so far.", "Try: grep -r . winfinal | tee act5_summary.txt",
+                           "grep -r . winfinal | tee act5_summary.txt\ncat act5_summary.txt"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive it (sudo cp)",
+                     hints=["It lives at /archive, at the filesystem root.", "Try: sudo cp act5_summary.txt /archive/act5_summary.txt",
+                           "sudo cp act5_summary.txt /archive/act5_summary.txt"]),
+        ],
+        solution=["grep -r . winfinal | tee act5_summary.txt", "cat act5_summary.txt", "sudo cp act5_summary.txt /archive/act5_summary.txt"],
+        reward_xp=230, tags=["bash", "act5", "milestone", "grep", "tee", "sudo"],
+    ),
+]
+
+ACT5 = [*ACT5_CHAPTER1, *ACT5_CHAPTER2, *ACT5_CHAPTER3]

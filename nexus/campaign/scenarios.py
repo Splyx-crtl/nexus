@@ -1076,3 +1076,111 @@ def win_dossier2() -> tuple[World, Session]:
     m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ----------------------------------------------------------------------------------------------- Act V — Windows, Chapter 3
+@scenario("win_ping")
+def win_ping() -> tuple[World, Session]:
+    """Level 112: Test-Connection — checking on the legacy box from inside the network this time, not from outside."""
+    world, player, target = _win_target_world()
+    legacy = Machine("LEGACY-SRV", "LEGACY-SRV", "10.20.30.9", "windows", VFS("windows", clock=lambda: EPOCH), shell="cmd")
+    legacy.add_user(User("svcacct", 1000, 1000, ("Users",), "C:\\Users\\svcacct", password="Legacy-Svc-99"))
+    legacy.services = [Service(22, "ssh", "OpenSSH for Windows 7.9", "open")]
+    world.add(legacy)
+    target.neighbors.append(legacy.id)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_webapp")
+def win_webapp() -> tuple[World, Session]:
+    """Level 113 (standard): Invoke-WebRequest — the console runs an internal dashboard nobody mentioned out loud."""
+    world, player, target = _win_target_world()
+    target.services.append(Service(80, "http", "Microsoft-IIS/10.0", "open", data={"pages": {
+        "/": {"body": "<html><body><h1>NexusCorp Ops Dashboard</h1><p>Internal use only. Ticket queue, relay health, account audit.</p></body></html>", "status": 200},
+    }}))
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_measure")
+def win_measure() -> tuple[World, Session]:
+    """Level 114: Measure-Object — adding things up instead of reading a list and counting by eye."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_origin")
+def win_origin() -> tuple[World, Session]:
+    """Level 115 (story): where svc_update actually logged in from — not Kade Voss's documented range, not the
+    player. The mystery stays open on purpose; it isn't Act V's to resolve."""
+    world, player, target = _win_target_world()
+    target.add_user(User("svc_update", 1002, 1002, ("Users",), "C:\\Users\\svc_update", password="update-svc-9921!"))
+    target.data["last"] = ["svc_update  pts/2    198.51.100.231   Thu Jan  2 03:40   still logged in",
+                           "opsadmin    pts/0    10.44.0.7        Fri Jan  9 09:00 - 09:41  (00:41)"]
+    target.fs.load({"Windows": {"Logs": {"auth_history.txt": [
+        "2050-01-02 03:40 logon success: svc_update from 198.51.100.231", "2050-01-02 03:41 logon success: svc_update from 198.51.100.231",
+    ]}}}, "C:\\")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_quiet")
+def win_quiet() -> tuple[World, Session]:
+    """Level 116 (standard): confirm svc_update isn't active right now — some relief, not real resolution."""
+    world, player, target = _win_target_world()
+    target.add_user(User("svc_update", 1002, 1002, ("Users",), "C:\\Users\\svc_update", password="update-svc-9921!"))
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_tightening")
+def win_tightening() -> tuple[World, Session]:
+    """Level 117 (story): Kade Voss's monitoring tightens — a broadcast memo, not a message aimed at the player
+    specifically, but the net is visibly closing."""
+    world, player, _target = _win_target_world()
+    player.fs.load({"home": {"operator": {"_owner": "operator", "_group": "operator", "inbox": {"voss_broadcast.txt": [
+        "FROM: K. Voss, Security Operations", "TO: All Ops Console Admins", "SUBJECT: Expanded monitoring — effective immediately",
+        "", "Given the ongoing investigation, all console sessions are now logged with full command history, reviewed daily.",
+        "If you notice anything — ANYTHING — that doesn't match routine administration, report it the same day.",
+        "", "We are closer than people think. - K. Voss",
+    ]}}}})
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_banner")
+def win_banner() -> tuple[World, Session]:
+    """Level 118: Invoke-WebRequest, headers only — the Windows shape of Act III's curl -I, on the dashboard this
+    chapter found."""
+    world, player, target = _win_target_world()
+    target.services.append(Service(80, "http", "Microsoft-IIS/10.0", "open", data={"pages": {
+        "/": {"body": "<html><body><h1>NexusCorp Ops Dashboard</h1></body></html>", "status": 200},
+    }}))
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("win_pullback")
+def win_pullback() -> tuple[World, Session]:
+    """Level 119 (story): with Kade Voss tightening monitoring and an unidentified third party already inside, Mira
+    asks the question directly — push forward or go quiet for a while. Another free-form decision, no branching engine
+    yet (same mechanism as decision:1/decision:2)."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"inbox": {"mira_pullback.txt": [
+        "MIRA:", "", "Voss is logging everything now. Someone else already has a foothold we can't explain. Both of "
+        "those got worse this chapter, not better.",
+        "", "We can go quiet for a while — let the monitoring ease off, figure out who 198.51.100.231 is from a "
+        "safer distance. Or we keep pushing, now, while we still know more than they think we do.",
+        "", "Your call. I'll back either one.", "---",
+    ]}, "notes.txt": "NEXUS: Mira wants a real decision this time, not just an opinion. Read it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("win_handoff2")
+def win_handoff2() -> tuple[World, Session]:
+    """Level 120 (milestone): closes Act V — one last pass across both Windows machines, everything archived
+    properly. Promotion to ENGINEER."""
+    world, player, _target = _win_target_world()
+    player.fs.load({"home": {"operator": {"_owner": "operator", "_group": "operator",
+                                          "winfinal": {"summary.txt": ["Kade Voss: expanded monitoring, effective immediately.",
+                                                                       "svc_update: origin 198.51.100.231, still unidentified.",
+                                                                       "LEGACY-SRV: outdated, vulnerable, flagged for follow-up."]}}}})
+    player.fs.load({"archive": {"_owner": "root", "_group": "root", "_mode": 0o700}})
+    player.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    return world, Session(player, player.users["operator"], "bash")
