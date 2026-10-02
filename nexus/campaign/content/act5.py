@@ -1,10 +1,14 @@
-"""Act V — Windows (levels 96-120, docs/story/02-acts-and-levels.md). No new commands unlock here either — PowerShell
-and cmd (B6) were built with low unlock levels of their own and have been available since early in the game, just never
-put in front of the player because every target so far has been Linux. The "new" in this act is the first Windows
-machine itself: PowerShell's own vocabulary and object pipeline for ideas the player already knows (Get-ChildItem for
-ls, Get-Content for cat, Select-String for grep). Chapter 1 (96-103) is written: the Act III Level-59 "unreachable"
-subdomain finally opens up as a Windows admin console, and Kade Voss — Nexus Company's security director — is
-introduced as the campaign's first named, active hunter. Chapters 2-3 (104-120) are not written yet.
+"""Act V — Windows (levels 96-120, docs/story/02-acts-and-levels.md), now complete. No new commands unlock here either
+— PowerShell and cmd (B6) were built with low unlock levels of their own and have been available since early in the
+game, just never put in front of the player because every target so far has been Linux. The "new" in this act is the
+first Windows machine itself: PowerShell's own vocabulary and object pipeline for ideas the player already knows
+(Get-ChildItem for ls, Get-Content for cat, Select-String for grep). Chapter 1 (96-103): the Act III Level-59
+"unreachable" subdomain finally opens up as a Windows admin console, OPS-CONSOLE, and Kade Voss — Nexus Company's
+security director — is introduced as the campaign's first named, active hunter. Chapter 2 (104-111): the object
+pipeline (Where-Object/Sort-Object/Select-Object), a stranger's account nobody on the operation created, and a second,
+never-upgraded cmd.exe machine. Chapter 3 (112-120): Test-Connection/Invoke-WebRequest/Measure-Object, the svc_update
+mystery deliberately left open, Kade Voss tightening monitoring, the player's third major decision, and a milestone
+promoting to ENGINEER. requires=["act4_m95"] on the first mission, now that Act IV exists to provide it.
 """
 from __future__ import annotations
 
@@ -13,7 +17,7 @@ from ..mission import Mission, Objective
 ACT5_CHAPTER1 = [
     Mission(
         id="act5_m96", number=96, act=5, size="mini", title="A Door That Finally Opens", scenario="win_login",
-        requires=["act3_m70"],
+        requires=["act4_m95"],
         briefing=["MIRA: We found a way to that subdomain from Level 59. It's a Windows admin console — different "
                   "world, same job. Credentials are in your inbox."],
         debrief=["MIRA: You're in. The prompt looks different — that's all that's different."],

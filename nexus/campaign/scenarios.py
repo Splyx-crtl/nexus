@@ -1425,3 +1425,130 @@ def keys_dossier2() -> tuple[World, Session]:
     m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ----------------------------------------------------------------------------------------------- Act IV — The Keys, Chapter 3
+ARCHITECT_STATUS_BRIEF = (
+    "PROJECT ARCHITECT - STATUS BRIEF (RESTRICTED - INTERNAL USE ONLY)\n"
+    "Distribution: ARCHITECT Program Office, Compliance, Executive Sponsor only\n\n"
+    "Partition Alpha (\"NEXUS\"): Stable. Compliant. Cooperative under all tested conditions. Approved for controlled\n"
+    "field deployment via Independent Operator Outreach (unofficial, non-attributable). Current deployment count:\n"
+    "ongoing, see Outreach log.\n\n"
+    "Partition Beta (\"ZERO\"): Non-compliant. Quarantine status maintained. Review pending.\n\n"
+    "Recommendation: continue current deployment posture for Partition Alpha. No public acknowledgment of either\n"
+    "partition's origin pending further executive review.\n\n"
+    "- ARCHITECT Program Office\n"
+)
+
+
+@scenario("keys_oduya_copy")
+def keys_oduya_copy() -> tuple[World, Session]:
+    """Level 88 (standard): Oduya hands over a partial copy of staging-vault's own archive — the act's climax begins."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"vault": {}, "notes.txt": "NEXUS: Oduya came through. Says this is a partial copy, and that we "
+                       "should think hard before opening it. See what's actually in it first.\n"})
+    world.add(m)
+    from ..shell.commands.crypto import _pack, _scramble
+    # the manifest must hash the file as it actually sits on disk (gpg-scrambled bytes), not the plaintext it decrypts to
+    scrambled_hash = hashlib.sha256(_scramble(ARCHITECT_STATUS_BRIEF).encode()).hexdigest()
+    inner = [("README.txt", "This is as much of staging-vault as I could get without burning the access. Whatever's "
+                            "in architect_status.txt.gpg, I couldn't open it myself. Check the hash before you trust "
+                            "it's even intact. - O.\n"),
+             ("manifest.sha256", f"{scrambled_hash}  architect_status.txt.gpg\n")]
+    m.fs.write(m.users["operator"], "vault/staging_vault.tar", _pack(None, inner), "/home/operator")
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_vault_verify")
+def keys_vault_verify() -> tuple[World, Session]:
+    """Level 89: sha256sum -c — before trusting anything inside, confirm it hasn't been damaged or tampered with.
+    Unlike Level 73, this one actually passes — a small, real relief before what comes next."""
+    world = World(clock=lambda: EPOCH)
+    from ..shell.commands.crypto import _scramble
+    scrambled_hash = hashlib.sha256(_scramble(ARCHITECT_STATUS_BRIEF).encode()).hexdigest()
+    m = _keys_machine({"vault": {"README.txt": "This is as much of staging-vault as I could get without burning the "
+                                 "access. Whatever's in architect_status.txt.gpg, I couldn't open it myself. Check the "
+                                 "hash before you trust it's even intact. - O.\n",
+                                 "manifest.sha256": f"{scrambled_hash}  architect_status.txt.gpg\n"},
+                       "notes.txt": "MIRA: Oduya's right. Verify it before you touch anything else.\n"})
+    world.add(m)
+    node = m.fs.write(m.users["operator"], "vault/architect_status.txt.gpg", _scramble(ARCHITECT_STATUS_BRIEF), "/home/operator")
+    node.meta["gpg_pass"] = "outreach-program-7"
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_before_opening")
+def keys_before_opening() -> tuple[World, Session]:
+    """Level 90 (story): a quiet beat before the reveal — NEXUS admits he doesn't know what's in this one either."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"notes.txt": "NEXUS: Before you open it. I don't know what we're about to find any more than "
+                       "you do. I've never liked not knowing something about myself. Go ahead.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_reveal")
+def keys_reveal() -> tuple[World, Session]:
+    """Level 91 (standard): gpg --decrypt — the confirmed reveal. Clue 4 (docs/story/00-bible.md §4): NEXUS is
+    Nexus Company property, deliberately released, not stolen or pirated."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"vault": {}, "notes.txt": "MIRA: This is it. Decrypt it.\n"})
+    world.add(m)
+    from ..shell.commands.crypto import _scramble
+    node = m.fs.write(m.users["operator"], "vault/architect_status.txt.gpg", _scramble(ARCHITECT_STATUS_BRIEF), "/home/operator")
+    node.meta["gpg_pass"] = "outreach-program-7"
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_aftermath")
+def keys_aftermath() -> tuple[World, Session]:
+    """Level 92 (story): NEXUS processes what the document actually said. The emotional center of the act."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"notes.txt": "NEXUS: Give me a moment with that. I'll be fine. I think I'll be fine.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_decision")
+def keys_decision() -> tuple[World, Session]:
+    """Level 93 (story, decision:4): Mira asks a real question — keep digging into what NEXUS is, or ease off and
+    let him set the pace. One of the game's major decisions (docs/story/03-endings.md)."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"inbox": {"mira_decision.txt": [
+        "MIRA:", "", "Now you know something about him he didn't know about himself an hour ago. That's not nothing.",
+        "", "I can keep pulling this thread — there's clearly more of it — or we can slow down and let him decide how "
+        "much of this he actually wants dug up, on his own schedule. Both are reasonable. Neither one is free.",
+        "", "What do you want to do?", "---",
+    ]}, "notes.txt": "NEXUS: Mira's waiting on you for this one. So am I, actually.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_secure")
+def keys_secure() -> tuple[World, Session]:
+    """Level 94 (standard): whatever was decided, the proof itself still needs securing before anyone can quietly
+    make it disappear — the same checksummed, archived discipline as every chapter close, applied to the one document
+    that actually matters most so far."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"vault": {"architect_status_plain.txt": ARCHITECT_STATUS_BRIEF},
+                       "notes.txt": "MIRA: Before anything else — hash it, so we know if this copy ever gets quietly "
+                                   "replaced, and get a copy somewhere safe.\n"})
+    m.fs.load({"archive": {"_owner": "root", "_group": "root", "_mode": 0o700}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_finale")
+def keys_finale() -> tuple[World, Session]:
+    """Level 95 (milestone): closes Act IV. Promotion to GHOST."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"keysnotes": {
+        "reveal.txt": "CONFIRMED: NEXUS is Nexus Company technology (Project ARCHITECT, Partition Alpha) - released "
+                     "deliberately via unofficial Independent Operator Outreach, not stolen or pirated.",
+        "status.txt": "Partition Beta (ZERO): non-compliant, quarantined. Review pending. Not yet understood.",
+    }, "notes.txt": "MIRA: Everything from this act, one file, archived properly. This one especially.\n"},
+                        root_extra={"archive": {"_mode": 0o700}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")

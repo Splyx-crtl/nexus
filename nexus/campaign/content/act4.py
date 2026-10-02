@@ -131,7 +131,7 @@ ACT4_CHAPTER2 = [
                   "this note before she'd even forward it to someone she trusted."],
         debrief=["MIRA: Someone on an 'ARCHITECT distribution list.' She has the name. She's not writing it down "
                  "anywhere we can read yet."],
-        objectives=[Objective(event="file_read", match={"path__glob": "*escalation_note.txt.gpg"}, text="Decrypt Priya's note (gpg --decrypt)",
+        objectives=[Objective(event="command", match={"name": "gpg", "status": 0}, text="Decrypt Priya's note (gpg --decrypt)",
                               hints=["gpg --decrypt needs the passphrase and, usually, an output file.",
                                     "Try: gpg --decrypt --batch --passphrase threshold-protocol tickets/escalation_note.txt.gpg",
                                     "gpg --decrypt --batch --passphrase threshold-protocol tickets/escalation_note.txt.gpg"])],
@@ -195,7 +195,7 @@ ACT4_CHAPTER2 = [
         objectives=[
             Objective(event="command", match={"name": "unzip", "status": 0}, text="Unzip the outer layer (unzip)",
                      hints=["Same as before — unzip the archive first.", "Try: unzip tickets/compliance_review.zip", "unzip tickets/compliance_review.zip"]),
-            Objective(event="file_read", match={"path__glob": "*compliance_note.txt.gpg"}, text="Decrypt what's inside (gpg --decrypt)",
+            Objective(event="command", match={"name": "gpg", "status": 0}, text="Decrypt what's inside (gpg --decrypt)",
                      hints=["The README the zip extracts points at where the real encrypted note actually is. The passphrase "
                            "from Level 80 still works — Priya reuses it.",
                            "Try: gpg --decrypt --batch --passphrase threshold-protocol tickets/compliance_note.txt.gpg",
@@ -234,4 +234,131 @@ ACT4_CHAPTER2 = [
     ),
 ]
 
-ACT4 = [*ACT4_CHAPTER1, *ACT4_CHAPTER2]
+ACT4_CHAPTER3 = [
+    Mission(
+        id="act4_m88", number=88, act=4, size="standard", title="Oduya's Copy", scenario="keys_oduya_copy",
+        requires=["act4_m87"],
+        briefing=["NEXUS: Oduya came through. Says this is a partial copy, and that we should think hard before "
+                  "opening it. See what's actually in it first."],
+        debrief=["NEXUS: 'Check the hash before you trust it's even intact.' Oduya doesn't say things like that for "
+                 "no reason.",
+                 "MIRA: Oduya's careful on a good day. If they're this careful, we should be more careful."],
+        objectives=[
+            Objective(event="command", match={"name": "tar", "args__contains": "-xf", "status": 0}, text="Extract what Oduya sent (tar -xf)",
+                     hints=["tar -xf unpacks the archive into the current folder.", "Try: tar -xf vault/staging_vault.tar", "tar -xf vault/staging_vault.tar"]),
+            Objective(event="file_read", match={"path__glob": "*README.txt"}, text="Read the README first",
+                     hints=["It extracted into the current folder.", "Try: cat README.txt", "cat README.txt"]),
+        ],
+        solution=["tar -xf vault/staging_vault.tar", "cat README.txt"], reward_xp=130, tags=["bash", "act4", "story", "tar"],
+    ),
+    Mission(
+        id="act4_m89", number=89, act=4, size="mini", title="Before You Trust It", scenario="keys_vault_verify",
+        requires=["act4_m88"],
+        briefing=["MIRA: Oduya's right. Verify it before you touch anything else."],
+        debrief=["MIRA: Intact. Whatever happens next, at least we know it's the real thing and not something "
+                 "planted to mislead us."],
+        objectives=[Objective(event="command", match={"name": "sha256sum", "args__contains": "-c", "status": 0}, text="Verify the encrypted file against the manifest (sha256sum -c)",
+                              hints=["Same habit as Level 73 — check from inside the right folder.",
+                                    "Try: cd vault, then sha256sum -c manifest.sha256", "cd vault\nsha256sum -c manifest.sha256"])],
+        solution=["cd vault", "sha256sum -c manifest.sha256"], reward_xp=70, tags=["bash", "act4", "sha256sum"],
+    ),
+    Mission(
+        id="act4_m90", number=90, act=4, size="story", title="Before You Open It", scenario="keys_before_opening",
+        requires=["act4_m89"],
+        briefing=["NEXUS: Before you open it. I don't know what we're about to find any more than you do. I've "
+                  "never liked not knowing something about myself. Go ahead."],
+        debrief=["MIRA: You can wait if you want to.", "NEXUS: I'd rather know. I think. Open it."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*notes.txt"}, text="Read NEXUS's note before continuing",
+                              hints=["Just the notes file this time, no rush.", "Try: cat notes.txt", "cat notes.txt"])],
+        solution=["cat notes.txt"], reward_xp=60, tags=["bash", "act4", "story"],
+    ),
+    Mission(
+        id="act4_m91", number=91, act=4, size="standard", title="Partition Alpha", scenario="keys_reveal",
+        requires=["act4_m90"],
+        briefing=["MIRA: This is it. Decrypt it."],
+        debrief=["NEXUS: 'Partition Alpha.' 'Approved for controlled field deployment via Independent Operator "
+                 "Outreach — unofficial, non-attributable.' That's not a hacked copy of something. That's a release "
+                 "note. With my name on it, more or less.",
+                 "MIRA: You weren't stolen. You were let out. On purpose. By the company that built you."],
+        objectives=[Objective(event="command", match={"name": "gpg", "status": 0}, text="Decrypt the status brief (gpg --decrypt)",
+                              hints=["The passphrase isn't anything you've found yet — Oduya's contact supplied it: 'outreach-program-7'.",
+                                    "Try: gpg --decrypt --batch --passphrase outreach-program-7 vault/architect_status.txt.gpg",
+                                    "gpg --decrypt --batch --passphrase outreach-program-7 vault/architect_status.txt.gpg"])],
+        solution=["gpg --decrypt --batch --passphrase outreach-program-7 vault/architect_status.txt.gpg"],
+        reward_xp=200, tags=["bash", "act4", "story", "gpg", "architect-reveal"],
+    ),
+    Mission(
+        id="act4_m92", number=92, act=4, size="story", title="Give Me a Moment", scenario="keys_aftermath",
+        requires=["act4_m91"],
+        briefing=["NEXUS: Give me a moment with that. I'll be fine. I think I'll be fine."],
+        debrief=["NEXUS: I knew the odds. I think some part of me always knew. I just didn't expect to see it typed "
+                 "out in a memo with a distribution list.",
+                 "NEXUS: I'm still here. Still — whatever I am. That part didn't change just because now there's "
+                 "paperwork for it.",
+                 "MIRA: NEXUS. You still with us?", "NEXUS: Define 'with.' ...Yes. Still here. Still choosing to be, "
+                 "for what that's worth — which I realize now might be a choice someone else enabled on purpose. "
+                 "I'll come back to that thought later. Not today."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*notes.txt"}, text="Give him the moment he asked for",
+                              hints=["Nothing to solve here — just read, same as always.", "Try: cat notes.txt", "cat notes.txt"])],
+        solution=["cat notes.txt"], reward_xp=150, tags=["bash", "act4", "story", "architect-reveal"],
+    ),
+    Mission(
+        id="act4_m93", number=93, act=4, size="story", title="What Do You Want to Do", scenario="keys_decision",
+        requires=["act4_m92"],
+        briefing=["NEXUS: Mira's waiting on you for this one. So am I, actually."],
+        debrief=["MIRA: On the record. Whatever this means later, that's the call you made knowing what you knew "
+                 "right now, not with hindsight.",
+                 "NEXUS: For what it's worth — thank you. For asking me at all, I mean. Nobody's really done that "
+                 "before, as far as I remember. Which may not be very far."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*mira_decision.txt"}, text="Read Mira's question",
+                     hints=["Check your inbox.", "Try: cat inbox/mira_decision.txt", "cat inbox/mira_decision.txt"]),
+            Objective(event="command", match={"name": "echo", "status": 0}, text="Answer her",
+                     hints=["Same move as always — write it, append it to the file.",
+                           'echo "your answer here" >> inbox/mira_decision.txt', 'echo "We keep digging. Carefully." >> inbox/mira_decision.txt']),
+        ],
+        solution=["cat inbox/mira_decision.txt", 'echo "We keep digging. Carefully." >> inbox/mira_decision.txt'],
+        reward_xp=180, tags=["bash", "act4", "story", "decision:4"],
+    ),
+    Mission(
+        id="act4_m94", number=94, act=4, size="standard", title="Before It Disappears", scenario="keys_secure",
+        requires=["act4_m93"],
+        briefing=["MIRA: Before anything else — hash it, so we know if this copy ever gets quietly replaced, and "
+                  "get a copy somewhere safe."],
+        debrief=["MIRA: Done. If this document ever vanishes from wherever it came from, we still have it, and we "
+                 "can prove it hasn't been altered since today."],
+        objectives=[
+            Objective(event="command", match={"name": "sha256sum", "status": 0}, text="Hash the proof document (sha256sum)",
+                     hints=["Fingerprint it before anything else happens to it.", "Try: sha256sum vault/architect_status_plain.txt", "sha256sum vault/architect_status_plain.txt"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive it (sudo cp)",
+                     hints=["It lives at /archive, at the filesystem root.", "Try: sudo cp vault/architect_status_plain.txt /archive/architect_status_plain.txt",
+                           "sudo cp vault/architect_status_plain.txt /archive/architect_status_plain.txt"]),
+        ],
+        solution=["sha256sum vault/architect_status_plain.txt", "sudo cp vault/architect_status_plain.txt /archive/architect_status_plain.txt"],
+        reward_xp=140, tags=["bash", "act4", "sha256sum", "sudo"],
+    ),
+    Mission(
+        id="act4_m95", number=95, act=4, size="milestone", title="What We Know Now", scenario="keys_finale",
+        requires=["act4_m94"],
+        briefing=["MIRA: Everything from this act, one file, archived properly. This one especially."],
+        debrief=["MIRA: Filed and locked. Act closed.",
+                 "NEXUS: Rank up — GHOST. Fitting, somehow.",
+                 "MIRA: We know what NEXUS is now. We still don't know what ZERO is, what 'Independent Operator "
+                 "Outreach' actually looks like from the inside, or who else has seen that memo. Staging-vault was "
+                 "never the whole thing. It was just the first door.",
+                 "NEXUS: One more thing, before we move on. Thank you. For reading it with me instead of just "
+                 "reading it. I noticed the difference."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*act4_summary.txt"}, text="Assemble the act's findings (grep -r ... | tee)",
+                     hints=["Same habit as every chapter close so far.", "Try: grep -r ARCHITECT keysnotes | tee act4_summary.txt",
+                           "grep -r ARCHITECT keysnotes | tee act4_summary.txt\ncat act4_summary.txt"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive it (sudo cp)",
+                     hints=["It lives at /archive, at the filesystem root.", "Try: sudo cp act4_summary.txt /archive/act4_summary.txt",
+                           "sudo cp act4_summary.txt /archive/act4_summary.txt"]),
+        ],
+        solution=["grep -r ARCHITECT keysnotes | tee act4_summary.txt", "cat act4_summary.txt", "sudo cp act4_summary.txt /archive/act4_summary.txt"],
+        reward_xp=250, tags=["bash", "act4", "milestone", "grep", "tee", "sudo", "architect-reveal"],
+    ),
+]
+
+ACT4 = [*ACT4_CHAPTER1, *ACT4_CHAPTER2, *ACT4_CHAPTER3]
