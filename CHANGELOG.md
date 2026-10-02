@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.1 — Online server connected
+
+### Changed
+- The game now connects to the production online server (Discord login, leaderboards, friends).
+
 ## 2.2.0 — Online services (optional)
 
 ### Added
