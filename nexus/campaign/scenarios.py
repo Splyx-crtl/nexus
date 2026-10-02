@@ -7,6 +7,8 @@ This is deliberately plain Python, not a declarative format — see ``docs/3.0-P
 """
 from __future__ import annotations
 
+import base64 as _b64
+import hashlib
 from typing import Callable
 
 from ..shell.fs import User, VFS
@@ -1184,3 +1186,110 @@ def win_handoff2() -> tuple[World, Session]:
     player.fs.load({"archive": {"_owner": "root", "_group": "root", "_mode": 0o700}})
     player.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
     return world, Session(player, player.users["operator"], "bash")
+
+
+# ============================================================================================ Act IV — The Keys
+def _keys_machine(home_extra: dict | None = None) -> Machine:
+    """The player's home-rig, for Act IV's file-based crypto work — Mira hands over exports and backups rather than
+    the player logging into anything new (this act is about what the files themselves hide, not network access)."""
+    return _player_machine(home_extra)
+
+
+@scenario("keys_base64")
+def keys_base64() -> tuple[World, Session]:
+    """Level 71: base64 — a ticket mentions an escalation target, encoded."""
+    world = World(clock=lambda: EPOCH)
+    encoded = _b64.b64encode(b"architect-staging-02").decode()
+    m = _keys_machine({"tickets": {
+        "ticket_4471.txt": ["TICKET #4471 - escalation", "Status: open", "Escalation target: see target.b64", "Priority: medium"],
+        "target.b64": encoded + "\n",
+    }, "notes.txt": "MIRA: Priya's ticket queue leaked out with the rest of the export. The target field points at a separate "
+                   "file, and that one isn't plain text — decode it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_xxd")
+def keys_xxd() -> tuple[World, Session]:
+    """Level 72: xxd — an attachment that isn't really text, whatever its name claims."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"tickets": {"signal.dat": "junk" + "\x89HDR\x01\x02" + "moredata"},
+                       "notes.txt": "NEXUS: That attachment isn't going to read like a normal file. Look at the actual bytes.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_checksums")
+def keys_checksums() -> tuple[World, Session]:
+    """Level 73 (standard): md5sum -c — Priya's own backup-verification habit, and one file that fails it."""
+    world = World(clock=lambda: EPOCH)
+    good_content = "backup OK, rotation complete\n"
+    tampered_content = "backup OK, rotation complete -- EDITED\n"       # on disk as backup2.cfg, but the manifest below still records the ORIGINAL hash
+    manifest = f"{hashlib.md5(good_content.encode()).hexdigest()}  backup1.cfg\n{hashlib.md5(good_content.encode()).hexdigest()}  backup2.cfg\n"
+    m = _keys_machine({"tickets": {"backup1.cfg": good_content, "backup2.cfg": tampered_content, "manifest.md5": manifest},
+                       "notes.txt": "MIRA: Priya checksums every backup before trusting it. Do the same — manifest.md5 has what each file should hash to.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_priya")
+def keys_priya() -> tuple[World, Session]:
+    """Level 74 (story): Priya Shah, introduced the only way she ever appears — through her own words in a ticket
+    thread, never in person."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"tickets": {"thread_priya_227.txt": [
+        "P.SHAH: Third time asking — why does 'ARCHITECT-staging' need a separate backup rotation from everything else",
+        "I manage? Nobody will give me a straight answer and I'm the one who gets paged when it breaks.",
+        "", "P.SHAH: Forget I asked. Ticket closed per manager's request. Noted for the record, not that anyone reads these.",
+    ]}, "notes.txt": "NEXUS: There's a name attached to half these tickets. Read the thread.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_strings")
+def keys_strings() -> tuple[World, Session]:
+    """Level 75: strings — one readable fragment in a file that's mostly noise."""
+    world = World(clock=lambda: EPOCH)
+    noise = "".join(chr(0x01 + (i % 30)) for i in range(40))
+    content = noise + "rotation-key-pending-review" + noise
+    m = _keys_machine({"tickets": {"corrupt_export.log": content},
+                       "notes.txt": "MIRA: That log looks corrupted. Might not all be noise — pull out anything actually readable.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_tar")
+def keys_tar() -> tuple[World, Session]:
+    """Level 76 (standard): tar — Priya's own export, bundled, with more of her ticket history inside."""
+    world = World(clock=lambda: EPOCH)
+    m = _keys_machine({"tickets": {}, "notes.txt": "MIRA: Priya's full export came through as one archive. See what's actually in it before you dig further.\n"})
+    world.add(m)
+    from ..shell.commands.crypto import _pack          # reuse the real packer so the format can never drift from what tar -x expects
+    inner = [("ticket_4488.txt", "Still no answer on the ARCHITECT-staging question.\n"), ("ticket_4501.txt", "Reassigned handling for Q1. Not my problem anymore, apparently.\n")]
+    m.fs.write(m.users["operator"], "tickets/priya_export.tar", _pack(None, inner), "/home/operator")
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_verify2")
+def keys_verify2() -> tuple[World, Session]:
+    """Level 77: sha256sum — the stronger check, on the file that actually matters from the extracted archive."""
+    world = World(clock=lambda: EPOCH)
+    content = "Reassigned handling for Q1. Not my problem anymore, apparently.\n"
+    m = _keys_machine({"tickets": {"ticket_4501.txt": content},
+                       "notes.txt": "NEXUS: That last ticket is the one worth being sure about. Hash it properly this time — sha256, not md5.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("keys_dossier")
+def keys_dossier() -> tuple[World, Session]:
+    """Level 78 (milestone): closes Act IV, Chapter 1 — everything Priya's export actually revealed, archived."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"keysnotes": {
+        "summary.txt": ["Priya Shah: sysadmin, increasingly suspicious of 'ARCHITECT-staging' backup rotation.",
+                        "Reassigned off the relevant tickets as of ticket #4501 — someone noticed her asking."],
+    }, "notes.txt": "MIRA: Everything her export actually told us, one file, archived.\n"},
+                        root_extra={"archive": {"_mode": 0o700}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
