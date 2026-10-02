@@ -14,7 +14,7 @@ from nexus.i18n import tr
 from nexus.version import DISCORD_URL
 
 from .dialogs import ConfirmDialog
-from .widgets import Chip, NeonButton
+from .widgets import Chip, NeonButton, play
 
 BOARDS = [("level", "LEVEL"), ("missions", "MISSIONS"), ("credits", "CREDITS"), ("weekly", "WEEKLY XP"), ("perfect", "PERFECT")]
 SYNC_SECONDS = 300
@@ -41,7 +41,15 @@ class Job(QThread):
             self.failed.emit(f"Unexpected error: {exc}")
 
 
+def countdown(seconds: int) -> str:
+    d, rest = divmod(max(0, int(seconds)), 86400)
+    h, rest = divmod(rest, 3600)
+    return f"{d}d {h}h" if d else f"{h}h {rest // 60}m"
+
+
 class OnlinePage(QWidget):
+    friends_summary = Signal(int, str)      # (friends online, tooltip text); -1 = not logged in (hide the bar)
+
     def __init__(self, engine, settings, parent=None):
         super().__init__(parent)
         self.engine, self.settings = engine, settings
@@ -52,6 +60,7 @@ class OnlinePage(QWidget):
         self._poll_left = 0
         self.gated: bool | None = None          # None = not asked yet; the key field is shown unless the server says it is open
         self._last_sync = 0.0
+        self._friends_seen: set[str] | None = None
         self.lay = QVBoxLayout(self)
         self.lay.setContentsMargins(14, 10, 14, 10)
         title = QLabel(f"// {tr('online')}")
@@ -108,6 +117,7 @@ class OnlinePage(QWidget):
         il.addWidget(self.who)
         self.tabs = QTabWidget()
         il.addWidget(self.tabs, 1)
+        self._build_challenge_tab()
         self._build_board_tab()
         self._build_friends_tab()
         self._build_account_tab()
@@ -123,6 +133,32 @@ class OnlinePage(QWidget):
         self.refresh()
 
     # ------------------------------------------------------------ builders --
+    def _build_challenge_tab(self) -> None:
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        self.ch_title = QLabel("")
+        self.ch_title.setObjectName("h2")
+        self.ch_text = QLabel("")
+        self.ch_text.setWordWrap(True)
+        self.ch_meta = QLabel("")
+        self.ch_meta.setObjectName("dim")
+        lay.addWidget(self.ch_title)
+        lay.addWidget(self.ch_text)
+        lay.addWidget(self.ch_meta)
+        self.ch_table = QTableWidget(0, 3)
+        self.ch_table.setHorizontalHeaderLabels(["#", "OPERATOR", "THIS WEEK"])
+        from PySide6.QtWidgets import QHeaderView
+        hh = self.ch_table.horizontalHeader()
+        hh.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        hh.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.ch_table.verticalHeader().hide()
+        self.ch_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        lay.addWidget(self.ch_table, 1)
+        self.ch_mine = QLabel("")
+        self.ch_mine.setObjectName("dim")
+        lay.addWidget(self.ch_mine)
+        self.tabs.addTab(w, "WEEKLY CHALLENGE")
+
     def _build_board_tab(self) -> None:
         w = QWidget()
         lay = QVBoxLayout(w)
@@ -221,6 +257,8 @@ class OnlinePage(QWidget):
         logged = c.logged_in
         self.out_view.setVisible(not logged)
         self.in_view.setVisible(logged)
+        if not logged:
+            self.friends_summary.emit(-1, "")
         if not c.configured:
             self.intro.setText("Online services are not available in this build.\n\n"
                                "They add Discord login, leaderboards and a friends list with live status. Everything stays optional — "
@@ -246,6 +284,7 @@ class OnlinePage(QWidget):
     def _load_all(self) -> None:
         self._run(self.client.me, self._on_me)
         self._load_board()
+        self._load_challenge()
         self._load_friends()
         self._heartbeat()
 
@@ -333,6 +372,7 @@ class OnlinePage(QWidget):
         if self.client.logged_in:
             text = online.presence_text(self.engine)
             self._run(lambda: self.client.presence(text), None, lambda m: None)
+            self._load_friends()
             if time.time() - self._last_sync > SYNC_SECONDS:
                 self._sync()
 
@@ -359,11 +399,34 @@ class OnlinePage(QWidget):
         me = data.get("me")
         self.mine.setText(f"You are #{me['position']} of {data['total']}." if me else f"{data['total']} operators ranked. Sync your score to appear.")
 
+    # ------------------------------------------------------------ challenge --
+    def _load_challenge(self) -> None:
+        self._run(self.client.challenge, self._fill_challenge, lambda m: None)
+
+    def _fill_challenge(self, data: dict) -> None:
+        self.ch_title.setText(f"{data['title']}  ·  {data['week']}")
+        self.ch_text.setText(data["text"])
+        self.ch_meta.setText(f"Ends in {countdown(data['ends_in'])}  ·  {data['players']} operators competing  ·  "
+                             f"community total this week: {data['community_total']:,}")
+        rows = data["entries"]
+        self.ch_table.setRowCount(len(rows))
+        for i, r in enumerate(rows):
+            for col, text in enumerate([str(r["position"]), r["name"], f"{r['value']:,}"]):
+                item = QTableWidgetItem(text)
+                if r["me"]:
+                    item.setForeground(QColor(COLORS["green"]))
+                self.ch_table.setItem(i, col, item)
+        me = data.get("me")
+        self.ch_mine.setText(f"You are #{me['position']} with {me['value']:,}." if me else
+                             "Sync your score (LEADERBOARD tab) to join this week's challenge. The winners are announced on our Discord.")
+
     # -------------------------------------------------------------- friends --
     def _load_friends(self) -> None:
-        self._run(self.client.friends, self._fill_friends)
+        self._run(self.client.friends, self._fill_friends, lambda m: None)
 
     def _fill_friends(self, data: dict) -> None:
+        if not self.client.logged_in:                        # an answer that arrives after logging out
+            return
         while self.requests.count():
             w = self.requests.takeAt(0).widget()
             if w:
@@ -391,6 +454,13 @@ class OnlinePage(QWidget):
             self.friend_list.addItem(QListWidgetItem("pending: " + ", ".join(o["name"] for o in data["outgoing"])))
         if not data["friends"] and not data["outgoing"]:
             self.friend_list.addItem(QListWidgetItem("No friends yet. Ask them for their NEXUS name!"))
+        online_now = [f for f in data["friends"] if f["online"]]
+        names = {f["name"] for f in online_now}
+        if self._friends_seen is not None and names - self._friends_seen:
+            play("friend")                                   # somebody just came online
+        self._friends_seen = names
+        tip = "\n".join(f"● {f['name']}  LV {f['level'] or '?'}" + (f"  —  {f['status']}" if f["status"] else "") for f in online_now)
+        self.friends_summary.emit(len(online_now), tip or "None of your friends is online right now.")
 
     def _add_friend(self) -> None:
         name = self.add_edit.text().strip()

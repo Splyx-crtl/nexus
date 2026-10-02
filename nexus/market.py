@@ -142,7 +142,7 @@ class Market:
             self._on_buy(entry)
         e.bump("purchases")
         e.db.add_stat("market_spent", price)
-        e.notify("ok", "ITEM PURCHASED", f"{entry['name']}  -${price:,}", sound="notify")
+        e.notify("ok", "ITEM PURCHASED", f"{entry['name']}  -${price:,}", sound="purchase")
         e.achievements.check()
         e.inventory_changed.emit()
         e.state_changed.emit()

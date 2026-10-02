@@ -1,7 +1,8 @@
-"""Sound effects. Sounds are synthesised on first run (no asset files required).
+"""Sound effects and music.
 
-Drop your own ``<name>.wav`` files into assets/sounds to override any effect.
-If audio is unavailable the game simply stays silent.
+Effects are synthesised on first run (no asset files required); drop your own ``<name>.wav`` files into assets/sounds to override any.
+Music: assets/music/{menu,terminal,tension}.wav are seamless loops composed by tools/build_music.py (our own, nothing to license).
+The game crossfades between them by situation. If audio is unavailable the game simply stays silent.
 """
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ import struct
 import wave
 from pathlib import Path
 
-from .config import SOUNDS_DIR, USER_SOUNDS_DIR
+from .config import MUSIC_DIR, SOUNDS_DIR, USER_SOUNDS_DIR
 
 RATE = 22050
 
@@ -67,14 +68,10 @@ def _build_sounds() -> dict[str, list[float]]:
         "connect": _sweep(300, 900, 0.35, 0.35, 0.4),
         "glitch": _noise(0.08, 0.4, 2, 5) + _gap(0.02) + _noise(0.05, 0.35, 2, 6) + _tone(90, 0.1, 0.3, "square"),
         "boot": _sweep(70, 420, 0.7, 0.45),
+        "levelup": sum((_tone(f, 0.09, 0.38, decay=2.5) for f in (392, 494, 587, 784, 988)), []) + _mix(_tone(1175, 0.5, 0.3, decay=3), _tone(784, 0.5, 0.2, decay=3)),
+        "purchase": _tone(1568, 0.05, 0.35, decay=4) + _tone(2093, 0.16, 0.35, decay=5),
+        "friend": _tone(660, 0.08, 0.3, decay=3) + _tone(990, 0.14, 0.3, decay=4),
     }
-    # seamless 8 s ambient drone (integer cycle counts -> clean loop)
-    n = RATE * 8
-    sounds["ambient"] = [
-        0.18 * math.sin(2 * math.pi * 55 * i / RATE) + 0.10 * math.sin(2 * math.pi * 82.5 * i / RATE)
-        + 0.07 * math.sin(2 * math.pi * 110 * i / RATE) * (0.6 + 0.4 * math.sin(2 * math.pi * 0.25 * i / RATE))
-        for i in range(n)
-    ]
     return sounds
 
 
@@ -90,7 +87,7 @@ def ensure_sound_files() -> dict[str, Path]:
     """Return {name: path}; synthesise any missing effect into the user sound dir."""
     found: dict[str, Path] = {}
     missing = []
-    names = ["click", "type", "error", "notify", "warning", "complete", "achievement", "connect", "glitch", "boot", "ambient"]
+    names = ["click", "type", "error", "notify", "warning", "complete", "achievement", "connect", "glitch", "boot", "levelup", "purchase", "friend"]
     for name in names:
         for base in (SOUNDS_DIR, USER_SOUNDS_DIR):
             candidate = base / f"{name}.wav"
@@ -112,49 +109,76 @@ def ensure_sound_files() -> dict[str, Path]:
     return found
 
 
+LOOP_FOREVER = -2                                                # QSoundEffect.Infinite (newer PySide6 no longer accepts the enum here)
+MUSIC = {"menu": 0.62, "terminal": 0.5, "tension": 0.6}      # track -> loudness trim (the loops are mastered loud)
+FADE_STEP = 0.045                                                # per 60 ms tick: about 1.3 s crossfades
+
+
 class SoundManager:
-    """Thin wrapper around QSoundEffect with volume control and graceful fallback."""
+    """Thin wrapper around QSoundEffect with volume control, music crossfading and graceful fallback."""
 
     POOL = {"type": 3, "click": 3}
 
     def __init__(self, settings=None):
         self.settings = settings
         self.effects: dict[str, list] = {}
+        self.music: dict[str, object] = {}
+        self.level: dict[str, float] = {}
+        self.mood: str | None = None
         self.enabled = not os.environ.get("NEXUS_NO_AUDIO")
         self._rr: dict[str, int] = {}
+        self._timer = None
         if not self.enabled:
             return
         try:
-            from PySide6.QtCore import QUrl
+            from PySide6.QtCore import QTimer, QUrl
             from PySide6.QtMultimedia import QSoundEffect
             for name, path in ensure_sound_files().items():
                 pool = []
                 for _ in range(self.POOL.get(name, 1)):
                     fx = QSoundEffect()
                     fx.setSource(QUrl.fromLocalFile(str(path)))
-                    if name == "ambient":
-                        fx.setLoopCount(QSoundEffect.Infinite)
                     pool.append(fx)
                 self.effects[name] = pool
+            for name in MUSIC:
+                path = MUSIC_DIR / f"{name}.wav"
+                if path.exists():
+                    fx = QSoundEffect()
+                    fx.setSource(QUrl.fromLocalFile(str(path)))
+                    fx.setLoopCount(LOOP_FOREVER)
+                    fx.setVolume(0.0)
+                    self.music[name] = fx
+                    self.level[name] = 0.0
+            self._timer = QTimer()
+            self._timer.setInterval(60)
+            self._timer.timeout.connect(self._fade)
         except Exception:                      # no audio backend: stay silent
             self.enabled = False
-            self.effects = {}
+            self.effects, self.music = {}, {}
         self.apply_volumes()
 
+    # -- volumes -------------------------------------------------------
     def _vol(self, key: str) -> float:
         if not self.settings:
             return 0.5
         return self.settings.get("volume_master") / 100 * self.settings.get(key) / 100
 
     def apply_volumes(self) -> None:
-        for name, pool in self.effects.items():
-            vol = self._vol("volume_music" if name == "ambient" else "volume_sfx")
+        vol = self._vol("volume_sfx")
+        for pool in self.effects.values():
             for fx in pool:
                 fx.setVolume(vol)
+        self._apply_music()
 
+    def _apply_music(self) -> None:
+        base = self._vol("volume_music")
+        for name, fx in self.music.items():
+            fx.setVolume(base * MUSIC[name] * self.level[name])
+
+    # -- effects -------------------------------------------------------
     def play(self, name: str) -> None:
         pool = self.effects.get(name)
-        if not pool or name == "ambient":
+        if not pool:
             return
         if name == "type" and self.settings and not self.settings.get("typing_sound"):
             return
@@ -165,12 +189,38 @@ class SoundManager:
         except Exception:
             pass
 
-    def start_ambient(self) -> None:
-        pool = self.effects.get("ambient")
-        if pool and not pool[0].isPlaying():
-            pool[0].play()
+    # -- music ---------------------------------------------------------
+    def set_music(self, mood: str | None) -> None:
+        """Crossfade to the track for ``mood`` ('menu', 'terminal', 'tension'); None fades everything out."""
+        if mood == self.mood or (mood is not None and mood not in self.music):
+            return
+        self.mood = mood
+        if self._timer is not None and not self._timer.isActive():
+            self._timer.start()
+
+    def _fade(self) -> None:
+        busy = False
+        for name, fx in self.music.items():
+            goal = 1.0 if name == self.mood else 0.0
+            cur = self.level[name]
+            if cur != goal:
+                cur = min(goal, cur + FADE_STEP) if goal > cur else max(goal, cur - FADE_STEP)
+                self.level[name] = cur
+                busy = True
+            try:
+                if cur > 0 and not fx.isPlaying():
+                    fx.play()
+                elif cur == 0 and fx.isPlaying():
+                    fx.stop()
+            except Exception:
+                pass
+        self._apply_music()
+        if not busy and self._timer is not None:
+            self._timer.stop()
+
+    def start_ambient(self) -> None:                     # kept for older callers: background music for the menu
+        if self.mood is None:
+            self.set_music("menu")
 
     def stop_ambient(self) -> None:
-        pool = self.effects.get("ambient")
-        if pool:
-            pool[0].stop()
+        self.set_music(None)

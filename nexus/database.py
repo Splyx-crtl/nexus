@@ -79,7 +79,7 @@ class Database:
         existed = self.path.exists() and self.path.stat().st_size > 0
         self._last_commit = 0.0
         self._dirty = False
-        self.conn = sqlite3.connect(str(self.path))
+        self.conn = sqlite3.connect(str(self.path), timeout=30)     # wait for a short-lived lock (sync tools, virus scanners)
         self.conn.row_factory = sqlite3.Row
         self.conn.execute("PRAGMA synchronous=NORMAL")       # fast commits; still safe against app crashes
         self.conn.executescript(SCHEMA)

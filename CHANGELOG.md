@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.4.0 — Weekly challenge, friends bar, Discord announcements, music
+
+### Added
+- **Weekly community challenge** (ONLINE → WEEKLY CHALLENGE): every week everybody plays for the same goal (XP RUSH, OPERATOR,
+  PAYDAY, GHOST — rotating by calendar week). The table counts what you earned *since the start of the week*, shows the time left
+  and the community total. Players who hide themselves are not listed.
+- **Friends bar**: the sidebar shows how many friends are online (tooltip: who, level, current mission); click to open ONLINE.
+  A soft sound plays when a friend comes online.
+- **Discord announcements (optional)**: set `DISCORD_WEBHOOK_URL` on the server and the weekly winners (top 3) are posted into your
+  Discord server once per week. Add the repository secret `DISCORD_WEBHOOK_URL` and every release announces itself there too.
+- **Music**: three original synthwave loops (menu, terminal, tension) composed by `tools/build_music.py` — our own, nothing to license.
+  The game crossfades between them: menu music in the menus, calm terminal music while playing, tension music when the heat
+  reaches 70 % (back to calm below 50 %). New sound effects for level-up, purchases and friends coming online.
+
+### Changed
+- A save file that is locked by another program (second NEXUS window, OneDrive, virus scanner) is waited for up to 30 s and then
+  explained with a **Try again** button instead of a crash.
+- The old drone ambience was replaced by the music; the MUSIC VOLUME slider controls it.
+
+### Tests
+- `tests/test_v24.py` (challenge maths, baseline per week, privacy, once-per-week Discord announcement, music files and loop seams);
+  `tests/ui_online.py` also covers the challenge tab and the friends bar.
+
 ## 2.3.0 — Invite-only login (Discord server + access key)
 
 ### Added

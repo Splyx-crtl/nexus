@@ -99,6 +99,20 @@ A key binds to the first Discord account that logs in with it; sharing it does n
 
 Keys look like `NX-7K2QF-9WMXA-3HTRB` (case and dashes do not matter when typing). Wrong guesses are rate limited per address.
 
+## 5. Weekly challenge and Discord announcements (optional)
+
+The ONLINE page has a **WEEKLY CHALLENGE** tab: one goal per calendar week for everybody (rotating XP / missions / credits / flawless missions),
+counted from each player's first score of that week. No setup needed.
+
+To have the **winners announced in your Discord server**:
+
+1. Discord → your channel → *Edit channel → Integrations → Webhooks → New Webhook → Copy Webhook URL*.
+2. Railway → Variables → `DISCORD_WEBHOOK_URL` = that URL (treat it like a password; anybody with it can post in your channel).
+3. The first request after Monday posts the top 3 of the week that just ended, exactly once. Without the variable nothing is posted.
+
+For **release announcements**: GitHub → repository → *Settings → Secrets and variables → Actions → New repository secret* named
+`DISCORD_WEBHOOK_URL` (same or a different webhook). New releases then post "NEXUS vX is out" automatically; the step is skipped without the secret.
+
 ## What is stored on the server
 
 * Discord user id and display name, session tokens,

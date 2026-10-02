@@ -96,6 +96,13 @@ class AppShell(QWidget):
             sl.addWidget(btn)
             self.nav[key] = btn
         sl.addStretch(1)
+        self.friends_bar = NeonButton("", "")
+        self.friends_bar.clicked.connect(lambda: self.show_page("online"))
+        self.friends_bar.hide()
+        fwrap = QHBoxLayout()
+        fwrap.setContentsMargins(12, 0, 12, 6)
+        fwrap.addWidget(self.friends_bar)
+        sl.addLayout(fwrap)
         self.mini = QLabel("")
         self.mini.setWordWrap(True)
         self.mini.setStyleSheet(f"color:{COLORS['text']}; padding: 8px 16px; border-top: 1px solid {COLORS['border']};")
@@ -164,6 +171,7 @@ class AppShell(QWidget):
         self.pages["profile"] = ProfilePage(engine)
         self.pages["achievements"] = AchievementsPage(engine)
         self.pages["online"] = OnlinePage(engine, settings)
+        self.pages["online"].friends_summary.connect(self._on_friends_summary)
         self.pages["archives"] = ArchivesWidget(engine)
         self.pages["settings"] = SettingsWidget(settings, engine, self.settings_applied.emit, self.reload_requested.emit)
         for key in KEYS:
@@ -210,6 +218,13 @@ class AppShell(QWidget):
         if key == "terminal":
             self.terminal_page.terminal.focus_input()
         self.page_changed.emit(key)
+
+    def _on_friends_summary(self, count: int, tip: str) -> None:
+        """The sidebar shows how many friends are online (hidden while logged out of the online service)."""
+        self.friends_bar.setVisible(count >= 0)
+        if count >= 0:
+            self.friends_bar.setText(f"● {count} FRIEND{'S' if count != 1 else ''} ONLINE" if count else "○ NO FRIENDS ONLINE")
+            self.friends_bar.setToolTip(tip)
 
     def _open_admin(self) -> None:
         from .admin_panel import AdminPanel

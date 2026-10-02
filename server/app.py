@@ -16,9 +16,10 @@ import os
 import re
 import secrets
 import sqlite3
+import threading
 import time
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, timedelta
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -42,6 +43,11 @@ ADMIN_SESSION_MINUTES = 60
 GATED = bool(GUILD_ID) or os.environ.get("NEXUS_REQUIRE_KEY", "") == "1"      # invite-only: a key is required to log in
 SESSION_DAYS = int(os.environ.get("NEXUS_SESSION_DAYS", "30"))     # gated servers re-check membership at least this often
 KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"                  # no 0/O/1/I
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()     # optional: weekly winners are posted into your Discord server
+CHALLENGES = [("xp", "XP RUSH", "Earn the most XP this week."),
+              ("missions", "OPERATOR", "Complete the most missions this week."),
+              ("credits", "PAYDAY", "Earn the most credits this week."),
+              ("perfect", "GHOST", "Finish the most missions without a single mistake this week.")]
 ONLINE_WINDOW = 120            # seconds since last heartbeat that count as "online"
 STATE_TTL = 600
 BOARDS = {"level": "level DESC, xp_total DESC", "missions": "missions DESC, level DESC", "credits": "credits_earned DESC",
@@ -60,6 +66,10 @@ CREATE TABLE IF NOT EXISTS access_keys (id INTEGER PRIMARY KEY AUTOINCREMENT, ke
 CREATE TABLE IF NOT EXISTS scores (user_id INTEGER PRIMARY KEY, level INTEGER, xp_total INTEGER, missions INTEGER, credits_earned INTEGER,
     perfect INTEGER, playtime INTEGER, ng_plus INTEGER, rank TEXT, updated_at REAL, week TEXT, week_base_xp INTEGER);
 CREATE TABLE IF NOT EXISTS friends (user_id INTEGER, friend_id INTEGER, status TEXT, created_at REAL, PRIMARY KEY (user_id, friend_id));
+CREATE TABLE IF NOT EXISTS week_results (week TEXT NOT NULL, user_id INTEGER NOT NULL,
+    base_xp INTEGER, base_missions INTEGER, base_credits INTEGER, base_perfect INTEGER,
+    xp INTEGER, missions INTEGER, credits INTEGER, perfect INTEGER, PRIMARY KEY (week, user_id));
+CREATE TABLE IF NOT EXISTS announcements (week TEXT PRIMARY KEY, posted_at REAL);
 """
 
 
@@ -379,7 +389,7 @@ def delete_me(user=Depends(current_user)):
     """Delete the account and every stored row about it (GDPR-style erasure)."""
     with db() as conn:
         uid = user["id"]
-        for table, col in (("sessions", "user_id"), ("scores", "user_id"), ("friends", "user_id"), ("friends", "friend_id"), ("users", "id")):
+        for table, col in (("sessions", "user_id"), ("scores", "user_id"), ("week_results", "user_id"), ("friends", "user_id"), ("friends", "friend_id"), ("users", "id")):
             conn.execute(f"DELETE FROM {table} WHERE {col}=?", (uid,))
     return {"deleted": True}
 
@@ -412,6 +422,8 @@ def submit_score(body: ScoreBody, user=Depends(current_user)):
                         ng_plus=excluded.ng_plus, rank=excluded.rank, updated_at=excluded.updated_at, week=excluded.week, week_base_xp=excluded.week_base_xp""",
                      (user["id"], clean["level"], clean["xp_total"], clean["missions"], clean["credits_earned"], clean["perfect"], clean["playtime"],
                       clean["ng_plus"], clean["rank"], time.time(), wk, base))
+        record_week(conn, user["id"], wk, old, clean)
+        announce_last_week(conn)
     return {"ok": True}
 
 
@@ -432,6 +444,87 @@ def leaderboard(board: str = "level", limit: int = 50, user=Depends(current_user
         r["me"] = r.pop("id") == user["id"]
     mine = next((r for r in rows if r["me"]), None)
     return {"board": board, "entries": rows[:limit], "me": mine, "total": len(rows)}
+
+
+# -------------------------------------------------------- weekly challenge --
+def challenge_for(week: str) -> tuple[str, str, str]:
+    """The challenge of an ISO week ('2026-W40'): rotates through CHALLENGES, so everybody gets the same one."""
+    number = int(week.split("-W")[1])
+    return CHALLENGES[number % len(CHALLENGES)]
+
+
+def previous_week() -> str:
+    y, w, _ = (date.today() - timedelta(days=7)).isocalendar()
+    return f"{y}-W{w:02d}"
+
+
+def record_week(conn: sqlite3.Connection, user_id: int, week: str, old, clean: dict) -> None:
+    """Keep the player's start-of-week numbers and the current ones; the weekly result is the difference."""
+    cur = (clean["xp_total"], clean["missions"], clean["credits_earned"], clean["perfect"])
+    row = conn.execute("SELECT 1 FROM week_results WHERE week=? AND user_id=?", (week, user_id)).fetchone()
+    if row is None:
+        base = (old["xp_total"], old["missions"], old["credits_earned"], old["perfect"]) if old else cur
+        conn.execute("INSERT INTO week_results VALUES(?,?,?,?,?,?,?,?,?,?)", (week, user_id, *base, *cur))
+    else:
+        conn.execute("UPDATE week_results SET xp=?, missions=?, credits=?, perfect=? WHERE week=? AND user_id=?", (*cur, week, user_id))
+
+
+def week_table(conn: sqlite3.Connection, week: str, metric: str) -> list[dict]:
+    rows = conn.execute(f"""SELECT u.id, u.name, w.{metric} - w.base_{metric} AS value FROM week_results w
+                            JOIN users u ON u.id = w.user_id WHERE w.week=? AND u.share=1
+                            ORDER BY value DESC, u.name_lc""", (week,)).fetchall()
+    out = [dict(r) for r in rows]
+    for i, r in enumerate(out, 1):
+        r["position"] = i
+    return out
+
+
+def send_webhook(text: str) -> None:
+    """Post a message into the Discord server (server -> Discord only). Replaceable in tests."""
+    if not DISCORD_WEBHOOK_URL:
+        return
+
+    def work():
+        try:
+            httpx.post(DISCORD_WEBHOOK_URL, json={"content": text[:1900], "allowed_mentions": {"parse": []}}, timeout=8)
+        except httpx.HTTPError:
+            pass
+
+    threading.Thread(target=work, daemon=True).start()
+
+
+def announce_last_week(conn: sqlite3.Connection) -> None:
+    """Once per week (the first request after the rollover) tell the Discord server who won the last challenge."""
+    if not DISCORD_WEBHOOK_URL:
+        return
+    week = previous_week()
+    if conn.execute("INSERT OR IGNORE INTO announcements VALUES(?, ?)", (week, time.time())).rowcount == 0:
+        return
+    metric, title, _ = challenge_for(week)
+    table = [r for r in week_table(conn, week, metric) if r["value"] > 0][:3]
+    if not table:
+        return
+    medals = ("🥇", "🥈", "🥉")
+    lines = [f"{medals[i]} **{r['name']}** — {r['value']:,} {metric}" for i, r in enumerate(table)]
+    send_webhook(f"**NEXUS weekly challenge {title} ({week}) — results**\n" + "\n".join(lines))
+
+
+@app.get("/challenge")
+def challenge(user=Depends(current_user)):
+    week = week_key()
+    metric, title, text = challenge_for(week)
+    now = time.time()
+    next_monday = (date.today() + timedelta(days=7 - date.today().weekday()))
+    ends_in = int(time.mktime(next_monday.timetuple()) - now)
+    with db() as conn:
+        announce_last_week(conn)
+        rows = week_table(conn, week, metric)
+        total = conn.execute(f"SELECT COALESCE(SUM(w.{metric} - w.base_{metric}), 0) FROM week_results w WHERE w.week=?", (week,)).fetchone()[0]
+    for r in rows:
+        r["me"] = r.pop("id") == user["id"]
+    mine = next((r for r in rows if r["me"]), None)
+    return {"week": week, "metric": metric, "title": title, "text": text, "ends_in": max(0, ends_in),
+            "entries": rows[:20], "me": mine, "players": len(rows), "community_total": int(total)}
 
 
 # ------------------------------------------------------------------ friends --

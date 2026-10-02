@@ -305,6 +305,7 @@ class GameEngine(QObject):
         if missions:
             lines.append("NEW MISSION UNLOCKED: " + missions[0]["title"] + (f" (+{len(missions) - 1} more)" if len(missions) > 1 else ""))
         self.level_up.emit(new, rank_for_level(new))
+        self.sound.emit("levelup")
         self.banner.emit("levelup", lines, {})
         self.notify("ok", f"LEVEL UP — {new}", f"Rank: {rank_for_level(new)}", sound=None, log_only=True)
         self.snapshot_history()

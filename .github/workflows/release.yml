@@ -47,3 +47,14 @@ jobs:
             dist/NEXUS-Setup.exe
             dist/NEXUS-Setup.exe.sha256
           generate_release_notes: true
+      - name: Announce on Discord (optional)
+        # Only runs when the repository secret DISCORD_WEBHOOK_URL exists (Settings -> Secrets -> Actions). A failure never blocks the release.
+        if: ${{ env.HOOK != '' }}
+        continue-on-error: true
+        shell: pwsh
+        env:
+          HOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          $text = "**NEXUS ${{ github.ref_name }} is out!** Start the game and the update window does the rest. Notes: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+          $body = @{ content = $text; allowed_mentions = @{ parse = @() } } | ConvertTo-Json -Depth 3
+          Invoke-RestMethod -Uri $env:HOOK -Method Post -ContentType "application/json" -Body $body

@@ -1,9 +1,10 @@
 """Main window: owns pages, overlays and the whole application flow."""
 from __future__ import annotations
+import sqlite3
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QIcon, QKeySequence, QPainter, QPixmap, QShortcut
-from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QMainWindow, QMessageBox, QStackedWidget, QVBoxLayout, QWidget
 
 from nexus import config, i18n
 from nexus.config import APP_FULL_NAME, ASSETS_DIR, COLORS
@@ -78,6 +79,7 @@ class MainWindow(QMainWindow):
         lay = QVBoxLayout(central)
         lay.setContentsMargins(0, 0, 0, 0)
         self.stack = QStackedWidget()
+        self.stack.currentChanged.connect(lambda _i: self._update_music())
         lay.addWidget(self.stack)
         self.menu = MainMenu()
         self.first = FirstLaunchScreen()
@@ -132,16 +134,49 @@ class MainWindow(QMainWindow):
             self.stack.setCurrentIndex(self.PAGE_FIRST)
             self.first.start()
             return
-        self._attach_engine(self.saves.open_profile(latest.path))
+        db = self._open_with_retry(latest.path)
+        if db is None:
+            QApplication.instance().quit()
+            return
+        self._attach_engine(db)
         self.stack.setCurrentIndex(self.PAGE_MENU)
-        self.sound.start_ambient()
+        self._update_music()
         self.updates.start()
+
+    def _update_music(self) -> None:
+        """Menu music in the menus, calm terminal music while playing, tension music when the heat is high."""
+        in_shell = self.stack.currentIndex() == self.PAGE_SHELL
+        mood = "menu"
+        if in_shell:
+            heat = self.engine.heat if self.engine else 0
+            mood = "tension" if heat >= (50 if self.sound.mood == "tension" else 70) else "terminal"
+        self.sound.set_music(mood)
+
+    def _open_with_retry(self, path):
+        """Open a save; if another program holds it (second NEXUS window, sync tool), explain and let the player retry."""
+        while True:
+            try:
+                return self.saves.open_profile(path)
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc).lower():
+                    raise
+                box = QMessageBox(self)
+                box.setIcon(QMessageBox.Icon.Warning)
+                box.setWindowTitle("NEXUS")
+                box.setText("Your save file is in use by another program.")
+                box.setInformativeText("Close every other NEXUS window (Task Manager → Details → NEXUS.exe) and pause "
+                                       "cloud-sync tools such as OneDrive, then try again. Your progress is not damaged.")
+                retry = box.addButton("Try again", QMessageBox.ButtonRole.AcceptRole)
+                box.addButton("Quit", QMessageBox.ButtonRole.RejectRole)
+                box.exec()
+                if box.clickedButton() is not retry:
+                    return None
 
     def _on_profile_created(self, name: str) -> None:
         db = self.saves.create_profile(name)
         self._attach_engine(db)
         self._first_run = True
-        self.sound.start_ambient()
+        self._update_music()
         self.updates.start()
         self._transition(self._start_loading)
 
@@ -156,6 +191,7 @@ class MainWindow(QMainWindow):
         e.banner.connect(lambda k, lines, opts: self.banner.push(k, lines))
         e.sound.connect(play)
         e.heat_changed.connect(lambda h: setattr(self.scan, "alert", h >= 70))
+        e.heat_changed.connect(lambda _h: self._update_music())
         e.ending_reached.connect(self._on_ending)
         e.state_changed.connect(self._refresh_menu_card)
         self._apply_theme()

@@ -154,6 +154,10 @@ class OnlineClient:
     def leaderboard(self, board: str = "level", limit: int = 50) -> dict:
         return self._call("GET", f"/leaderboard?board={urllib.parse.quote(board)}&limit={int(limit)}")
 
+    def challenge(self) -> dict:
+        """This week's community challenge: goal, time left, top players and my own place."""
+        return self._call("GET", "/challenge")
+
     def friends(self) -> dict:
         return self._call("GET", "/friends")
 
