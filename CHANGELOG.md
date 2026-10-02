@@ -1,6 +1,11 @@
 # Changelog
 
-## 2.2.3 — Banner fix
+## 2.2.3 — Banner fix & new update window
+
+### Changed
+- **New update window**: version hero (installed -> new build with animated chevrons), formatted release notes, REQUIRED/OPTIONAL badge,
+  three clear stages (download with size, speed and ETA -> checksum verification -> installer), retry button on errors, fade-in.
+  Release notes are HTML-escaped before display.
 
 ### Fixed
 - **Level-up (and every other) banner never went away.** The fade-in raised the opacity again on every frame while the
