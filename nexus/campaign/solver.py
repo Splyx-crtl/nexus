@@ -22,10 +22,16 @@ class SolveResult:
         return self.ok
 
 
-def solve(mission: Mission, level=lambda: 10**6) -> SolveResult:
+def solve(mission: Mission, level=None) -> SolveResult:
     """Run ``mission.solution`` line by line and check the mission completed. A line that fails (non-zero exit) does not
     stop the run — a solution is allowed to probe or fail a step before correcting itself, same as a real player — but a
-    Python exception while running it is treated as a bug and reported immediately."""
+    Python exception while running it is treated as a bug and reported immediately.
+
+    ``level`` defaults to the mission's own ``number``: this proves the mission is solvable by a player who has progressed
+    *exactly* to this level, no further — not by someone who (like an unrestricted test harness) already has every command
+    unlocked. That distinction matters: a mission whose solution needs a command gated to a higher level than the mission's
+    own number is unsolvable for a real player, and would only have been caught by this, not by an unlimited-level run."""
+    level = level or (lambda: mission.number)
     try:
         runner = MissionRunner.start(mission, level=level)
     except KeyError as exc:
@@ -41,6 +47,6 @@ def solve(mission: Mission, level=lambda: 10**6) -> SolveResult:
     return SolveResult(mission.id, runner.is_complete, missing=missing, transcript=transcript)
 
 
-def solve_all(missions: list[Mission], level=lambda: 10**6) -> dict[str, SolveResult]:
+def solve_all(missions: list[Mission], level=None) -> dict[str, SolveResult]:
     """{mission_id: SolveResult} for every mission — the batch check a pre-release test (or CI) should run."""
     return {m.id: solve(m, level=level) for m in missions}

@@ -584,7 +584,9 @@ class Shell:
             return self.call_function(name, args, stdin, chunks)
         method = BUILTINS.get(name)
         if method is not None:
-            return getattr(self, method)(args, stdin, chunks)
+            status = getattr(self, method)(args, stdin, chunks)
+            self.emit("command", name=name, args=list(args), status=status or 0, family="bash", builtin=True)
+            return status
         if "/" in name:
             return self.run_path(name, args, stdin, chunks)
         return self.run_command(name, args, stdin, chunks)

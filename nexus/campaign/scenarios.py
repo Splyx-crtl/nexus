@@ -66,9 +66,75 @@ def awakening_deaddrop() -> tuple[World, Session]:
     return world, Session(m, m.users["operator"], "bash")
 
 
+@scenario("awakening_workspace")
+def awakening_workspace() -> tuple[World, Session]:
+    """Level 4: nothing to find yet, just an empty home — teaches mkdir/touch by asking the player to set up a workspace."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"notes.txt": "NEXUS: Let's set up a proper workspace before we go further.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_manual")
+def awakening_manual() -> tuple[World, Session]:
+    """Level 5: teaches 'man' — the most useful habit in the whole game — against a command already unlocked (ls)."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"notes.txt": "NEXUS: Every tool has a manual. Get in the habit of checking.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_tidy")
+def awakening_tidy() -> tuple[World, Session]:
+    """Level 6: a messy folder (badly named file, a stray copy) — teaches cp/mv/rm."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"draft_v2_FINAL_reall.txt": "Mira's contact protocol, typed in a hurry.\n",
+                         "draft_v2_FINAL_reall_OLD.txt": "An older, wrong draft. Get rid of it.\n",
+                         "notes.txt": "NEXUS: This folder's a mess. Clean it up: lose the old draft, rename the real one sensibly.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_search")
+def awakening_search() -> tuple[World, Session]:
+    """Level 7: a slightly bigger tree — the first real use of 'find', which unlocks at exactly this level."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({
+        "notes.txt": "NEXUS: Somewhere under this folder is a file named 'protocol.key'. I don't remember where. Use find.\n",
+        "archive": {"2049": {"q1": {"misc.txt": "nothing here"}, "q2": {"protocol.key": "CONTACT-PROTOCOL-7\n"}}, "2050": {"empty": {}}},
+    })
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_firstgrep")
+def awakening_firstgrep() -> tuple[World, Session]:
+    """Level 8: the first use of grep, which unlocks at exactly this level — short and simple before the noisier Level 10 log."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"roster.txt": ["alice - analyst", "bshah - contractor", "cwu - analyst", "NEXUS - classified", "dpatel - analyst"],
+                         "notes.txt": "NEXUS: My own name is buried in that roster file. Find the line with 'NEXUS' in it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("awakening_contact")
+def awakening_contact() -> tuple[World, Session]:
+    """Level 9 (story): Mira reaches out for the first time, having noticed the player's activity since the dead drop."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"inbox": {"unread_001.txt": [
+        "FROM: M.", "",
+        "I've been watching your traffic for a week. You're sloppy in exactly the ways that don't get you caught, which is rarer than it sounds.",
+        "", "I run a small, deniable network of independent operators. I'd like you to be one of them.",
+        "", "Reply in this file if you're in. Nothing fancy — just write it below the line and save.", "---",
+    ]}, "notes.txt": "NEXUS: Someone noticed us. Read inbox/unread_001.txt.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
 @scenario("awakening_logs")
 def awakening_logs() -> tuple[World, Session]:
-    """An Act I mission teaching grep against a log file with a handful of real-looking, noisy lines plus one that matters."""
+    """Level 10 (milestone): the "decommissioned" contractor test server from the Level 3 dead drop — a log with real-looking
+    noise plus one line that matters. Closes Chapter 1 of Act I (first contact with NEXUS, Mira, and a first real result)."""
     world = World(clock=lambda: EPOCH)
     log = [
         "10:02:01 svc[auth]: session renewed for operator", "10:02:44 svc[cron]: backup job completed (0 errors)",

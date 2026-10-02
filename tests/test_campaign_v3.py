@@ -86,6 +86,21 @@ class Validator(unittest.TestCase):
     def test_act1_content_has_no_problems(self):
         self.assertEqual(validate_all(ALL_MISSIONS), {})
 
+    def test_a_command_used_before_its_unlock_level_is_flagged(self):
+        """Regression test for the real bug this file's design caught: a mission using 'grep' (unlocks at engine level 8)
+        at a mission number below 8 is unsolvable for an actual player, who would not have grep yet."""
+        m = Mission(id="x", number=4, act=1, size="mini", title="T", scenario="awakening_logs",
+                    objectives=[Objective(event="grep_match", match={"pattern__contains": "x"}, text="t", hints=["h"])],
+                    solution=["grep x /var/log/system.log"])
+        problems = validate_mission(m)
+        self.assertTrue(any("unlocks at level 8" in p and "mission is level 4" in p for p in problems))
+
+    def test_a_command_at_exactly_its_unlock_level_is_fine(self):
+        m = Mission(id="x", number=8, act=1, size="mini", title="T", scenario="awakening_logs",
+                    objectives=[Objective(event="grep_match", match={"pattern__contains": "x"}, text="t", hints=["h"])],
+                    solution=["grep x /var/log/system.log"])
+        self.assertEqual(validate_mission(m), [])
+
     def test_duplicate_objective_id_is_flagged(self):
         m = Mission(id="x", number=1, act=1, size="mini", title="T", scenario="awakening_boot",
                     objectives=[Objective(event="command", id="dup", text="a", hints=["h"]),
@@ -187,13 +202,13 @@ class Scenarios(unittest.TestCase):
 
 class Generators(unittest.TestCase):
     def test_grep_mini_is_deterministic_and_solvable(self):
-        a = generate_grep_mini("g1", 5, 1, seed=42)
-        b = generate_grep_mini("g1b", 5, 1, seed=42)
+        a = generate_grep_mini("g1", 8, 1, seed=42)
+        b = generate_grep_mini("g1b", 8, 1, seed=42)
         self.assertEqual(a.title, b.title)                            # same seed -> same keyword
         self.assertTrue(solve(a).ok)
 
     def test_different_seeds_can_differ(self):
-        titles = {generate_grep_mini(f"g{i}", 5, 1, seed=i).title for i in range(8)}
+        titles = {generate_grep_mini(f"g{i}", 8, 1, seed=i).title for i in range(8)}
         self.assertGreater(len(titles), 1)
 
     def test_hidden_file_mini_is_solvable(self):
@@ -222,6 +237,22 @@ class SolverBot(unittest.TestCase):
         result = solve(m)
         self.assertTrue(result.ok)
         self.assertEqual([line for line, _ in result.transcript], m.solution)
+
+    def test_solve_defaults_to_the_missions_own_level_not_unlimited(self):
+        """The same regression as the validator test above, but proving the solver itself (not just the static check)
+        would have caught it: solving at the mission's own number, a too-early command simply never unlocks."""
+        m = Mission(id="x", number=4, act=1, size="mini", title="T", scenario="awakening_logs",
+                    objectives=[Objective(event="grep_match", match={"pattern__contains": "contractor"}, text="t")],
+                    solution=["grep contractor /var/log/system.log"])
+        self.assertFalse(solve(m).ok)
+        self.assertTrue(solve(m, level=lambda: 10**6).ok)              # an unrestricted level masks the same bug
+
+    def test_builtins_also_emit_a_command_event(self):
+        """echo/cd/etc. are bash builtins, dispatched without going through run_command() — they need their own event too,
+        or a mission like act1_m09 (reply by echoing into a file) could never complete."""
+        m = Mission(id="x", number=9, act=1, size="mini", title="T", scenario="awakening_boot",
+                    objectives=[Objective(event="command", match={"name": "echo", "status": 0}, text="t")], solution=["echo hi"])
+        self.assertTrue(solve(m).ok)
 
 
 if __name__ == "__main__":

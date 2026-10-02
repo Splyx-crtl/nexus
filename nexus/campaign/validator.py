@@ -3,6 +3,8 @@ instead of raising on the first one, so an author (or the generator) sees the wh
 mission is actually solvable — that needs a live shell and is ``solver.py``'s job."""
 from __future__ import annotations
 
+from ..shell import commands  # noqa: F401  (registers every command, needed before registry.lookup works)
+from ..shell.registry import lookup
 from .mission import Mission, Objective
 from .scenarios import SCENARIOS
 
@@ -46,6 +48,25 @@ def validate_mission(m: Mission) -> list[str]:
         problems.extend(validate_objective(m.id, i, o))
     if m.reward_xp < 0:
         problems.append(f"{m.id}: reward_xp must not be negative")
+    problems.extend(check_command_levels(m))
+    return problems
+
+
+def check_command_levels(m: Mission) -> list[str]:
+    """Static, best-effort check: every command named as the first word of a solution line must unlock at or before this
+    mission's own level — otherwise a player who has only reached this mission could never have the command available.
+    Only checks the 'bash' family (every current scenario starts there); a mission that ssh's into another shell family
+    mid-solution needs a human read, not just this check. This is exactly the class of bug that slipped through once
+    already (see docs/3.0-PROGRESS.md's C2 entry) — ``solver.solve()`` also catches it at runtime; this catches it without
+    even running the shell, so it shows up the moment a mission is written, not only when the whole suite runs."""
+    problems = []
+    for line in m.solution:
+        name = line.strip().split(" ", 1)[0] if line.strip() else ""
+        if not name or not name.isidentifier():
+            continue
+        spec = lookup("bash", name)
+        if spec is not None and spec.level > m.number:
+            problems.append(f"{m.id}: solution uses '{name}', which unlocks at level {spec.level}, but this mission is level {m.number}")
     return problems
 
 
