@@ -641,7 +641,7 @@ class Shell:
         self.delay_ms += ctx.delay_ms
         self.interactive.extend(ctx.interactive)
         chunks.extend(ctx.chunks)
-        self.emit("command", name=name, args=list(args), status=status or 0)
+        self.emit("command", name=name, args=list(args), status=status or 0, family="bash")
         return status or 0
 
     def run_path(self, name: str, args: list[str], stdin, chunks) -> int:

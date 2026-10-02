@@ -185,6 +185,7 @@ def _dispatch_ps(shell, name: str, args: list[str], ctx, chunks: list) -> int:
         ctx.err(f"{name} : internal error ({type(exc).__name__})")
         status = 1
     chunks.extend(ctx.chunks)
+    shell.emit("command", name=name, args=list(args), status=status or 0, family="ps")
     return status or 0
 
 
@@ -552,6 +553,7 @@ def _run_cmd_pipeline(shell, tokens: list[str], res: Result) -> int:
             chunks.extend(ctx.chunks)
             res.delay_ms += ctx.delay_ms
             res.interactive.extend(ctx.interactive)
+            shell.emit("command", name=name, args=list(args), status=status, family="cmd")
         text_in = "".join(t for fd, t in chunks if fd == 1) or None
         if redirects:
             fs, user, cwd = shell.session.machine.fs, shell.session.user, shell.session.cwd
