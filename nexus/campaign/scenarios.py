@@ -637,7 +637,7 @@ def network_oduya() -> tuple[World, Session]:
     """Level 50 (story): Oduya, Mira's more experienced asset, is introduced — a warning before the player goes any
     further at a company target directly."""
     world, player, _target = _recon_world(discovered=True)
-    player.fs.load({"home": {"operator": {"inbox": {"oduya_intro.txt": [
+    player.fs.load({"home": {"operator": {"_owner": "operator", "_group": "operator", "inbox": {"oduya_intro.txt": [
         "FROM: Oduya", "", "Mira asked me to say something before you go further. I've worked Nexus Company targets "
         "longer than you've been doing this at all.", "",
         "They notice. Not always fast, but they notice. Confirm what you're looking at before you touch it, keep your "
@@ -676,3 +676,97 @@ def network_services() -> tuple[World, Session]:
     world, player, target = _recon_world(services=services, discovered=True)
     player.services = [Service(22, "ssh", "OpenSSH 9.6", "open")]
     return world, Session(player, player.users["operator"], "bash")
+
+
+# ----------------------------------------------------------------------------------------- Act III — The Network, Chapter 2
+OPS_PAGES = {
+    "/": {"body": "<html><body><h1>Nexus Company</h1><p>Edge relay — internal use only.</p></body></html>", "status": 200},
+    "/robots.txt": {"body": "User-agent: *\nDisallow: /ops-console/\n", "status": 200, "headers": {"Content-Type": "text/plain"}},
+    "/ops-console/": {"body": "<html><body><h1>Index of /ops-console/</h1><ul><li><a href='backup.cfg'>backup.cfg</a></li></ul></body></html>", "status": 200},
+    "/ops-console/backup.cfg": {"body": "# deploy automation config - DO NOT COMMIT\nDEPLOY_HOST=203.0.113.9\nDEPLOY_USER=deploy\n"
+                                        "DEPLOY_PASS=n3xus-deploy!\n# see ops.nexus-company.com for the console itself\n# rotate before Q1 audit\n",
+                                 "status": 200, "headers": {"Content-Type": "text/plain"}},
+}
+
+
+@scenario("network_altdns")
+def network_altdns() -> tuple[World, Session]:
+    """Level 54 (standard): nslookup and host — two more ways to resolve the same name, the habit of not trusting a
+    single tool's answer."""
+    world, player, _target = _recon_world(discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_ifconfig")
+def network_ifconfig() -> tuple[World, Session]:
+    """Level 55: ifconfig — the older interface tool, same information ip addr already gave at Level 49."""
+    world, player, _target = _recon_world(discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_robots")
+def network_robots() -> tuple[World, Session]:
+    """Level 56: robots.txt — a polite request to crawlers, not a lock. It names the one path worth checking first."""
+    services = [Service(80, "http", "nginx/1.24.0", "open", data={"pages": OPS_PAGES})]
+    world, player, _target = _recon_world(services=services, discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_backdoor_config")
+def network_backdoor_config() -> tuple[World, Session]:
+    """Level 57 (standard): the path robots.txt tried to hide leads straight to a deployment config with live
+    credentials in it — a very ordinary, very real way servers get compromised."""
+    services = [Service(80, "http", "nginx/1.24.0", "open", data={"pages": OPS_PAGES})]
+    world, player, _target = _recon_world(services=services, discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_caution")
+def network_caution() -> tuple[World, Session]:
+    """Level 58 (story): Oduya's warning from Level 50 becomes concrete — live credentials, found, not earned. What
+    now is a real question, not a rhetorical one."""
+    world, player, _target = _recon_world(discovered=True)
+    player.fs.load({"home": {"operator": {"_owner": "operator", "_group": "operator", "inbox": {"oduya_caution.txt": [
+        "FROM: Oduya", "", "Found credentials on a server you don't own. That's the easy part. The question is what "
+        "you do with them.", "",
+        "Mira will tell you this is fine because the client approved going after this target. I'll tell you that "
+        "'approved' and 'careful' aren't the same thing. Tell me you're going to be careful.", "---",
+    ]}}}})
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_subdomain")
+def network_subdomain() -> tuple[World, Session]:
+    """Level 59: the backup config mentioned a console at ops.nexus-company.com — it resolves, but to a private
+    address nothing here can actually reach. A real distinction: knowing a name's address isn't the same as reaching it."""
+    world, player, _target = _recon_world(discovered=True)
+    world.dns["ops.nexus-company.com"] = "10.20.30.5"
+    world.whois["ops.nexus-company.com"] = ("Domain Name: OPS.NEXUS-COMPANY.COM\nRegistrar: MERIDIAN DOMAIN REGISTRY\n"
+                                            "Updated Date: 2049-08-14T00:00:00Z\nCreation Date: 2047-02-01T00:00:00Z")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_banner")
+def network_banner() -> tuple[World, Session]:
+    """Level 60: curl -I — headers only, no body. Banner-grabbing: what the server volunteers about itself before
+    you've asked it to do anything."""
+    services = [Service(80, "http", "nginx/1.24.0", "open", data={"pages": OPS_PAGES})]
+    world, player, _target = _recon_world(services=services, discovered=True)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("network_dossier2")
+def network_dossier2() -> tuple[World, Session]:
+    """Level 61 (milestone): compile Chapter 2's findings the same way Act II did — search, save, archive. Closes
+    Chapter 2 and hands off directly into Chapter 3's login attempt."""
+    world = World(clock=lambda: EPOCH)
+    m = _player_machine({"recon": {
+        "robots.txt": "User-agent: *\nDisallow: /ops-console/\n",
+        "backup.cfg": "# deploy automation config - DO NOT COMMIT\nDEPLOY_HOST=203.0.113.9\nDEPLOY_USER=deploy\n"
+                     "DEPLOY_PASS=n3xus-deploy!\n# see ops.nexus-company.com for the console itself\n# rotate before Q1 audit\n",
+    }, "notes.txt": "MIRA: Pull every credential-looking string out of what you've found this chapter into one file, "
+                   "and archive a copy before we go any further.\n"},
+                        root_extra={"archive": {"_mode": 0o700}})
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")

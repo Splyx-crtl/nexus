@@ -1,10 +1,12 @@
 """Act III — The Network (levels 46-70, docs/story/02-acts-and-levels.md). Network reconnaissance commands (B4) were
 deliberately left untouched through Acts I-II for this act: ping, dig/nslookup/host, whois, curl/wget, netstat/ss,
 traceroute, ip/ifconfig/arp, and ssh/scp/sshpass as the climax. The target throughout is the Nexus Company edge server
-at 203.0.113.9 — the "patient address" that has recurred since Act I Level 20. Chapter 1 (46-53) is written: confirm the
-address is real, resolve and look up its domain, check the player's own exposure, Oduya is introduced, and the chapter
-closes having mapped the target's public footprint without touching it directly yet. Chapters 2-3 (54-70) are not
-written yet.
+at 203.0.113.9 — the "patient address" that has recurred since Act I Level 20. Chapter 1 (46-53) confirms the address is
+real, resolves and looks up its domain, checks the player's own exposure, and introduces Oduya. Chapter 2 (54-61) digs
+deeper into the same server: alternate DNS tools, a robots.txt-hinted hidden path leading to an exposed deployment
+config with live credentials in it (an very ordinary, very real way servers get compromised — found, not cracked, same
+principle as every credential in this campaign so far), a caution beat from Oduya, and a mystery subdomain that
+resolves but can't be reached yet. Chapter 3 (62-70), the ssh/scp climax, is not written yet.
 """
 from __future__ import annotations
 
@@ -111,4 +113,126 @@ ACT3_CHAPTER1 = [
     ),
 ]
 
-ACT3 = [*ACT3_CHAPTER1]
+ACT3_CHAPTER2 = [
+    Mission(
+        id="act3_m54", number=54, act=3, size="standard", title="Two More Ways to Ask", scenario="network_altdns",
+        requires=["act3_m53"],
+        briefing=["MIRA: Don't trust one tool's answer when there are three that ask the same question differently. "
+                  "Confirm it with nslookup and host too."],
+        debrief=["MIRA: Same answer, three times. Good. Now you actually trust it instead of just believing it."],
+        objectives=[
+            Objective(event="command", match={"name": "nslookup", "status": 0}, text="Resolve nexus-company.com (nslookup)",
+                     hints=["nslookup is an older, simpler DNS lookup tool.", "Try: nslookup nexus-company.com", "nslookup nexus-company.com"]),
+            Objective(event="command", match={"name": "host", "status": 0}, text="Resolve it again (host)",
+                     hints=["host gives the same answer in the simplest format of all three.", "Try: host nexus-company.com", "host nexus-company.com"]),
+        ],
+        solution=["nslookup nexus-company.com", "host nexus-company.com"], reward_xp=55, tags=["bash", "act3", "net", "dns"],
+    ),
+    Mission(
+        id="act3_m55", number=55, act=3, size="mini", title="The Older Way", scenario="network_ifconfig",
+        requires=["act3_m54"],
+        briefing=["NEXUS: Some systems still only have the old tool installed. Check your own interfaces the "
+                  "old-fashioned way."],
+        debrief=["NEXUS: Same information ip addr gave you, different formatting. Know both — you won't always get "
+                 "to choose."],
+        objectives=[Objective(event="command", match={"name": "ifconfig", "status": 0}, text="Check your interfaces the old way (ifconfig)",
+                              hints=["ifconfig predates ip and shows the same kind of information.", "Try: ifconfig", "ifconfig"])],
+        solution=["ifconfig"], reward_xp=35, tags=["bash", "act3", "net", "ifconfig"],
+    ),
+    Mission(
+        id="act3_m56", number=56, act=3, size="mini", title="Check the Robots", scenario="network_robots",
+        requires=["act3_m55"],
+        briefing=["NEXUS: Every site has a file telling search engines what not to crawl. It's a polite request, not "
+                  "a lock — and it's usually the first place worth looking."],
+        debrief=["NEXUS: 'Disallow: /ops-console/.' They just told us exactly where to look."],
+        objectives=[Objective(event="command", match={"name": "curl", "args__contains": "http://nexus-company.com/robots.txt", "status": 0},
+                              text="Check robots.txt", hints=["It's just another path on the same server.",
+                                                              "Try: curl http://nexus-company.com/robots.txt", "curl http://nexus-company.com/robots.txt"])],
+        solution=["curl http://nexus-company.com/robots.txt"], reward_xp=45, tags=["bash", "act3", "net", "curl"],
+    ),
+    Mission(
+        id="act3_m57", number=57, act=3, size="standard", title="Through the Unlocked Door", scenario="network_backdoor_config",
+        requires=["act3_m56"],
+        briefing=["MIRA: You know where to look now. See what's actually there, and if something's downloadable, "
+                  "download it and read it properly."],
+        debrief=["MIRA: Live deploy credentials. Sitting in a config file. On a path they tried to hide with a "
+                 "request-only text file.",
+                 "NEXUS: This isn't a technique. This is just someone forgetting to lock a door."],
+        objectives=[
+            Objective(event="command", match={"name": "curl", "args__contains": "http://nexus-company.com/ops-console/", "status": 0},
+                     text="See what's in the ops-console path", hints=["Same move as robots.txt, different path.",
+                                                                       "Try: curl http://nexus-company.com/ops-console/", "curl http://nexus-company.com/ops-console/"]),
+            Objective(event="command", match={"name": "wget", "status": 0}, text="Download backup.cfg",
+                     hints=["wget saves it locally instead of just printing it.", "Try: wget http://nexus-company.com/ops-console/backup.cfg",
+                           "wget http://nexus-company.com/ops-console/backup.cfg"]),
+            Objective(event="file_read", match={"path__glob": "*backup.cfg"}, text="Read what you downloaded",
+                     hints=["It saved under its own name.", "Try: cat backup.cfg", "cat backup.cfg"]),
+        ],
+        solution=["curl http://nexus-company.com/ops-console/", "wget http://nexus-company.com/ops-console/backup.cfg", "cat backup.cfg"],
+        reward_xp=90, tags=["bash", "act3", "net", "curl", "wget"],
+    ),
+    Mission(
+        id="act3_m58", number=58, act=3, size="story", title="Found, Not Earned", scenario="network_caution",
+        requires=["act3_m57"],
+        briefing=["NEXUS: Oduya again. This one's worth reading slowly."],
+        debrief=["NEXUS: Whatever you told them, I noticed you actually thought about it this time instead of just "
+                 "typing the first thing that came to mind.",
+                 "MIRA: That's the job. Good instincts, kept in check. Keep both."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*oduya_caution.txt"}, text="Read Oduya's message",
+                     hints=["Check your inbox.", "Try: cat inbox/oduya_caution.txt", "cat inbox/oduya_caution.txt"]),
+            Objective(event="command", match={"name": "echo", "status": 0}, text="Answer honestly",
+                     hints=["Same move as before — write it, append it to the file.",
+                           'echo "your answer here" >> inbox/oduya_caution.txt', 'echo "I\'ll be careful." >> inbox/oduya_caution.txt']),
+        ],
+        solution=["cat inbox/oduya_caution.txt", 'echo "I\'ll be careful." >> inbox/oduya_caution.txt'],
+        reward_xp=85, tags=["bash", "act3", "story", "oduya", "decision:2"],
+    ),
+    Mission(
+        id="act3_m59", number=59, act=3, size="mini", title="A Name That Doesn't Answer", scenario="network_subdomain",
+        requires=["act3_m58"],
+        briefing=["NEXUS: That config mentioned a console at a subdomain. Look it up — both the address and who's "
+                  "behind it."],
+        debrief=["NEXUS: It resolves. We're nowhere near it, though — that address isn't on any path we can reach "
+                 "from here. Knowing a name's address isn't the same as being able to get to it.",
+                 "MIRA: File it. We'll come back to that one."],
+        objectives=[
+            Objective(event="command", match={"name": "dig", "args__contains": "ops.nexus-company.com", "status": 0}, text="Resolve ops.nexus-company.com",
+                     hints=["Same tool, different name this time.", "Try: dig ops.nexus-company.com", "dig ops.nexus-company.com"]),
+            Objective(event="command", match={"name": "whois", "args__contains": "ops.nexus-company.com", "status": 0}, text="Check who registered it",
+                     hints=["whois works on subdomains too.", "Try: whois ops.nexus-company.com", "whois ops.nexus-company.com"]),
+        ],
+        solution=["dig ops.nexus-company.com", "whois ops.nexus-company.com"], reward_xp=55, tags=["bash", "act3", "net", "dig", "whois"],
+    ),
+    Mission(
+        id="act3_m60", number=60, act=3, size="mini", title="What It Volunteers", scenario="network_banner",
+        requires=["act3_m59"],
+        briefing=["MIRA: Before we're done with this server for now — what does it say about itself without being "
+                  "asked? Headers only, nothing else."],
+        debrief=["MIRA: nginx, version and all. Filed for later — that matters once we're looking for weaknesses "
+                 "instead of just doors."],
+        objectives=[Objective(event="command", match={"name": "curl", "args__contains": "-I", "status": 0}, text="Grab the server's headers (curl -I)",
+                              hints=["-I fetches only the headers, not the page itself.", "Try: curl -I http://nexus-company.com/", "curl -I http://nexus-company.com/"])],
+        solution=["curl -I http://nexus-company.com/"], reward_xp=40, tags=["bash", "act3", "net", "curl"],
+    ),
+    Mission(
+        id="act3_m61", number=61, act=3, size="milestone", title="Everything This Chapter Found", scenario="network_dossier2",
+        requires=["act3_m60"],
+        briefing=["MIRA: Pull every credential-looking string out of what you've found this chapter into one file, "
+                  "and archive a copy before we go any further."],
+        debrief=["MIRA: Filed and locked. Chapter closed.",
+                 "NEXUS: Next time we touch that server, it won't be from the outside looking in."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*creds_summary.txt"}, text="Assemble and review the findings (grep -r ... | tee)",
+                     hints=["Same trick as Act II's case file — search, and save a copy while you're looking.",
+                           "Try: grep -r DEPLOY recon | tee creds_summary.txt", "grep -r DEPLOY recon | tee creds_summary.txt\ncat creds_summary.txt"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive a copy somewhere only root can reach (sudo cp)",
+                     hints=["Same archive folder as before — root-only.", "Try: sudo cp creds_summary.txt archive/creds_summary.txt",
+                           "sudo cp creds_summary.txt archive/creds_summary.txt"]),
+        ],
+        solution=["grep -r DEPLOY recon | tee creds_summary.txt", "cat creds_summary.txt", "sudo cp creds_summary.txt archive/creds_summary.txt"],
+        reward_xp=195, tags=["bash", "act3", "milestone", "grep", "tee", "sudo"],
+    ),
+]
+
+ACT3 = [*ACT3_CHAPTER1, *ACT3_CHAPTER2]
