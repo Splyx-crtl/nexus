@@ -18,7 +18,7 @@ from PySide6.QtWidgets import QApplication
 
 from nexus.audio import SoundManager
 from nexus.save_system import SaveSystem, SettingsStore
-from tests.test_keys import ADMIN, load_server
+from tests.test_keys import ADMIN, ADMIN_PASSWORD, ADMIN_USER, load_server
 from ui.main_window import MainWindow
 from ui.widgets import build_stylesheet
 
@@ -113,6 +113,56 @@ page.login_btn.click()
 pump(1500)
 check("revoked" in page.status.text(), "logging in again shows 'revoked'")
 win.grab().save(str(OUT / "online_key_revoked.png"))
+
+# ------------------------------------------------------------------ admin panel (inside the game)
+from ui import admin_panel
+from ui.admin_panel import AdminPanel
+
+check(win.shell.admin_btn.isVisible(), "ADMIN button at the bottom of the sidebar")
+admin_panel.ConfirmDialog.exec = lambda self: True                      # answer the confirmation dialogs with YES
+panel = AdminPanel(win.shell.admin_client, win)
+panel.show()
+pump(300)
+check(panel.stack.currentIndex() == 0, "the admin panel starts at the login form")
+panel.login_btn.click()
+pump(300)
+check("Enter the admin user name" in panel.status.text(), "empty admin login is refused locally")
+panel.user_edit.setText(ADMIN_USER)
+panel.pass_edit.setText("wrong password!!")
+panel.login_btn.click()
+pump(1500)
+check("Wrong user name or password" in panel.status.text() and panel.stack.currentIndex() == 0, "wrong admin credentials are refused by the server")
+panel.pass_edit.setText(ADMIN_PASSWORD)
+panel.login_btn.click()
+pump(1500)
+check(panel.stack.currentIndex() == 1 and panel.client.admin_logged_in, "right credentials open the key manager")
+check(not panel.pass_edit.text(), "the password field is cleared after login")
+check(panel.table.rowCount() >= 1, "existing keys are listed")
+panel.label_edit.setText("Mira")
+panel.count.setValue(2)
+before = panel.table.rowCount()
+panel.create_btn.click()
+pump(2000)
+check(panel.fresh_box.isVisible() and panel.fresh.toPlainText().count("NX-") == 2, "two new keys are shown once, ready to copy")
+check(panel.table.rowCount() == before + 2, "the list shows the new keys")
+panel.copy_btn.click()
+from PySide6.QtGui import QGuiApplication
+check(QGuiApplication.clipboard().text().count("NX-") == 2, "COPY puts the keys on the clipboard")
+panel.table.selectRow(0)                                                  # newest key first
+newest_id = panel._selected_id()
+panel.revoke_btn.click()
+pump(2000)
+status = {k["id"]: k["status"] for k in admin("GET", "/admin/keys")["keys"]}
+check(status[newest_id] == "revoked", "REVOKE blocks the selected key on the server")
+panel.table.clearSelection()
+panel.revoke_btn.click()
+check("Select a key" in panel.status.text(), "revoking without a selection asks for one")
+win.grab().save(str(OUT / "admin_panel.png"))
+panel.grab().save(str(OUT / "admin_panel_dialog.png"))
+panel.logout_btn.click()
+pump(800)
+check(panel.stack.currentIndex() == 0 and not panel.client.admin_logged_in, "LOG OUT returns to the login form and drops the session")
+panel.close()
 win._teardown()
 server.should_exit = True
 print("INVITE-ONLY UI OK")

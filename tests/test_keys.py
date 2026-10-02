@@ -12,7 +12,8 @@ from pathlib import Path
 HAVE_SERVER_DEPS = all(importlib.util.find_spec(m) for m in ("fastapi", "uvicorn", "httpx"))
 ROOT = Path(__file__).resolve().parent.parent
 ADMIN = {"Authorization": "Bearer admin-token-for-tests"}
-ENV = {"NEXUS_DEV_LOGIN": "1", "NEXUS_REQUIRE_KEY": "1", "NEXUS_ADMIN_TOKEN": "admin-token-for-tests", "DISCORD_GUILD_ID": "1000",
+ADMIN_USER, ADMIN_PASSWORD = "boss", "correct horse battery"
+ENV = {"NEXUS_ADMIN_USER": ADMIN_USER, "NEXUS_ADMIN_PASSWORD": ADMIN_PASSWORD, "NEXUS_DEV_LOGIN": "1", "NEXUS_REQUIRE_KEY": "1", "NEXUS_ADMIN_TOKEN": "admin-token-for-tests", "DISCORD_GUILD_ID": "1000",
        "DISCORD_ROLE_ID": "777", "DISCORD_CLIENT_ID": "cid", "DISCORD_CLIENT_SECRET": "secret", "PUBLIC_URL": "https://nexus.test"}
 
 
@@ -119,7 +120,7 @@ class InviteOnlyLogin(unittest.TestCase):
 
     def test_admin_api_is_off_without_a_token(self):
         from fastapi.testclient import TestClient
-        mod = load_server(Path(self.dir) / "other.db", NEXUS_ADMIN_TOKEN="")
+        mod = load_server(Path(self.dir) / "other.db", NEXUS_ADMIN_TOKEN="", NEXUS_ADMIN_USER="")
         self.assertEqual(TestClient(mod.app).get("/admin/keys", headers=ADMIN).status_code, 404)
 
     def test_keys_look_right_and_are_stored_hashed(self):
@@ -221,6 +222,54 @@ class InviteOnlyLogin(unittest.TestCase):
         con.execute("UPDATE sessions SET created_at=?", (time.time() - 40 * 86400,))
         con.commit()
         self.assertEqual(self.http.get("/me", headers={"Authorization": f"Bearer {token}"}).status_code, 401)
+
+    # -- admin login (used by the panel inside the game) ---------------------
+    def admin_login(self, user=ADMIN_USER, password=ADMIN_PASSWORD):
+        return self.http.post("/admin/login", json={"user": user, "password": password})
+
+    def test_admin_login_gives_a_working_session(self):
+        r = self.admin_login()
+        self.assertEqual(r.status_code, 200)
+        headers = {"Authorization": "Bearer " + r.json()["token"]}
+        self.assertEqual(self.http.post("/admin/keys", json={"label": "x"}, headers=headers).status_code, 200)
+        self.assertEqual(self.http.get("/admin/keys", headers=headers).status_code, 200)
+
+    def test_admin_login_rejects_wrong_credentials(self):
+        self.assertEqual(self.admin_login(password="wrong password!!").status_code, 401)
+        self.assertEqual(self.admin_login(user="nobody").status_code, 401)
+        self.assertEqual(self.admin_login(user="", password="").status_code, 401)
+
+    def test_admin_password_guessing_is_rate_limited(self):
+        codes = [self.admin_login(password=f"guess number {i} here").status_code for i in range(9)]
+        self.assertIn(429, codes)
+        self.assertEqual(self.admin_login().status_code, 429)          # even the right password waits while locked
+
+    def test_admin_logout_ends_the_session(self):
+        headers = {"Authorization": "Bearer " + self.admin_login().json()["token"]}
+        self.assertEqual(self.http.post("/admin/logout", headers=headers).status_code, 200)
+        self.assertEqual(self.http.get("/admin/keys", headers=headers).status_code, 401)
+
+    def test_admin_sessions_expire(self):
+        token = self.admin_login().json()["token"]
+        self.mod._admin_sessions[token] = time.time() - 1
+        self.assertEqual(self.http.get("/admin/keys", headers={"Authorization": f"Bearer {token}"}).status_code, 401)
+
+    def test_a_player_session_is_not_an_admin_session(self):
+        key = self.make_keys()[0]["key"]
+        state, _ = self.dev_login(key, "Alice")
+        player = {"Authorization": "Bearer " + self.token(state).json()["token"]}
+        self.assertEqual(self.http.get("/admin/keys", headers=player).status_code, 401)
+
+    def test_admin_login_is_off_with_a_short_password_or_no_user(self):
+        from fastapi.testclient import TestClient
+        for env in ({"NEXUS_ADMIN_PASSWORD": "short"}, {"NEXUS_ADMIN_USER": ""}):
+            mod = load_server(Path(self.dir) / f"x{len(env)}{list(env)[0]}.db", NEXUS_ADMIN_TOKEN="", **env)
+            r = TestClient(mod.app).post("/admin/login", json={"user": ADMIN_USER, "password": ADMIN_PASSWORD})
+            self.assertEqual(r.status_code, 404, env)
+            self.assertFalse(TestClient(mod.app).get("/health").json()["admin"])
+
+    def test_health_says_whether_an_admin_exists(self):
+        self.assertTrue(self.http.get("/health").json()["admin"])
 
     # -- the Discord side (membership + role), with Discord's answers faked ----
     def discord_login(self, key, **discord):

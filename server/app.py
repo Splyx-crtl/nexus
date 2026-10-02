@@ -35,6 +35,10 @@ DEV_LOGIN = os.environ.get("NEXUS_DEV_LOGIN", "") == "1"
 GUILD_ID = os.environ.get("DISCORD_GUILD_ID", "").strip()          # the Discord server players must be on
 ROLE_ID = os.environ.get("DISCORD_ROLE_ID", "").strip()            # optional role on that server
 ADMIN_TOKEN = os.environ.get("NEXUS_ADMIN_TOKEN", "").strip()      # protects /admin/*; unset = no admin API
+ADMIN_USER = os.environ.get("NEXUS_ADMIN_USER", "").strip()        # optional: admin login for the panel inside the game
+ADMIN_PASSWORD = os.environ.get("NEXUS_ADMIN_PASSWORD", "")        # (kept only on the server, never in the game); 12+ characters
+ADMIN_LOGIN = bool(ADMIN_USER) and len(ADMIN_PASSWORD) >= 12
+ADMIN_SESSION_MINUTES = 60
 GATED = bool(GUILD_ID) or os.environ.get("NEXUS_REQUIRE_KEY", "") == "1"      # invite-only: a key is required to log in
 SESSION_DAYS = int(os.environ.get("NEXUS_SESSION_DAYS", "30"))     # gated servers re-check membership at least this often
 KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"                  # no 0/O/1/I
@@ -215,7 +219,7 @@ def state_row(conn: sqlite3.Connection, state: str):
 # --------------------------------------------------------------------- auth --
 @app.get("/health")
 def health():
-    return {"ok": True, "dev_login": DEV_LOGIN, "discord": bool(DISCORD_CLIENT_ID), "gated": GATED}
+    return {"ok": True, "dev_login": DEV_LOGIN, "discord": bool(DISCORD_CLIENT_ID), "gated": GATED, "admin": bool(ADMIN_TOKEN or ADMIN_LOGIN)}
 
 
 class BeginBody(BaseModel):
@@ -524,14 +528,51 @@ def presence(body: PresenceBody, user=Depends(current_user)):
 
 
 # -------------------------------------------------------------------- admin --
+_admin_sessions: dict[str, float] = {}          # session token -> expiry (memory only: a server restart means logging in again)
+
+
 def admin_only(request: Request, authorization: str = Header(default="")) -> None:
-    """Admin API for key management. Disabled (404) unless NEXUS_ADMIN_TOKEN is set; wrong tries are rate limited."""
-    if not ADMIN_TOKEN:
+    """Admin API for key management. Accepts NEXUS_ADMIN_TOKEN or a session from /admin/login. Disabled (404) when neither is
+    configured; wrong tries are rate limited."""
+    if not (ADMIN_TOKEN or ADMIN_LOGIN):
         raise HTTPException(404, "Not found.")
-    rate_limit("admin:" + client_ip(request), limit=30, window=60)
+    rate_limit("admin:" + client_ip(request), limit=60, window=60)
     given = authorization.removeprefix("Bearer ").strip()
-    if not secrets.compare_digest(given.encode(), ADMIN_TOKEN.encode()):
-        raise HTTPException(401, "Wrong admin token.")
+    now = time.time()
+    for token in [t for t, exp in _admin_sessions.items() if exp < now]:
+        del _admin_sessions[token]
+    if ADMIN_TOKEN and secrets.compare_digest(given.encode(), ADMIN_TOKEN.encode()):
+        return
+    if given in _admin_sessions:
+        return
+    raise HTTPException(401, "Admin login required.")
+
+
+class AdminLogin(BaseModel):
+    user: str = Field(max_length=80)
+    password: str = Field(max_length=200)
+
+
+@app.post("/admin/login")
+def admin_login(body: AdminLogin, request: Request):
+    """Login of the admin panel inside the game. The credentials live only in the server's environment."""
+    if not ADMIN_LOGIN:
+        raise HTTPException(404, "Not found.")
+    rate_limit("adminlogin:" + client_ip(request), limit=6, window=60)           # slows down password guessing
+    user_ok = secrets.compare_digest(body.user.strip().encode(), ADMIN_USER.encode())
+    pass_ok = secrets.compare_digest(body.password.encode(), ADMIN_PASSWORD.encode())
+    if not (user_ok and pass_ok):
+        time.sleep(0.4)
+        raise HTTPException(401, "Wrong user name or password.")
+    token = secrets.token_urlsafe(32)
+    _admin_sessions[token] = time.time() + ADMIN_SESSION_MINUTES * 60
+    return {"token": token, "minutes": ADMIN_SESSION_MINUTES}
+
+
+@app.post("/admin/logout", dependencies=[Depends(admin_only)])
+def admin_logout(authorization: str = Header(default="")):
+    _admin_sessions.pop(authorization.removeprefix("Bearer ").strip(), None)
+    return {"ok": True}
 
 
 class NewKeys(BaseModel):

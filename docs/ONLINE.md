@@ -68,7 +68,8 @@ or is banned from your server cannot log in again, and a revoked key logs its ow
 |---|---|
 | `DISCORD_GUILD_ID` | the server ID. Setting it turns invite-only on (and adds the `guilds.members.read` scope to the login) |
 | `DISCORD_ROLE_ID` | optional: players also need this role on that server |
-| `NEXUS_ADMIN_TOKEN` | a long random secret (30+ characters) that protects the key tools. Without it nobody can create keys |
+| `NEXUS_ADMIN_USER` · `NEXUS_ADMIN_PASSWORD` | the admin login of the **ADMIN panel inside the game** (password: 12+ characters). They exist only here on the server; the game contains no credentials |
+| `NEXUS_ADMIN_TOKEN` | optional: a long random secret (30+ characters) for the command-line tool below. Set the login above, the token, or both. Without any of them nobody can create keys |
 | `NEXUS_SESSION_DAYS` | optional: sessions last this long before a new login re-checks membership (default 30) |
 
    The Discord application from step 1 needs nothing else: no bot, no privileged intents. Players are asked for permission to
@@ -76,6 +77,13 @@ or is banned from your server cannot log in again, and a revoked key logs its ow
 3. The game must be released with the new login screen (version 2.3.0 or newer). Older versions are refused with a clear message.
 
 ### Hand out keys
+
+**In the game:** click **ADMIN** at the bottom of the sidebar, log in with `NEXUS_ADMIN_USER` / `NEXUS_ADMIN_PASSWORD`, then
+create keys (label + amount), copy them (shown only once), and revoke or free keys from the list. The admin session lives only in
+memory and ends after 60 minutes or on LOG OUT. Wrong passwords are rate limited (6 tries per minute per address).
+Anyone can open the panel, but without the right login they see nothing: the check happens on the server.
+
+**On the command line** (needs `NEXUS_ADMIN_TOKEN`):
 
 ```text
 set NEXUS_SERVER_URL=https://YOUR-SERVER
@@ -114,7 +122,7 @@ believable numbers. Treat the leaderboards as *for fun*. For competitive ranking
 | Endpoint | Purpose |
 |---|---|
 | `POST /auth/begin` · `GET /auth/start?state=` · `GET /auth/callback` · `POST /auth/poll` | login: the game announces the attempt (and the key), the browser does Discord, the game polls until the token is ready (or the refusal reason arrives) |
-| `POST/GET /admin/keys` · `POST /admin/keys/{id}/revoke\|unbind` | key management, only with `Authorization: Bearer <NEXUS_ADMIN_TOKEN>` |
+| `POST /admin/login` · `POST/GET /admin/keys` · `POST /admin/keys/{id}/revoke\|unbind` | key management, only with `Authorization: Bearer <NEXUS_ADMIN_TOKEN or the session token of /admin/login>` |
 | `GET /me` · `POST /me/share` · `DELETE /me` | profile, privacy, erase account |
 | `POST /scores` · `GET /leaderboard?board=level\|missions\|credits\|weekly\|perfect` | scores and rankings |
 | `GET /friends` · `POST /friends/request` · `POST /friends/respond` · `DELETE /friends/{name}` | friends |

@@ -100,6 +100,15 @@ class AppShell(QWidget):
         self.mini.setWordWrap(True)
         self.mini.setStyleSheet(f"color:{COLORS['text']}; padding: 8px 16px; border-top: 1px solid {COLORS['border']};")
         sl.addWidget(self.mini)
+        from nexus import online as _online
+        self.admin_client = _online.OnlineClient(settings)
+        self.admin_btn = NeonButton("ADMIN", "Admin panel: create and manage access keys for the online service")
+        self.admin_btn.clicked.connect(self._open_admin)
+        self.admin_btn.setVisible(self.admin_client.configured)            # only builds that have an online server
+        awrap = QHBoxLayout()
+        awrap.setContentsMargins(12, 6, 12, 0)
+        awrap.addWidget(self.admin_btn)
+        sl.addLayout(awrap)
         self.menu_btn = NeonButton(f"{tr('menu')} [ESC]", "Pause menu: save, load, settings, main menu")
         self.menu_btn.clicked.connect(self.menu_requested)
         wrap = QHBoxLayout()
@@ -201,6 +210,10 @@ class AppShell(QWidget):
         if key == "terminal":
             self.terminal_page.terminal.focus_input()
         self.page_changed.emit(key)
+
+    def _open_admin(self) -> None:
+        from .admin_panel import AdminPanel
+        AdminPanel(self.admin_client, self.window()).exec()
 
     def run_command(self, command: str, goto_terminal: bool | None = None) -> None:
         """Run a command in the terminal (used by buttons on other pages)."""
