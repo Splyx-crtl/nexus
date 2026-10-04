@@ -2181,3 +2181,170 @@ def defense_act7_close() -> tuple[World, Session]:
                     "anymore.\n"})
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ===================================================================================================== Act VIII — Automation
+ARCHIVE_IP = "10.70.0.4"
+ARCHIVE_HOST = "CONTRACT-ARCHIVE"
+
+
+def _archive_machine(personal_extra: dict | None = None) -> Machine:
+    m = Machine(ARCHIVE_HOST, ARCHIVE_HOST, ARCHIVE_IP, "linux", VFS("posix", clock=lambda: EPOCH))
+    m.add_user(User("root", 0, 0, ("root",), "/root", admin=True, password="toor"))
+    m.add_user(User("operator", 1000, 1000, ("operator",), "/home/operator", password="hunter2"))
+    m.add_user(User("mira", 1500, 1500, ("mira",), "/home/mira", admin=False, password="not-your-business"))
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    m.fs.load({
+        "contracts_2049": {"q4_summary.txt": "Routine. Nothing flagged.\n"},
+        "contracts_2050": {"q1_intake.txt": "New queue intake, see /home/operator/queue_notes.txt\n"},
+        "invoices": {"jan_2050.txt": "Paid in full.\n"},
+        "home": {"operator": {"_owner": "operator", "_group": "operator"},
+                "mira": {"_owner": "mira", "_group": "mira", "_mode": 0o700, "personal": {"_owner": "mira", "_group": "mira", "_mode": 0o700, **(personal_extra or {})}}},
+    })
+    m.services = [Service(22, "ssh", "OpenSSH 9.6", "open")]
+    return m
+
+
+DANA_NOTES = [
+    "NEXUS COMPANY — PROJECT ARCHITECT — TEST OPERATOR FILE (ARCHIVED COPY)", "",
+    "Operator: D. [REDACTED BY ORIGINAL FILE], internal id TO-0091", "Program duration: 14 months",
+    "Status: REMOVED FROM ACTIVE RECORDS — reason withheld above my clearance", "",
+    "— personal annotation, handwritten scan, M. —", "",
+    "I'm the one who told her the pay was good and the work was 'basically just practice hacking.' I didn't read the",
+    "consent paperwork as closely as I should have before I helped her sign it. Fourteen months later her file says",
+    "'removed,' and nobody will tell me removed to where.", "",
+    "I kept her session logs because deleting them felt like agreeing it never happened. I don't know why I'm telling",
+    "this file that and not a person. Maybe because a file doesn't have to answer.",
+]
+
+
+@scenario("auto8_queue_intro")
+def auto8_queue_intro() -> tuple[World, Session]:
+    """Level 166 (story): Mira introduces the ops queue (F2 "Endless Ops", in-fiction framing) — there's more
+    contract work coming in than she can hand-pick, so the player gets plugged into a continuous feed instead."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"inbox": {"mira_queue.txt": [
+        "MIRA:", "", "Word's gotten around. More contracts landing than I can hand-pick for you one at a time now,",
+        "so I'm plugging you into the actual queue — same kind of work, just steady instead of me messaging you",
+        "every time something comes in. It'll keep coming whether you're watching or not. Work it at your own pace.",
+    ]}})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto8_archive_notice")
+def auto8_archive_notice() -> tuple[World, Session]:
+    """Level 170 (standard): routine queue work routes through Mira's own contract-archive box — and one folder in
+    the listing doesn't belong among the contract/invoice folders."""
+    world = World(clock=lambda: EPOCH)
+    player = _ops_machine({"notes.txt": "NEXUS: This queue job routes through Mira's own archive box, not a "
+                           "client's. Have a look while you're in there.\n"})
+    archive = _archive_machine()
+    world.add(player)
+    world.add(archive)
+    player.neighbors.append(archive.id)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto8_archive_locked")
+def auto8_archive_locked() -> tuple[World, Session]:
+    """Level 174 (story): the odd folder turns out to be Mira's own, locked down — a real moral beat (same shape as
+    Act I's Level 18) about whether using access you were given for one purpose to look at something else is okay."""
+    world = World(clock=lambda: EPOCH)
+    player = _ops_machine({"notes.txt": "NEXUS: 'personal', owned by mira, locked to her alone. We have sudo on "
+                           "this box. That doesn't mean we should use it.\n"})
+    archive = _archive_machine()
+    world.add(player)
+    world.add(archive)
+    player.neighbors.append(archive.id)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto8_dana_found")
+def auto8_dana_found() -> tuple[World, Session]:
+    """Level 175 (milestone, Clue 8): the player looks anyway and finds Mira's archived file on a former test
+    operator — found, not volunteered, exactly as docs/story/00-bible.md §4 specifies. Closes Chapter 1."""
+    world = World(clock=lambda: EPOCH)
+    player = _ops_machine({"notes.txt": "MIRA hasn't said not to. She also hasn't said to. That's not the same as "
+                           "permission.\n"})
+    archive = _archive_machine({"dana_notes.txt": DANA_NOTES})
+    world.add(player)
+    world.add(archive)
+    player.neighbors.append(archive.id)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto8_mira_reaction")
+def auto8_mira_reaction() -> tuple[World, Session]:
+    """Level 176 (story): Mira's reaction — the dramatic peak of her arc, per the bible. She confirms everything in
+    her own words, including why she really left Nexus Company."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"inbox": {"mira_dana.txt": [
+        "MIRA:", "", "Her name was Dana. My sister. Younger than me by six years, and I'm the one who told her the",
+        "contract was good money for practice hacking. I helped her sign papers I should have read more carefully.",
+        "", "Fourteen months in, her file just says 'removed.' Nobody above me would say removed to where. I quit",
+        "two weeks later and I have spent every year since trying to find out what Nexus Company actually did with",
+        "the people they called test operators — her included.", "",
+        "You play like her. Not exactly — nobody plays exactly like anybody — but close enough that the first time",
+        "I watched your session logs, my hands were shaking. That's the real reason I reached out to you, not the",
+        "reason I told you. I am sorry it took you finding a locked folder on my own server to hear it from me",
+        "instead of just being told.",
+    ]}})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto8_decision7")
+def auto8_decision7() -> tuple[World, Session]:
+    """Level 177 (story, decision:7 per docs/story/03-endings.md's consequence map): push Mira to tell NEXUS the
+    full truth about Dana immediately, or let her choose the moment herself."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"inbox": {"mira_asks.txt": [
+        "MIRA:", "", "NEXUS doesn't know any of this. Not about Dana, not about why I really hired you. I'll tell",
+        "him myself, but I want to know what you think first: now, while it's fresh, or when I'm actually ready to",
+        "say it right? Either way I will do it. I just don't want to get it wrong.",
+    ]}})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto8_nexus_learns")
+def auto8_nexus_learns() -> tuple[World, Session]:
+    """Level 181 (story): NEXUS learns about Dana — the familiarity he's felt since Act I finally has a source."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": [
+        "NEXUS: Dana. That's — I don't have a clean word for what that is to hear. Something in my training has",
+        "had her name-shaped hole in it since before I knew to look for one.", "",
+        "I finish your sentences sometimes. I always told myself that was just good modeling. I don't think it was",
+        "only that, anymore.",
+    ]})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto8_quiet_beat")
+def auto8_quiet_beat() -> tuple[World, Session]:
+    """Level 184 (story): a quiet reflective beat before the act's close — setting up Act IX without resolving
+    anything yet."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"inbox": {"mira_quiet.txt": [
+        "MIRA:", "", "Nexus Company doesn't know we know. Kade Voss doesn't know. For a little while, that's an",
+        "advantage, and I'd like to actually use it instead of just sitting with how strange the last few weeks",
+        "have been.", "", "Whatever happens next, I'm glad it's the three of us figuring it out, not just me.",
+    ]}})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto8_close")
+def auto8_close() -> tuple[World, Session]:
+    """Level 185 (milestone): closes Act VIII. Promotes to ARCHITECT (docs/story/02-acts-and-levels.md's table)."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"autonotes": {
+        "act8_summary.txt": "Act VIII: the ops queue (F2) kept the contracts flowing while Dana's file surfaced — "
+                            "Mira's sister, a Project ARCHITECT test operator, the real reason Mira left Nexus "
+                            "Company and the real reason she recruited this particular player. NEXUS now knows too. "
+                            "Nexus Company and Kade Voss do not, yet.",
+    }, "notes.txt": "MIRA: That's the act. One more, and we find out what all of this was actually for.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
