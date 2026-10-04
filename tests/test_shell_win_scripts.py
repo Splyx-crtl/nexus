@@ -19,6 +19,34 @@ class Win(unittest.TestCase):
         self.machine.fs.write(self.session.user, name, text, self.session.cwd)
 
 
+class PsAuthoring(Win):
+    """Set-Content/Add-Content/Out-File — writing a .ps1 script from inside the game itself, no Python shortcut."""
+
+    def test_set_content_then_run_as_script(self):
+        self.run_("Set-Content -Path t.ps1 -Value 'Write-Output \"built in game\"'")
+        self.assertEqual(self.out(".\\t.ps1"), "built in game\n")
+
+    def test_add_content_builds_a_multiline_script(self):
+        self.run_("Set-Content -Path t.ps1 -Value 'Write-Output \"line1\"'")
+        self.run_("Add-Content -Path t.ps1 -Value 'Write-Output \"line2\"'")
+        self.assertEqual(self.out(".\\t.ps1"), "line1\nline2\n")
+
+    def test_add_content_can_build_control_flow(self):
+        self.run_("Set-Content -Path t.ps1 -Value 'foreach ($x in 1..3) {'")
+        self.run_("Add-Content -Path t.ps1 -Value 'Write-Output $x'")
+        self.run_("Add-Content -Path t.ps1 -Value '}'")
+        self.assertEqual(self.out(".\\t.ps1"), "1\n2\n3\n")
+
+    def test_out_file_from_a_pipeline(self):
+        self.run_('Write-Output "piped" | Out-File -FilePath o.txt')
+        self.assertEqual(self.out("Get-Content o.txt"), "piped\n")
+
+    def test_out_file_append(self):
+        self.run_('Write-Output "one" | Out-File -FilePath o.txt')
+        self.run_('Write-Output "two" | Out-File -FilePath o.txt -Append')
+        self.assertEqual(self.out("Get-Content o.txt"), "one\ntwo\n")
+
+
 class PsIfElse(Win):
     def test_if_true_branch(self):
         self.write_ps1("t.ps1", "if (1 -eq 1) { Write-Output 'yes' } else { Write-Output 'no' }\n")

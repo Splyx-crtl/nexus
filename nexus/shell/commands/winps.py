@@ -88,6 +88,61 @@ def get_content(ctx, args):
     return 0
 
 
+@command("Set-Content", family="ps", level=3, summary="Writes new content to a file, replacing anything already there.",
+         usage="Set-Content [-Path] <path> -Value <text>", aliases=("sc",),
+         lesson="Set-Content writes text straight to a file: 'Set-Content -Path notes.ps1 -Value \"Write-Output 1\"'. Same idea as > in bash.")
+def set_content(ctx, args):
+    pos, named, _ = parse_ps_args(args, valued={"Path", "Value"})
+    path = named.get("Path") or (pos[0] if pos else None)
+    if not path:
+        ctx.err("Set-Content : Cannot bind argument to parameter 'Path'.")
+        return 1
+    value = named.get("Value", "")
+    try:
+        ctx.fs.write(ctx.user, path, value if value.endswith("\n") else value + "\n", ctx.cwd)
+    except FsError as exc:
+        ctx.err(f"Set-Content : {core.win_text(exc)}")
+        return 1
+    return 0
+
+
+@command("Add-Content", family="ps", level=3, summary="Appends content to a file.", usage="Add-Content [-Path] <path> -Value <text>", aliases=("ac",),
+         lesson="Add-Content adds another line to a file without erasing what's already there — same idea as >> in bash. Build a script one line at a time with it.")
+def add_content(ctx, args):
+    pos, named, _ = parse_ps_args(args, valued={"Path", "Value"})
+    path = named.get("Path") or (pos[0] if pos else None)
+    if not path:
+        ctx.err("Add-Content : Cannot bind argument to parameter 'Path'.")
+        return 1
+    value = named.get("Value", "")
+    try:
+        ctx.fs.write(ctx.user, path, value if value.endswith("\n") else value + "\n", ctx.cwd, append=True)
+    except FsError as exc:
+        ctx.err(f"Add-Content : {core.win_text(exc)}")
+        return 1
+    return 0
+
+
+@command("Out-File", family="ps", level=3, summary="Sends pipeline output to a file.", usage="<pipeline> | Out-File [-FilePath] <path> [-Append]",
+         lesson="Out-File saves whatever came through the pipeline into a file: 'Write-Output \"hi\" | Out-File log.txt'.")
+def out_file(ctx, args):
+    pos, named, flags = parse_ps_args(args, {"Append"}, valued={"FilePath"})
+    path = named.get("FilePath") or (pos[0] if pos else None)
+    if not path:
+        ctx.err("Out-File : Cannot bind argument to parameter 'FilePath'.")
+        return 1
+    items = ctx.objects_in if ctx.objects_in is not None else []
+    text = "\n".join(str(it) for it in items)
+    if text:
+        text += "\n"
+    try:
+        ctx.fs.write(ctx.user, path, text, ctx.cwd, append="Append" in flags)
+    except FsError as exc:
+        ctx.err(f"Out-File : {core.win_text(exc)}")
+        return 1
+    return 0
+
+
 @command("Get-Item", family="ps", level=2, summary="Gets the item at the specified location.", usage="Get-Item [-Path] <path>", aliases=("gi",))
 def get_item(ctx, args):
     pos, named, _ = parse_ps_args(args)
