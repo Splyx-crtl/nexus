@@ -149,4 +149,119 @@ ACT6_CHAPTER1 = [
     ),
 ]
 
-ACT6 = [*ACT6_CHAPTER1]
+ACT6_CHAPTER2 = [
+    Mission(
+        id="act6_m130", number=130, act=6, size="mini", title="Build It In PowerShell", scenario="auto_ps_build",
+        requires=["act6_m129"],
+        briefing=["MIRA: Same idea as the bash scripts, PowerShell's own way of writing them. Set-Content writes, "
+                  "Add-Content appends."],
+        debrief=["MIRA: One script, both checks, one call from now on."],
+        objectives=[Objective(event="command", match={"name": "whoami", "status": 0}, text="Write and run a status script (.\\status.ps1)",
+                              hints=["Set-Content first, then Add-Content for each extra line, then run it.",
+                                    "Try: Set-Content -Path status.ps1 -Value 'Get-Date' (then Add-Content for whoami), then: .\\status.ps1",
+                                    "Set-Content -Path status.ps1 -Value 'Get-Date'\nAdd-Content -Path status.ps1 -Value 'whoami'\n.\\status.ps1"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Set-Content -Path status.ps1 -Value 'Get-Date'",
+                 "Add-Content -Path status.ps1 -Value 'whoami'", ".\\status.ps1"],
+        reward_xp=90, tags=["bash", "act6", "ps", "scripting"],
+    ),
+    Mission(
+        id="act6_m131", number=131, act=6, size="standard", title="Filter, In a File This Time", scenario="auto_ps_filter_script",
+        requires=["act6_m130"],
+        briefing=["NEXUS: That stopped-services filter from before — save it. You're going to want it again."],
+        debrief=["NEXUS: Now it's stopped_services.ps1, not something you have to remember how to spell correctly "
+                 "under pressure."],
+        objectives=[Objective(event="command", match={"name": "Where-Object", "status": 0}, text="Write and run the filter as a script",
+                              hints=["The whole pipeline goes in as one line of script content.",
+                                    "Try: Set-Content -Path stopped_services.ps1 -Value 'Get-Service | Where-Object Status -eq Stopped', then: .\\stopped_services.ps1",
+                                    "Set-Content -Path stopped_services.ps1 -Value 'Get-Service | Where-Object Status -eq Stopped'\n.\\stopped_services.ps1"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Set-Content -Path stopped_services.ps1 -Value 'Get-Service | Where-Object Status -eq Stopped'",
+                 ".\\stopped_services.ps1"],
+        reward_xp=115, tags=["bash", "act6", "ps", "scripting"],
+    ),
+    Mission(
+        id="act6_m132", number=132, act=6, size="mini", title="If, In a Script", scenario="auto_ps_if_script",
+        requires=["act6_m131"],
+        briefing=["MIRA: Track whether Voss's monitoring order is still in effect, and have the script say so "
+                  "either way."],
+        debrief=["MIRA: Flip one value at the top of the script later, and the whole report changes with it."],
+        objectives=[Objective(event="command", match={"name": "Write-Output", "args__contains": "Voss monitoring: active", "status": 0}, text="Write and run an if/else script",
+                              hints=["Set a variable, then branch on it with if/else — same shape as the bash version from Level 123.",
+                                    "Try: Set-Content -Path watch_status.ps1 -Value '$monitoring = 1' (then Add-Content for the if/else), then: .\\watch_status.ps1",
+                                    "Set-Content -Path watch_status.ps1 -Value '$monitoring = 1'\nAdd-Content -Path watch_status.ps1 -Value 'if ($monitoring -eq 1) { Write-Output \"Voss monitoring: active\" } else { Write-Output \"monitoring lifted\" }'\n.\\watch_status.ps1"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Set-Content -Path watch_status.ps1 -Value '$monitoring = 1'",
+                 "Add-Content -Path watch_status.ps1 -Value 'if ($monitoring -eq 1) { Write-Output \"Voss monitoring: active\" } else { Write-Output \"monitoring lifted\" }'",
+                 ".\\watch_status.ps1"],
+        reward_xp=100, tags=["bash", "act6", "ps", "scripting", "if"],
+    ),
+    Mission(
+        id="act6_m133", number=133, act=6, size="story", title="Not Just Faster", scenario="auto_opsec",
+        requires=["act6_m132"],
+        briefing=["NEXUS: Mira wants a word about something other than saving time."],
+        debrief=["NEXUS: Every chapter's worth of typing, logged somewhere Voss can read it, start to finish. A "
+                 "script that runs in two seconds barely gives him anything.",
+                 "MIRA: Automation isn't just convenience from here on. It's cover."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*mira_opsec.txt"}, text="Read Mira's message",
+                              hints=["Check your inbox.", "Try: cat inbox/mira_opsec.txt", "cat inbox/mira_opsec.txt"])],
+        solution=["cat inbox/mira_opsec.txt"], reward_xp=95, tags=["bash", "act6", "story"],
+    ),
+    Mission(
+        id="act6_m134", number=134, act=6, size="standard", title="The Other Machine", scenario="auto_batch_for",
+        requires=["act6_m133"],
+        briefing=["MIRA: Same idea, the old machine's own language. It never got PowerShell, but batch files work "
+                  "fine."],
+        debrief=["MIRA: Three files, one command, same as everything else you've automated this chapter."],
+        objectives=[Objective(event="command", match={"name": "echo", "args__contains": "d1.log", "status": 0}, text="Write and run a batch for-loop (check_logs.bat)",
+                              hints=["Batch for-loops only work inside a saved .bat file, not typed live at the prompt — build the file first.",
+                                    "Try: echo for %%f in (d1.log d2.log d3.log) do echo checking %%f > check_logs.bat, then: check_logs.bat",
+                                    "echo for %%f in (d1.log d2.log d3.log) do echo checking %%f > check_logs.bat\ncheck_logs.bat"])],
+        solution=["sshpass -p Legacy-Svc-99 ssh svcacct@10.20.30.9", "echo for %%f in (d1.log d2.log d3.log) do echo checking %%f > check_logs.bat", "check_logs.bat"],
+        reward_xp=120, tags=["bash", "act6", "cmd", "scripting", "for"],
+    ),
+    Mission(
+        id="act6_m135", number=135, act=6, size="mini", title="Did It Land", scenario="auto_batch_exist",
+        requires=["act6_m134"],
+        briefing=["MIRA: Check whether last night's export actually landed before anything downstream assumes it "
+                  "did."],
+        debrief=["MIRA: One check before trusting the rest of the pipeline. Cheap insurance."],
+        objectives=[Objective(event="command", match={"name": "echo", "args__contains": "confirmed", "status": 0}, text="Write and run an exist-check batch file",
+                              hints=["cmd's if exist genuinely checks the filesystem, same as the bash version.",
+                                    "Try: echo if exist export_2050_01_09.csv (> verify_export.bat (then two more lines with >>), then: verify_export.bat",
+                                    "echo if exist export_2050_01_09.csv (> verify_export.bat\necho echo export confirmed>> verify_export.bat\necho )>> verify_export.bat\nverify_export.bat"])],
+        solution=["sshpass -p Legacy-Svc-99 ssh svcacct@10.20.30.9", "echo if exist export_2050_01_09.csv (> verify_export.bat",
+                 "echo echo export confirmed>> verify_export.bat", "echo )>> verify_export.bat", "verify_export.bat"],
+        reward_xp=85, tags=["bash", "act6", "cmd", "scripting", "if"],
+    ),
+    Mission(
+        id="act6_m136", number=136, act=6, size="standard", title="One Command, Not Four", scenario="auto_ps_recheck",
+        requires=["act6_m135"],
+        briefing=["MIRA: Check on svc_update again. Same question as Act V — is it still there, still enabled."],
+        debrief=["MIRA: Still there. Still unexplained. At least now checking takes one command instead of "
+                 "remembering the exact cmdlet chain every time."],
+        objectives=[Objective(event="command", match={"name": "Where-Object", "status": 0}, text="Write and run the svc_update re-check script",
+                              hints=["Same filter idea as Level 131, a different question.",
+                                    "Try: Set-Content -Path check_svc_update.ps1 -Value 'Get-LocalUser | Where-Object Name -eq svc_update', then: .\\check_svc_update.ps1",
+                                    "Set-Content -Path check_svc_update.ps1 -Value 'Get-LocalUser | Where-Object Name -eq svc_update'\n.\\check_svc_update.ps1"])],
+        solution=["sshpass -p Meridian-2050! ssh opsadmin@10.20.30.5", "Set-Content -Path check_svc_update.ps1 -Value 'Get-LocalUser | Where-Object Name -eq svc_update'",
+                 ".\\check_svc_update.ps1"],
+        reward_xp=130, tags=["bash", "act6", "ps", "scripting"],
+    ),
+    Mission(
+        id="act6_m137", number=137, act=6, size="milestone", title="Both Platforms, Automated", scenario="auto_chapter2_close",
+        requires=["act6_m136"],
+        briefing=["MIRA: One more file, one more archive, chapter closed."],
+        debrief=["MIRA: Filed and locked. Chapter closed.",
+                 "NEXUS: Linux, Windows, old machine and new — all of it automated now, not just the easy half."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*ch2_summary.txt"}, text="Assemble the chapter's findings (grep -r ... | tee)",
+                     hints=["Same habit as every chapter close so far.", "Try: grep -r automation autonotes | tee ch2_summary.txt",
+                           "grep -r automation autonotes | tee ch2_summary.txt\ncat ch2_summary.txt"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive it (sudo cp)",
+                     hints=["It lives at /archive, at the filesystem root.", "Try: sudo cp ch2_summary.txt /archive/ch2_summary.txt",
+                           "sudo cp ch2_summary.txt /archive/ch2_summary.txt"]),
+        ],
+        solution=["grep -r automation autonotes | tee ch2_summary.txt", "cat ch2_summary.txt", "sudo cp ch2_summary.txt /archive/ch2_summary.txt"],
+        reward_xp=215, tags=["bash", "act6", "milestone"],
+    ),
+]
+
+ACT6 = [*ACT6_CHAPTER1, *ACT6_CHAPTER2]

@@ -1663,3 +1663,98 @@ def auto_chapter_close() -> tuple[World, Session]:
     m.fs.chmod(m.users["operator"], "/home/operator/archive_chapter.sh", 0o755)
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ---------------------------------------------------------------------------------- Act VI — Rights & Automation, Chapter 2
+@scenario("auto_ps_build")
+def auto_ps_build() -> tuple[World, Session]:
+    """Level 130: the PowerShell side of Level 121 — Set-Content/Add-Content build a script, no shortcuts."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_ps_filter_script")
+def auto_ps_filter_script() -> tuple[World, Session]:
+    """Level 131 (standard): the Where-Object filter from Act V, Level 118, saved as a reusable script instead of
+    retyped every time."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_ps_if_script")
+def auto_ps_if_script() -> tuple[World, Session]:
+    """Level 132: if/else inside a .ps1 script, on a flag the script itself tracks."""
+    world, player, _target = _win_target_world()
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_opsec")
+def auto_opsec() -> tuple[World, Session]:
+    """Level 133 (story): automation isn't just convenience — every minute logged in is a minute Kade Voss's
+    expanded monitoring (Act V, Level 117) can see."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": "NEXUS: Mira wants a word about something other than saving time.\n",
+                      "inbox": {"mira_opsec.txt": [
+        "MIRA:", "", "Voss logs every session now. The less time you spend logged into that console typing things "
+        "out by hand, the less there is for anyone to review.",
+        "", "A script that runs in two seconds is two seconds of exposure. The same work done by hand is however "
+        "long it takes you to type it, with every keystroke in his log. Automate it. Not just because it's easier. "
+        "Because it's safer.", "---",
+    ]}})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_batch_for")
+def auto_batch_for() -> tuple[World, Session]:
+    """Level 134 (standard): a batch for-loop on LEGACY-SRV, the machine that never got the PowerShell upgrade."""
+    world = World(clock=lambda: EPOCH)
+    player = _player_machine({"notes.txt": "MIRA: Same idea, the old machine's own language. It never got PowerShell, but batch files work fine.\n"})
+    legacy = Machine("LEGACY-SRV", "LEGACY-SRV", "10.20.30.9", "windows", VFS("windows", clock=lambda: EPOCH), shell="cmd")
+    legacy.add_user(User("svcacct", 1000, 1000, ("Users",), "C:\\Users\\svcacct", password="Legacy-Svc-99"))
+    legacy.services = [Service(22, "ssh", "OpenSSH for Windows 7.9", "open")]
+    legacy.fs.load({"Users": {"svcacct": {"_owner": "svcacct", "_group": "svcacct",
+                                          "logs": {"d1.log": "nominal\n", "d2.log": "nominal\n", "d3.log": "nominal\n"}}}}, "C:\\")
+    world.add(player)
+    world.add(legacy)
+    player.neighbors.append(legacy.id)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_batch_exist")
+def auto_batch_exist() -> tuple[World, Session]:
+    """Level 135: if exist in a batch file — a real filesystem check, not a stand-in flag (cmd's if exist is
+    genuinely wired to the filesystem in this engine, unlike PowerShell's if here)."""
+    world = World(clock=lambda: EPOCH)
+    player = _player_machine({"notes.txt": "MIRA: Check whether last night's export actually landed before anything "
+                              "downstream assumes it did.\n"})
+    legacy = Machine("LEGACY-SRV", "LEGACY-SRV", "10.20.30.9", "windows", VFS("windows", clock=lambda: EPOCH), shell="cmd")
+    legacy.add_user(User("svcacct", 1000, 1000, ("Users",), "C:\\Users\\svcacct", password="Legacy-Svc-99"))
+    legacy.services = [Service(22, "ssh", "OpenSSH for Windows 7.9", "open")]
+    legacy.fs.load({"Users": {"svcacct": {"_owner": "svcacct", "_group": "svcacct", "export_2050_01_09.csv": "id,status\n1,ok\n"}}}, "C:\\")
+    world.add(player)
+    world.add(legacy)
+    player.neighbors.append(legacy.id)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_ps_recheck")
+def auto_ps_recheck() -> tuple[World, Session]:
+    """Level 136 (standard): the svc_update check from Act V, Level 116, saved as a one-command re-check instead of
+    four lines retyped from memory."""
+    world, player, target = _win_target_world()
+    target.add_user(User("svc_update", 1002, 1002, ("Users",), "C:\\Users\\svc_update", password="update-svc-9921!"))
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_chapter2_close")
+def auto_chapter2_close() -> tuple[World, Session]:
+    """Level 137 (milestone): closes Act VI, Chapter 2 — both platforms now have real automation instead of
+    retyped rituals."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"autonotes": {
+        "summary.txt": "Act VI, Chapter 2: PowerShell and batch scripts now exist for status checks, service "
+                       "filtering, the svc_update re-check, and cross-machine automation on both Windows targets.",
+    }, "notes.txt": "MIRA: One more file, one more archive, chapter closed.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
