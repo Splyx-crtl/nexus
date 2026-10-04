@@ -91,7 +91,7 @@ ACT8_CHAPTER1 = [
                                     "Try: sudo cat /home/mira/personal/dana_notes.txt",
                                     "sudo ls /home/mira/personal\nsudo cat /home/mira/personal/dana_notes.txt"])],
         solution=["sshpass -p hunter2 ssh operator@10.70.0.4", "sudo ls /home/mira/personal", "sudo cat /home/mira/personal/dana_notes.txt"],
-        reward_xp=260, tags=["bash", "act8", "milestone", "story"],
+        reward_xp=260, tags=["bash", "act8", "milestone", "story", "clue:8"],
     ),
 ]
 

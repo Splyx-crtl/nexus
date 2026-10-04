@@ -8,6 +8,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from .campaign.progression import rank_for_level as _rank_for_level_v3
 from .config import DEFAULT_SETTINGS, PROFILES_DIR, SAVES_DIR, SETTINGS_FILE, SLOTS_DIR, rank_for_level
 from .database import Database
 from .security import safe_filename
@@ -80,12 +81,15 @@ class SaveSystem:
             conn = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
             conn.row_factory = sqlite3.Row
             row = conn.execute("SELECT * FROM profile WHERE id=1").fetchone()
+            flag_row = conn.execute("SELECT value FROM flags WHERE key='campaign_v3'").fetchone()
             conn.close()
         except sqlite3.Error:
             return None
         if row is None:
             return None
-        return SaveInfo(path, row["username"], row["level"], rank_for_level(row["level"]), row["playtime"],
+        is_v3 = bool(flag_row and json.loads(flag_row["value"]))
+        rank = _rank_for_level_v3(row["level"]) if is_v3 else rank_for_level(row["level"])
+        return SaveInfo(path, row["username"], row["level"], rank, row["playtime"],
                         row["updated_at"], row["completed_missions"], kind, slot)
 
     def list_profiles(self) -> list[SaveInfo]:

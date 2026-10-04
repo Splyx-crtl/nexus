@@ -100,7 +100,7 @@ ACT7_CHAPTER1 = [
                               hints=["ZERO's transmissions read backward — the same command that spelled out Reyes' "
                                     "joke back in Act II.",
                                     "Try: rev archive_old/zero_fragment_act5.txt", "rev archive_old/zero_fragment_act5.txt"])],
-        solution=["rev archive_old/zero_fragment_act5.txt"], reward_xp=150, tags=["bash", "act7", "story", "rev"],
+        solution=["rev archive_old/zero_fragment_act5.txt"], reward_xp=150, tags=["bash", "act7", "story", "rev", "clue:5"],
     ),
     Mission(
         id="act7_m152", number=152, act=7, size="story", title="One Minute Before", scenario="defense_clue6_flashback",
@@ -114,7 +114,7 @@ ACT7_CHAPTER1 = [
         objectives=[Objective(event="file_read", match={"path__glob": "*ops_console_act6.log"}, text="Re-read the Act VI connection log",
                               hints=["It's archived from the earlier operation.", "Try: cat archive_old/ops_console_act6.log",
                                     "cat archive_old/ops_console_act6.log"])],
-        solution=["cat archive_old/ops_console_act6.log"], reward_xp=150, tags=["bash", "act7", "story"],
+        solution=["cat archive_old/ops_console_act6.log"], reward_xp=150, tags=["bash", "act7", "story", "clue:6"],
     ),
     Mission(
         id="act7_m153", number=153, act=7, size="mini", title="Lock the Door", scenario="defense_blocklist",
@@ -282,7 +282,7 @@ ACT7_CHAPTER2 = [
                  "have all of it."],
         objectives=[Objective(event="file_read", match={"path__glob": "*nexus_explains.txt"}, text="Hear NEXUS explain the split",
                               hints=["Check your inbox.", "Try: cat inbox/nexus_explains.txt", "cat inbox/nexus_explains.txt"])],
-        solution=["cat inbox/nexus_explains.txt"], reward_xp=220, tags=["bash", "act7", "story", "milestone-beat"],
+        solution=["cat inbox/nexus_explains.txt"], reward_xp=220, tags=["bash", "act7", "story", "milestone-beat", "clue:7"],
     ),
     Mission(
         id="act7_m164", number=164, act=7, size="story", title="Say It To Me", scenario="defense_decision6",
