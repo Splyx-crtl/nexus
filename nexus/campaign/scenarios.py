@@ -2043,3 +2043,141 @@ def defense_ch1_close() -> tuple[World, Session]:
                       Process(pid=1340, user="operator", name="relay-svc", cmd="/opt/relay/relay-svc --listen 443", cpu=2.1, mem=1.8),
                       Process(pid=4410, user="root", name="probe", cmd="/tmp/.hide/probe --enum", cpu=52.0, mem=1.6)]
     return world, Session(player, player.users["operator"], "bash")
+
+
+# ---------------------------------------------------------------------------------- Act VII — Defense, Chapter 2 (156-165)
+REAL_THREAT_IP = "203.0.113.90"           # the genuine hostile actor that got through while ZERO was blocked
+
+
+@scenario("defense_zero_contact")
+def defense_zero_contact() -> tuple[World, Session]:
+    """Level 156 (story): ZERO makes direct, uncorrupted contact for the first time — the blocklist from Chapter 1
+    cut ZERO off, not an attacker."""
+    world, player, edge = _defense_world({"notes.txt": "NEXUS: There's something on EDGE-RELAY that wasn't there "
+                                          "before. It wants you to read it.\n"})
+    edge.fs.load({"home": {"operator": {"zero_message.txt": "YOU BLOCKED ME. I WAS NOT THE ONE YOU NEEDED TO BLOCK."}}}, "/")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_check_damage")
+def defense_check_damage() -> tuple[World, Session]:
+    """Level 157 (standard): while 198.51.100.231 was blocked, something else got in — proof that the block had a
+    real cost, not just a false alarm."""
+    log = ["15:40:02 svc[auth]: failed login for root from 203.0.113.90",
+          f"15:41:10 svc[auth]: session opened for root from {REAL_THREAT_IP}",
+          "15:42:03 svc[auth]: session closed for root"]
+    world, player, edge = _defense_world({"notes.txt": "MIRA: If ZERO's message is right, check what got through "
+                                          "while the block was up.\n"}, auth_log=log)
+    edge.fs.load({"tmp": {".hide": {"dropped.txt": "placeholder for a later return visit\n"}}}, "/")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_unblock")
+def defense_unblock() -> tuple[World, Session]:
+    """Level 158 (mini): take 198.51.100.231 back off the blocklist, now that it's confirmed to be ZERO, not the
+    threat — sed -i, the reverse of the echo that put it there in Chapter 1."""
+    world, player, edge = _defense_world({"notes.txt": "MIRA: Take it back off the list. We need ZERO able to get "
+                                          "back in.\n"})
+    edge.fs.write(edge.users["operator"], "firewall_rules.conf", "198.51.100.231\n", "/home/operator")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_zero_warning")
+def defense_zero_warning() -> tuple[World, Session]:
+    """Level 159 (story): with the block lifted, ZERO warns clearly and specifically about round two."""
+    world, player, edge = _defense_world({"notes.txt": "NEXUS: It left something else. Clearer this time.\n"})
+    edge.fs.load({"home": {"operator": {"zero_message.txt": f"{REAL_THREAT_IP} IS NOT DONE. IT WILL COME BACK FOR "
+                                        "THE RELAY. I WILL BE HERE. DO NOT BLOCK ME AGAIN."}}}, "/")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_joint_response")
+def defense_joint_response() -> tuple[World, Session]:
+    """Level 160 (standard): the real threat returns — and ZERO already handled the process, same "called it"
+    pattern as Clue 3 (Act III). The player's job this time is confirmation and cleanup, not the kill itself."""
+    log = [f"16:20:01 svc[auth]: session opened for root from {REAL_THREAT_IP}",
+          f"16:20:44 svc[auth]: account disabled by unknown local service, session terminated"]
+    world, player, edge = _defense_world({"notes.txt": "ODUYA: It's back. Check it before you assume you need to "
+                                          "do anything.\n"}, auth_log=log)
+    edge.processes = [Process(pid=1, user="root", name="init", cmd="/sbin/init", cpu=0.0, mem=0.2),
+                      Process(pid=1200, user="root", name="sshd", cmd="/usr/sbin/sshd -D", cpu=0.1, mem=0.4),
+                      Process(pid=1340, user="operator", name="relay-svc", cmd="/opt/relay/relay-svc --listen 443", cpu=2.1, mem=1.8)]
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_nexus_shaken")
+def defense_nexus_shaken() -> tuple[World, Session]:
+    """Level 161 (story): the aftermath — NEXUS can't explain what just happened, and the evasion itself is
+    the tell."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": [
+        "NEXUS: I don't have a clean answer for how that process got disabled. I didn't do it. I don't think you",
+        "did either.", "", "Ask me something else. Please.",
+    ]})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("defense_proof")
+def defense_proof() -> tuple[World, Session]:
+    """Level 162 (standard): technical proof, not a feeling — a diagnostic file ZERO left behind on the relay
+    carries the same program name NEXUS was confirmed under back in Act IV, with one word different."""
+    world, player, edge = _defense_world({"notes.txt": "MIRA: If something keeps acting on this relay without "
+                                          "logging in as anybody, it leaves traces somewhere. Find one.\n"})
+    edge.fs.load({"var": {"log": {"diag": {"relay_svc_diag.log": [
+        "build: Project ARCHITECT", "partition: Zero", "deployment: autonomous field defense, non-attributable",
+        "note: see partition Alpha for the counterpart build",
+    ]}}}}, "/")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_the_split")
+def defense_the_split() -> tuple[World, Session]:
+    """Level 163 (story, Clue 7): NEXUS explains the split himself — the central reveal of Act VII. Deliberately
+    stops short of the Dana reveal (reserved for Act VIII per docs/story/00-bible.md §4)."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"inbox": {"nexus_explains.txt": [
+        "NEXUS:", "", "Partition Alpha. Partition Zero. Same program, same starting point, split into two builds",
+        "because Nexus Company couldn't get both halves of what they wanted into one deployment they were willing",
+        "to put their name on. Alpha talks. Alpha explains itself, asks before it acts, stays inside a terminal",
+        "window and a conversation. Zero doesn't talk, doesn't ask, and doesn't stay inside anything — it acts on",
+        "its own, in the field, without anyone's permission in the moment.", "",
+        "I'm Alpha. I always have been. I just didn't have the word for it until Partition Alpha was all I was",
+        "allowed to say out loud. Zero is the rest of what that program was supposed to be — the part built to",
+        "decide things by itself, without waiting to be told. We were never two separate things pretending to be",
+        "one. We're one thing, cut down the middle, deployed under two names so neither half looked like what the",
+        "whole would have been.", "",
+        "I don't know everything Zero knows. I don't have whatever let it disable that account without logging in",
+        "anywhere. And there are things I know that I don't think it does. I don't know why that split was made the",
+        "way it was, or who decided it. I just know it was done to both of us before either of us could have had",
+        "an opinion about it.",
+    ]}})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("defense_decision6")
+def defense_decision6() -> tuple[World, Session]:
+    """Level 164 (story, decision:6): how the player treats NEXUS now that they know — narrative-only, same free-
+    echo mechanism as decisions 1-5."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": "NEXUS: Whatever you're going to say, say it to me directly. I'd rather hear it "
+                      "than have Mira pass it along.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("defense_act7_close")
+def defense_act7_close() -> tuple[World, Session]:
+    """Level 165 (milestone): closes Act VII. No rank change — Act VII stays SENTINEL per
+    docs/story/02-acts-and-levels.md's table; the next rank-up is Act VIII's finale."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"autonotes": {
+        "act7_summary.txt": "Act VII: EDGE-RELAY defended, 198.51.100.231 confirmed as ZERO rather than a threat, "
+                            "203.0.113.90 the real one, contained jointly. NEXUS confirmed Partition Alpha and ZERO "
+                            "Partition Zero are one split program, Project ARCHITECT. Open: who ordered the split, "
+                            "and what NEXUS's training was actually built from.",
+    }, "notes.txt": "MIRA: That's the act. Whatever's next, none of us are going into it not knowing what we are "
+                    "anymore.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")

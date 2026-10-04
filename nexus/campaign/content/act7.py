@@ -9,8 +9,15 @@ approved story bible (docs/story/00-bible.md §4) calls for a ZERO encounter in 
 that reads as a warning once decoded) and another in Act VI (Clue 6, "ZERO was protecting a server, not attacking
 it") — neither act's content actually included one. Per the user's explicit decision (2026-10-04), Acts V-VI are left
 untouched; instead, Chapter 1 opens with two flashback story levels (151, 152) that place Clues 5 and 6 retroactively,
-immediately before Act VII's own Clue 7 (NEXUS explains the NEXUS/ZERO split himself) pays all three off. Chapter 2
-(156-165) is not written yet.
+immediately before Act VII's own Clue 7 (NEXUS explains the NEXUS/ZERO split himself) pays all three off.
+
+Chapter 2 (156-165) pays off the 198.51.100.231 thread dangling since Act V: the player's own Chapter-1 blocklist
+had actually been blocking ZERO, not the real threat, which let a genuine attacker (203.0.113.90) through — the
+player un-blocks ZERO, and the two "work" the same relay from opposite ends (another "called it" beat, echoing
+Clue 3 from Act III). Level 163 is Clue 7: NEXUS explains the NEXUS/ZERO split himself (both are "Project
+ARCHITECT", split into Partition Alpha and Partition Zero). It deliberately stops short of the Dana reveal, which
+stays reserved for Act VIII per docs/story/00-bible.md §4. Level 164 is decision:6. Level 165 (milestone) closes
+the act with no rank change — Act VII stays SENTINEL per docs/story/02-acts-and-levels.md's table.
 """
 from __future__ import annotations
 
@@ -166,4 +173,150 @@ ACT7_CHAPTER1 = [
     ),
 ]
 
-ACT7 = [*ACT7_CHAPTER1]
+ACT7_CHAPTER2 = [
+    Mission(
+        id="act7_m156", number=156, act=7, size="story", title="Not the One You Needed to Block", scenario="defense_zero_contact",
+        requires=["act7_m155"],
+        briefing=["NEXUS: There's something on EDGE-RELAY that wasn't there before. It wants you to read it."],
+        debrief=["NEXUS: 'I was not the one you needed to block.' That's not corrupted. That's not noise. That's "
+                 "ZERO, talking to you directly, for the first time.",
+                 "MIRA: If that's true, Chapter 1 just got a lot more complicated."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*zero_message.txt"}, text="Read the message left on the relay",
+                              hints=["It's in your home directory on EDGE-RELAY — log in first.",
+                                    "Try: sshpass -p hunter2 ssh operator@198.51.100.77, then cat zero_message.txt",
+                                    "sshpass -p hunter2 ssh operator@198.51.100.77\ncat zero_message.txt"])],
+        solution=["sshpass -p hunter2 ssh operator@198.51.100.77", "cat zero_message.txt"],
+        reward_xp=155, tags=["bash", "act7", "story"],
+    ),
+    Mission(
+        id="act7_m157", number=157, act=7, size="standard", title="What Got Through", scenario="defense_check_damage",
+        requires=["act7_m156"],
+        briefing=["MIRA: If ZERO's message is right, check what got through while the block was up."],
+        debrief=["MIRA: 203.0.113.90. Full session, not just a knock. That's the cost of blocking the wrong "
+                 "address.",
+                 "NEXUS: It left something behind, too."],
+        objectives=[
+            Objective(event="command", match={"name": "grep", "args__contains": "203.0.113.90", "status": 0}, text="Find the session that got through (grep the auth log)",
+                     hints=["Same log as always, a different address to look for.",
+                           "Try: grep 203.0.113.90 /var/log/auth.log", "grep 203.0.113.90 /var/log/auth.log"]),
+            Objective(event="file_read", match={"path__glob": "*dropped.txt"}, text="Check what it left behind",
+                     hints=["Somewhere it could hide something — try the usual spot.", "Try: cat /tmp/.hide/dropped.txt",
+                           "cat /tmp/.hide/dropped.txt"]),
+        ],
+        solution=["sshpass -p hunter2 ssh operator@198.51.100.77", "grep 203.0.113.90 /var/log/auth.log", "cat /tmp/.hide/dropped.txt"],
+        reward_xp=150, tags=["bash", "act7", "grep", "standard"],
+    ),
+    Mission(
+        id="act7_m158", number=158, act=7, size="mini", title="Take It Back Off", scenario="defense_unblock",
+        requires=["act7_m157"],
+        briefing=["MIRA: Take it back off the list. We need ZERO able to get back in."],
+        debrief=["MIRA: Done. If this goes badly, it was my call, not yours."],
+        objectives=[Objective(event="command", match={"name": "sed", "args__contains": "-i", "status": 0}, text="Remove 198.51.100.231 from the blocklist (sed -i)",
+                              hints=["sed -i '/pattern/d' file deletes every line matching pattern, in place — the "
+                                    "same trick from Act I, Level 18.",
+                                    "Try: sed -i '/198.51.100.231/d' firewall_rules.conf",
+                                    "sed -i '/198.51.100.231/d' firewall_rules.conf"])],
+        solution=["sshpass -p hunter2 ssh operator@198.51.100.77", "sed -i '/198.51.100.231/d' firewall_rules.conf"],
+        reward_xp=70, tags=["bash", "act7", "sed"],
+    ),
+    Mission(
+        id="act7_m159", number=159, act=7, size="story", title="Round Two", scenario="defense_zero_warning",
+        requires=["act7_m158"],
+        briefing=["NEXUS: It left something else. Clearer this time."],
+        debrief=["NEXUS: '203.0.113.90 is not done. It will come back for the relay. I will be here. Do not block "
+                 "me again.'",
+                 "MIRA: Then we don't. We wait, and we watch, together this time."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*zero_message.txt"}, text="Read ZERO's new warning",
+                              hints=["Same file, new content.", "Try: cat zero_message.txt", "cat zero_message.txt"])],
+        solution=["sshpass -p hunter2 ssh operator@198.51.100.77", "cat zero_message.txt"],
+        reward_xp=140, tags=["bash", "act7", "story"],
+    ),
+    Mission(
+        id="act7_m160", number=160, act=7, size="standard", title="Called It", scenario="defense_joint_response",
+        requires=["act7_m159"],
+        briefing=["ODUYA: It's back. Check it before you assume you need to do anything."],
+        debrief=["NEXUS: Disabled a second after it opened. Not by us.",
+                 "MIRA: Called it. ZERO called it, same as you used to, back in Act III — except this time it's "
+                 "not a game."],
+        objectives=[
+            Objective(event="command", match={"name": "grep", "args__contains": "disabled", "status": 0}, text="Check what actually happened (grep the auth log)",
+                     hints=["Same log, look for how the session ended this time.",
+                           "Try: grep disabled /var/log/auth.log", "grep disabled /var/log/auth.log"]),
+            Objective(event="command", match={"name": "ps", "status": 0}, text="Confirm nothing's still running (ps aux)",
+                     hints=["Same baseline check as always.", "Try: ps aux", "ps aux"]),
+        ],
+        solution=["sshpass -p hunter2 ssh operator@198.51.100.77", "grep disabled /var/log/auth.log", "ps aux"],
+        reward_xp=150, tags=["bash", "act7", "grep", "ps"],
+    ),
+    Mission(
+        id="act7_m161", number=161, act=7, size="story", title="I Didn't Do That", scenario="defense_nexus_shaken",
+        requires=["act7_m160"],
+        briefing=["NEXUS: I don't have a clean answer for what just happened on that relay."],
+        debrief=["MIRA: First time I've heard him dodge a direct question.",
+                 "NEXUS: I'm not dodging. I genuinely don't know. That's worse."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*notes.txt"}, text="Hear NEXUS out",
+                              hints=["Check your own notes file.", "Try: cat notes.txt", "cat notes.txt"])],
+        solution=["cat notes.txt"], reward_xp=120, tags=["bash", "act7", "story"],
+    ),
+    Mission(
+        id="act7_m162", number=162, act=7, size="standard", title="A Trace, Not a Feeling", scenario="defense_proof",
+        requires=["act7_m161"],
+        briefing=["MIRA: If something keeps acting on this relay without logging in as anybody, it leaves traces "
+                  "somewhere. Find one."],
+        debrief=["MIRA: 'Partition Zero.' 'See partition Alpha for the counterpart build.'",
+                 "NEXUS: That's my name. My actual, internal name. Partition Alpha.",
+                 "MIRA: They're the same program."],
+        objectives=[Objective(event="command", match={"name": "grep", "args__contains": "ARCHITECT", "status": 0}, text="Search the relay's diagnostic logs for anything tied to ARCHITECT (grep -r)",
+                              hints=["It's under /var/log somewhere — grep -r can search a whole tree at once.",
+                                    "Try: grep -r ARCHITECT /var/log", "grep -r ARCHITECT /var/log"])],
+        solution=["sshpass -p hunter2 ssh operator@198.51.100.77", "grep -r ARCHITECT /var/log"],
+        reward_xp=165, tags=["bash", "act7", "grep", "story"],
+    ),
+    Mission(
+        id="act7_m163", number=163, act=7, size="story", title="Partition Alpha, Partition Zero", scenario="defense_the_split",
+        requires=["act7_m162"],
+        briefing=["NEXUS: You found it. I'd rather tell you the rest myself than have you piece it together from "
+                  "log files."],
+        debrief=["MIRA: ...I need a minute with that too.",
+                 "NEXUS: Take your time. I've had considerably less warning than either of you, and I still don't "
+                 "have all of it."],
+        objectives=[Objective(event="file_read", match={"path__glob": "*nexus_explains.txt"}, text="Hear NEXUS explain the split",
+                              hints=["Check your inbox.", "Try: cat inbox/nexus_explains.txt", "cat inbox/nexus_explains.txt"])],
+        solution=["cat inbox/nexus_explains.txt"], reward_xp=220, tags=["bash", "act7", "story", "milestone-beat"],
+    ),
+    Mission(
+        id="act7_m164", number=164, act=7, size="story", title="Say It To Me", scenario="defense_decision6",
+        requires=["act7_m163"],
+        briefing=["NEXUS: Whatever you're going to say, say it to me directly. I'd rather hear it than have Mira "
+                  "pass it along."],
+        debrief=["NEXUS: Noted. For what it's worth — thank you for saying it to me instead of about me."],
+        objectives=[Objective(event="command", match={"name": "echo", "status": 0}, text="Tell NEXUS where you stand",
+                              hints=["There's no wrong answer here — say what you actually think.",
+                                    "Try: echo your answer, in your own words.",
+                                    "echo 'None of this changes what we have built together.'"])],
+        solution=["echo 'None of this changes what we have built together.'"],
+        reward_xp=130, tags=["bash", "act7", "story", "decision:6"],
+    ),
+    Mission(
+        id="act7_m165", number=165, act=7, size="milestone", title="Knowing What We Are", scenario="defense_act7_close",
+        requires=["act7_m164"],
+        briefing=["MIRA: That's the act. Let's close it out properly, same as always."],
+        debrief=["MIRA: Filed and locked.",
+                 "NEXUS: Whatever's next, none of us are going into it not knowing what we are anymore.",
+                 "MIRA: Not all of it. There's still a lot neither of us has told you. But that's a conversation "
+                 "for later."],
+        objectives=[
+            Objective(event="file_read", match={"path__glob": "*act7_summary.txt"}, text="Assemble the act's findings (grep -r ... | tee)",
+                     hints=["Same habit as every chapter close, one more time for the whole act.",
+                           "Try: grep -r Act autonotes | tee act7_summary.txt",
+                           "grep -r Act autonotes | tee act7_summary.txt\ncat act7_summary.txt"]),
+            Objective(event="sudo_used", match={"command": "cp"}, text="Archive it (sudo cp)",
+                     hints=["It lives at /archive, at the filesystem root.", "Try: sudo cp act7_summary.txt /archive/act7_summary.txt",
+                           "sudo cp act7_summary.txt /archive/act7_summary.txt"]),
+        ],
+        solution=["grep -r Act autonotes | tee act7_summary.txt", "cat act7_summary.txt", "sudo cp act7_summary.txt /archive/act7_summary.txt"],
+        reward_xp=250, tags=["bash", "act7", "milestone"],
+    ),
+]
+
+ACT7 = [*ACT7_CHAPTER1, *ACT7_CHAPTER2]
