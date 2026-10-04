@@ -1552,3 +1552,114 @@ def keys_finale() -> tuple[World, Session]:
     m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ============================================================================================ Act VI — Rights & Automation
+def _ops_machine(home_extra: dict | None = None) -> Machine:
+    """The player's home-rig, for Act VI's scripting work — same machine as every other act, nothing new to build."""
+    m = _player_machine(home_extra)
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    m.fs.load({"archive": {"_owner": "root", "_group": "root", "_mode": 0o700}})
+    return m
+
+
+@scenario("auto_first_script")
+def auto_first_script() -> tuple[World, Session]:
+    """Level 121: write a script, once, instead of retyping the same three commands every session."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": "MIRA: You've retyped the same three commands every morning for weeks. Write them "
+                      "into a script, once, and stop.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_loop_script")
+def auto_loop_script() -> tuple[World, Session]:
+    """Level 122 (standard): a for-loop inside a script, fingerprinting several files in one call."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"reports": {"file1.txt": "alpha report\n", "file2.txt": "beta report\n", "file3.txt": "gamma report\n"},
+                      "notes.txt": "NEXUS: Three files, three separate sha256sum calls, every time. Put the loop in "
+                                  "the script instead of your fingers.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_if_script")
+def auto_if_script() -> tuple[World, Session]:
+    """Level 123: a safety check inside a script — don't run twice if a lockfile says it's already running."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": "MIRA: Before anything automated runs twice by accident and breaks something, "
+                      "put a safety check at the top.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_reflection")
+def auto_reflection() -> tuple[World, Session]:
+    """Level 124 (story): NEXUS notices — every chapter so far has ended with the same manual ritual."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": "NEXUS: Something's been bothering me. Check your own history.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_function_script")
+def auto_function_script() -> tuple[World, Session]:
+    """Level 125 (standard): a function inside a script — logic written once, called as many times as needed."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": "MIRA: If you're going to log things consistently, write the logging once as its "
+                      "own piece, not copy-pasted every time you need it.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_executable")
+def auto_executable() -> tuple[World, Session]:
+    """Level 126: chmod +x and run a script directly, the way it's actually done day to day."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": "NEXUS: You don't have to type 'bash' in front of a script every time. Make it "
+                      "executable, and run it like any other program.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_generic_script")
+def auto_generic_script() -> tuple[World, Session]:
+    """Level 127 (standard): the payoff — a parameterised script that does the grep/tee/archive ritual for ANY
+    pattern, folder and output name, instead of retyping it by hand like every chapter so far."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"reports": {"log1.txt": "STATUS: nominal\n", "log2.txt": "STATUS: anomaly detected\n"},
+                      "notes.txt": "MIRA: Stop retyping the same three commands at the end of every job. Write one "
+                                  "script that takes the pattern, the folder and the output name as arguments.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_reuse_script")
+def auto_reuse_script() -> tuple[World, Session]:
+    """Level 128: prove it's actually reusable — same script, a completely different search, no edits."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"reports": {"log1.txt": "STATUS: nominal\n", "log2.txt": "STATUS: anomaly detected\n"},
+                      "notes.txt": "MIRA: Same script. Different question. If you have to edit it to reuse it, it "
+                                  "wasn't really a tool.\n"})
+    archive_chapter = ['grep -r "$1" "$2" | tee "$3"', 'sudo cp "$3" /archive/"$3"']
+    m.fs.write(m.users["operator"], "archive_chapter.sh", "\n".join(archive_chapter) + "\n", "/home/operator")
+    m.fs.chmod(m.users["operator"], "/home/operator/archive_chapter.sh", 0o755)
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_chapter_close")
+def auto_chapter_close() -> tuple[World, Session]:
+    """Level 129 (milestone): closes Chapter 1 — use the script for real, on this chapter's own summary, instead of
+    typing the ritual by hand one more time."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"autonotes": {
+        "summary.txt": "Act VI, Chapter 1: scripts now exist for the morning checklist, multi-file hashing, safety "
+                       "checks, logging, and the chapter-close ritual itself.",
+    }, "notes.txt": "MIRA: Use the script. Don't type it by hand one more time.\n"})
+    archive_chapter = ['grep -r "$1" "$2" | tee "$3"', 'sudo cp "$3" /archive/"$3"']
+    m.fs.write(m.users["operator"], "archive_chapter.sh", "\n".join(archive_chapter) + "\n", "/home/operator")
+    m.fs.chmod(m.users["operator"], "/home/operator/archive_chapter.sh", 0o755)
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
