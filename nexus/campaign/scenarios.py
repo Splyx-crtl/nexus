@@ -1875,3 +1875,171 @@ def auto_act6_close() -> tuple[World, Session]:
     }, "notes.txt": "MIRA: That's the chapter, and the act. Whatever's next, you're not doing it by hand anymore.\n"})
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+# ======================================================================================================= Act VII — Defense
+EDGE_IP = "198.51.100.77"
+EDGE_HOST = "EDGE-RELAY"
+INTRUDER_IP = "198.51.100.231"           # same address as svc_update (Act V/VI) — the thread this act pays off
+
+
+def _edge_relay(fs_extra: dict | None = None, auth_log: list[str] | None = None) -> Machine:
+    m = Machine(EDGE_HOST, EDGE_HOST, EDGE_IP, "linux", VFS("posix", clock=lambda: EPOCH))
+    m.add_user(User("operator", 1000, 1000, ("operator",), "/home/operator", password="hunter2"))
+    m.add_user(User("root", 0, 0, ("root",), "/root", admin=True, password="toor"))
+    m.data["sudoers"] = {"operator": {"commands": "ALL", "nopasswd": True}}
+    tree = {"etc": {"hostname": EDGE_HOST}, "home": {"operator": {"_owner": "operator", "_group": "operator", **(fs_extra or {})}},
+           "var": {"log": {"auth.log": auth_log or []}}}
+    m.fs.load(tree)
+    m.services = [Service(22, "ssh", "OpenSSH 9.6", "open")]
+    return m
+
+
+def _defense_world(home_extra: dict | None = None, edge_extra: dict | None = None, auth_log: list[str] | None = None) -> tuple[World, Machine, Machine]:
+    world = World(clock=lambda: EPOCH)
+    player = _ops_machine(home_extra)
+    edge = _edge_relay(edge_extra, auth_log)
+    world.add(player)
+    world.add(edge)
+    player.neighbors.append(edge.id)
+    return world, player, edge
+
+
+@scenario("defense_handoff")
+def defense_handoff() -> tuple[World, Session]:
+    """Level 146 (story): Oduya hands over real admin access to EDGE-RELAY — the relay from Kade Voss's Act V memo
+    ("irregular access against the edge relay infrastructure"). The role reversal starts here: the player is asked
+    to watch it, not attack it."""
+    world, player, _edge = _defense_world({"inbox": {"oduya_handoff.txt": [
+        "FROM: Oduya", "", "Mira says you're ready for something different. There's a relay box — EDGE-RELAY,",
+        f"{EDGE_IP} — that Voss's own memo flagged months ago as a target. Nobody above me will admit it's worth",
+        "watching properly. I can get you admin on it quietly. Credentials: operator / hunter2.",
+        "", "This isn't a job. Nothing to take, nothing to prove. Just watch it. If something comes for it, you'll",
+        "be the first to know, and for once, you won't be the one knocking.", "", "- Oduya",
+    ]}, "notes.txt": "NEXUS: Different kind of morning. Read Oduya's message before you do anything else.\n"})
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_check_log")
+def defense_check_log() -> tuple[World, Session]:
+    """Level 147 (mini): the first habit of the watch — read the relay's own auth log."""
+    log = ["09:40:02 svc[auth]: session renewed for operator",
+          "09:55:17 svc[auth]: failed login for root from 203.0.113.212",
+          "09:55:19 svc[auth]: failed login for root from 203.0.113.212",
+          "10:10:04 svc[cron]: backup job completed (0 errors)"]
+    world, player, _edge = _defense_world({"notes.txt": "ODUYA: First habit: read the relay's own log before you "
+                                           "trust the quiet.\n"}, auth_log=log)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_check_netstat")
+def defense_check_netstat() -> tuple[World, Session]:
+    """Level 148 (mini): a quick connection check, same tool as Act III, now defensive instead of reconnaissance —
+    this time with -a, to see established connections, not just listening ports."""
+    world, player, edge = _defense_world({"notes.txt": "ODUYA: Second habit: what's actually connected right now, "
+                                          "not just who tried and failed.\n"})
+    edge.services.append(Service(443, "https", "relay-svc 2.1", "open"))
+    edge.data["connections"] = [{"local_port": 22, "peer": "10.44.0.7", "peer_port": 51022, "state": "ESTABLISHED"},
+                                {"local_port": 443, "peer": "203.0.113.212", "peer_port": 51234, "state": "ESTABLISHED"}]
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_check_ps")
+def defense_check_ps() -> tuple[World, Session]:
+    """Level 149 (mini): third habit — what's actually running, so a later anomaly has a baseline to stand out against."""
+    world, player, edge = _defense_world({"notes.txt": "ODUYA: Third habit: know what's supposed to be running, "
+                                          "so you notice the day something isn't.\n"})
+    edge.processes = [Process(pid=1, user="root", name="init", cmd="/sbin/init", cpu=0.0, mem=0.2),
+                      Process(pid=1200, user="root", name="sshd", cmd="/usr/sbin/sshd -D", cpu=0.1, mem=0.4),
+                      Process(pid=1340, user="operator", name="relay-svc", cmd="/opt/relay/relay-svc --listen 443", cpu=2.1, mem=1.8)]
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_catch_live")
+def defense_catch_live() -> tuple[World, Session]:
+    """Level 150 (standard): the first real catch — a session that isn't Oduya's or the player's, live right now,
+    plus the process it's running. Deliberately a petty, forgettable intrusion (203.0.113.212, unrelated to the
+    thread this act is actually building toward) so Level 153+'s real pattern stands out by contrast."""
+    world, player, edge = _defense_world({"notes.txt": "ODUYA: Something's on the relay right now that isn't us. "
+                                          "Find it, end it.\n"})
+    edge.data["last"] = ["operator  pts/0   10.44.0.7        Thu Jan  9 09:40   still logged in",
+                        "root      pts/1   203.0.113.212    Thu Jan  9 10:58   still logged in"]
+    edge.processes = [Process(pid=1, user="root", name="init", cmd="/sbin/init", cpu=0.0, mem=0.2),
+                      Process(pid=1200, user="root", name="sshd", cmd="/usr/sbin/sshd -D", cpu=0.1, mem=0.4),
+                      Process(pid=1340, user="operator", name="relay-svc", cmd="/opt/relay/relay-svc --listen 443", cpu=2.1, mem=1.8),
+                      Process(pid=2290, user="root", name="scanner.sh", cmd="/tmp/.hide/scanner.sh --sweep", cpu=61.0, mem=2.0)]
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_clue5_flashback")
+def defense_clue5_flashback() -> tuple[World, Session]:
+    """Level 151 (story, Clue 5 catch-up): an archived transcript from the Act V operation, set aside at the time as
+    ZERO's usual corrupted noise. Read backward (rev), it isn't noise — it's a warning."""
+    world = World(clock=lambda: EPOCH)
+    garbled = ".siht gnirud ffo yatS .ecno ton ,gnidliuber er'uoy tahw gnidraug m'I .gninraw a si sihT"
+    m = _ops_machine({"archive_old": {"zero_fragment_act5.txt": garbled},
+                      "notes.txt": "MIRA: Found this in the Act V op logs, filed under 'ZERO noise, ignore'. "
+                                  "Oduya thinks we were wrong to ignore it. Read it the way ZERO actually sends "
+                                  "things — backward.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("defense_clue6_flashback")
+def defense_clue6_flashback() -> tuple[World, Session]:
+    """Level 152 (story, Clue 6 catch-up): re-reading the Act VI connection log with fresh eyes — ZERO was on
+    OPS-CONSOLE during the exact window an unrelated intruder got kicked out, not causing the intrusion."""
+    world = World(clock=lambda: EPOCH)
+    log = ["2050-01-09 04:09 connection from unknown origin, flagged and terminated by local service",
+          "2050-01-09 04:10 logon success: opsadmin from 10.44.0.7",
+          "2050-01-09 04:11 logon success: svc_update from 198.51.100.231",
+          "2050-01-09 04:11 logoff: svc_update"]
+    m = _ops_machine({"archive_old": {"ops_console_act6.log": log},
+                      "notes.txt": "NEXUS: Look at the timestamps again. svc_update didn't cause that 04:09 "
+                                  "termination. It happened one minute BEFORE svc_update even logged in.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("defense_blocklist")
+def defense_blocklist() -> tuple[World, Session]:
+    """Level 153 (mini): the relay's first real firewall-style rule — a plain blocklist file the relay's own
+    service is set up to honor, same idea as a real hosts.deny or ufw rule, just file-based in this engine."""
+    log = ["11:02:01 svc[auth]: failed login for root from 198.51.100.231",
+          "11:02:04 svc[auth]: failed login for root from 198.51.100.231",
+          "11:02:07 svc[auth]: failed login for root from 198.51.100.231"]
+    world, player, _edge = _defense_world({"notes.txt": "ODUYA: That's not random noise, that's someone testing "
+                                           "the door. Block it before they find it unlocked.\n"}, auth_log=log)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_real_intrusion")
+def defense_real_intrusion() -> tuple[World, Session]:
+    """Level 154 (standard): the same address comes back and gets further this time — live on the box, needs both
+    containment (kill) and a permanent rule (blocklist), not just one or the other."""
+    world, player, edge = _defense_world({"notes.txt": "ODUYA: It's back, and this time it's not just knocking.\n"})
+    edge.data["last"] = ["operator  pts/0   10.44.0.7        Thu Jan  9 13:20   still logged in",
+                        "root      pts/2   198.51.100.231   Thu Jan  9 13:41   still logged in"]
+    edge.processes = [Process(pid=1, user="root", name="init", cmd="/sbin/init", cpu=0.0, mem=0.2),
+                      Process(pid=1200, user="root", name="sshd", cmd="/usr/sbin/sshd -D", cpu=0.1, mem=0.4),
+                      Process(pid=1340, user="operator", name="relay-svc", cmd="/opt/relay/relay-svc --listen 443", cpu=2.1, mem=1.8),
+                      Process(pid=3105, user="root", name="probe", cmd="/tmp/.hide/probe --enum", cpu=48.0, mem=1.5)]
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("defense_ch1_close")
+def defense_ch1_close() -> tuple[World, Session]:
+    """Level 155 (milestone): the full watch routine chained end to end — log, connections, processes, containment,
+    blocklist — closes Chapter 1 on the realization that 198.51.100.231 keeps coming back on a schedule."""
+    log = ["14:58:50 svc[auth]: failed login for root from 198.51.100.231",
+          "14:58:53 svc[auth]: failed login for root from 198.51.100.231",
+          "15:00:01 svc[auth]: session opened for root from 198.51.100.231"]
+    world, player, edge = _defense_world({"notes.txt": "ODUYA: Full sweep, same as every time, then lock it down "
+                                          "properly.\n"}, auth_log=log)
+    edge.data["last"] = ["operator  pts/0   10.44.0.7        Thu Jan  9 14:50   still logged in",
+                        "root      pts/3   198.51.100.231   Thu Jan  9 15:00   still logged in"]
+    edge.processes = [Process(pid=1, user="root", name="init", cmd="/sbin/init", cpu=0.0, mem=0.2),
+                      Process(pid=1200, user="root", name="sshd", cmd="/usr/sbin/sshd -D", cpu=0.1, mem=0.4),
+                      Process(pid=1340, user="operator", name="relay-svc", cmd="/opt/relay/relay-svc --listen 443", cpu=2.1, mem=1.8),
+                      Process(pid=4410, user="root", name="probe", cmd="/tmp/.hide/probe --enum", cpu=52.0, mem=1.6)]
+    return world, Session(player, player.users["operator"], "bash")
