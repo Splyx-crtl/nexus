@@ -1758,3 +1758,120 @@ def auto_chapter2_close() -> tuple[World, Session]:
     }, "notes.txt": "MIRA: One more file, one more archive, chapter closed.\n"})
     world.add(m)
     return world, Session(m, m.users["operator"], "bash")
+
+
+def _fleet_world(home_extra: dict | None = None, legacy_ssh_open: bool = True) -> tuple[World, Machine, Machine, Machine]:
+    """Player's home-rig plus BOTH Act V Windows targets reachable as neighbors at once (Act V only ever had one
+    target reachable per scenario) — for Act VI, Chapter 3's cross-machine fleet scripts."""
+    world = World(clock=lambda: EPOCH)
+    player = _ops_machine(home_extra)
+    ops = Machine(OPS_HOST, OPS_HOST, OPS_IP, "windows", VFS("windows", clock=lambda: EPOCH))
+    ops.add_user(User(OPS_USER, 1000, 1000, ("Administrators",), f"C:\\Users\\{OPS_USER}", password=OPS_PASS))
+    ops.services = [Service(22, "ssh", "OpenSSH for Windows 9.6", "open")]
+    legacy = Machine("LEGACY-SRV", "LEGACY-SRV", "10.20.30.9", "windows", VFS("windows", clock=lambda: EPOCH), shell="cmd")
+    legacy.add_user(User("svcacct", 1000, 1000, ("Users",), "C:\\Users\\svcacct", password="Legacy-Svc-99"))
+    legacy.services = [Service(22, "ssh", "OpenSSH for Windows 7.9", "open" if legacy_ssh_open else "closed")]
+    world.add(player)
+    world.add(ops)
+    world.add(legacy)
+    player.neighbors += [ops.id, legacy.id]
+    return world, player, ops, legacy
+
+
+@scenario("auto_fleet_script")
+def auto_fleet_script() -> tuple[World, Session]:
+    """Level 138 (standard): one script checks both Act V Windows targets in a single run instead of two separate
+    manual logins."""
+    world, player, _ops, _legacy = _fleet_world({"notes.txt": "MIRA: Two machines, two logins, every time. Script "
+                                                 "it into one run.\n"})
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_fleet_failover")
+def auto_fleet_failover() -> tuple[World, Session]:
+    """Level 139 (standard): LEGACY-SRV is down this time — the script should say so instead of just failing
+    silently."""
+    world, player, _ops, _legacy = _fleet_world({"notes.txt": "MIRA: Don't just run the script blind — have it "
+                                                 "check whether each machine actually answered.\n"},
+                                                legacy_ssh_open=False)
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_voss_pattern")
+def auto_voss_pattern() -> tuple[World, Session]:
+    """Level 140 (story): Voss flags the automation itself — identical, clockwork-regular login timing is its own
+    signature, not camouflage. The counterpoint to Level 133's "automation is cover"."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"inbox": {"kade_voss_flag.txt": [
+        "FROM: K. Voss, Security Operations", "TO: Ops Console Admins", "SUBJECT: Scripted access pattern on opsadmin",
+        "", "The opsadmin account has logged in at near-identical intervals, to the second, for several sessions",
+        "running. No human types that consistently. Either this account is compromised and being run by someone",
+        "else, or whoever is behind it should know that a machine-perfect rhythm is its own red flag.", "", "- K. Voss",
+    ]}, "notes.txt": "NEXUS: Automating the work was supposed to make this quieter.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_fleet_jitter")
+def auto_fleet_jitter() -> tuple[World, Session]:
+    """Level 141 (mini): a little randomness between steps so the script doesn't read like a machine — directly
+    answers Voss's Level 140 flag."""
+    world, player, _ops, _legacy = _fleet_world({"notes.txt": "MIRA: Put a little space between the two logins. "
+                                                 "Doesn't have to be exact, just not identical every time.\n"})
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_decision5")
+def auto_decision5() -> tuple[World, Session]:
+    """Level 142 (story, decision:5): what the player leans into from here — the "specialization choice" from
+    docs/story/02-acts-and-levels.md, deliberately narrative-only (see 3.0-PROGRESS.md's note on F2 being out of
+    scope), same free-echo mechanism as decision:1-4."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"inbox": {"mira_direction.txt": [
+        "MIRA:", "", "You've automated enough of the grunt work now that what's left is a real choice: keep pushing",
+        "at targets, start watching for people watching you, or spend more time making sense of what we've already",
+        "pulled. Doesn't lock you in forever. I just want to know which way you're leaning.",
+    ]}})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_svc_update_returns")
+def auto_svc_update_returns() -> tuple[World, Session]:
+    """Level 143 (standard): svc_update logs in again, a minute after the player's own scripted run — the timing is
+    the uncomfortable part, not just the account. Left open, same as Act V, Level 115 (ZERO reveal is Act VII)."""
+    world, player, ops, _legacy = _fleet_world({"notes.txt": "MIRA: Check the account log again. Something about "
+                                                "the timing bothers me.\n"})
+    ops.fs.load({"Windows": {"Logs": {"account_changes.log": [
+        "2050-01-09 04:10 logon success: opsadmin from 10.44.0.7",
+        "2050-01-09 04:11 logon success: svc_update from 198.51.100.231",
+        "2050-01-09 04:11 logoff: svc_update",
+    ]}}}, "C:\\")
+    return world, Session(player, player.users["operator"], "bash")
+
+
+@scenario("auto_act6_reflection")
+def auto_act6_reflection() -> tuple[World, Session]:
+    """Level 144 (story): NEXUS sits with the decision and the timing both — a quiet beat before Act VII."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"notes.txt": [
+        "NEXUS: Whoever's on the other end of 198.51.100.231 runs on your schedule, almost to the minute. That's",
+        "not a coincidence I know how to explain yet.", "", "Whatever you told Mira, hold onto it. It's going to",
+        "matter more than either of us expects.",
+    ]})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
+
+
+@scenario("auto_act6_close")
+def auto_act6_close() -> tuple[World, Session]:
+    """Level 145 (milestone): closes Act VI in full — automation on both platforms, opsec as a habit, one open
+    thread (svc_update) carried forward instead of resolved."""
+    world = World(clock=lambda: EPOCH)
+    m = _ops_machine({"autonotes": {
+        "act6_summary.txt": "Act VI: bash and PowerShell/batch scripting now cover both Linux and Windows targets. "
+                            "Automation cuts exposure but creates its own pattern - Voss noticed the rhythm, "
+                            "svc_update's origin (198.51.100.231) is still unidentified and still active.",
+    }, "notes.txt": "MIRA: That's the chapter, and the act. Whatever's next, you're not doing it by hand anymore.\n"})
+    world.add(m)
+    return world, Session(m, m.users["operator"], "bash")
