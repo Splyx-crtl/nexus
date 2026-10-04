@@ -112,11 +112,15 @@ def split_pipeline(tokens: list[str]) -> list[list[str]]:
     return stages
 
 
-def run_ps(shell, src: str) -> Result:
+def run_ps(shell, src: str, record_history: bool = True) -> Result:
     shell.ps_pipeline_item = None
+    stripped = src.strip()
+    first_tok = stripped.split(None, 1)[0] if stripped else ""
+    if first_tok.lower().endswith(".ps1"):
+        return _run_ps1_file(shell, first_tok)
     res = Result()
-    if src.strip():
-        shell.session.history.append(src.strip())
+    if record_history and stripped:
+        shell.session.history.append(stripped)
     status = 0
     for stmt in split_statements(_ps_tokens(src)):
         if stmt and stmt[0] in ("&&", "||"):               # conditional continuation after the previous stage
@@ -427,6 +431,345 @@ def eval_scriptblock(text: str, shell, item):
         return None
 
 
+# --------------------------------------------------------------------------------- .ps1 scripts (B8)
+# A small block-structured layer on top of the single-line pipeline engine above: if/elseif/else, foreach, for, while,
+# and variable assignment with a real expression on the right (the pipeline engine above only recognises `$x=literal`,
+# one token, no spaces). Deliberately not a general PowerShell interpreter — no function definitions, no try/catch, no
+# passing arguments into a script — just enough for mission-style automation scripts (B8 in docs/3.0-PROGRESS.md).
+_MATCH_CLOSE = {"(": ")", "{": "}"}
+_KEYWORD_RE = re.compile(r"[A-Za-z_]\w*")
+_ASSIGN_RE = re.compile(r"^\$([A-Za-z_]\w*)\s*(\+\+|--|\+=|-=|=)\s*(.*)$", re.S)
+
+
+def _scan_balanced(text: str, i: int) -> int:
+    """text[i] is an opening '(' or '{'. Returns the index just after its matching closer, skipping quoted strings."""
+    open_ch = text[i]
+    close_ch = _MATCH_CLOSE[open_ch]
+    depth, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c in "\"'":
+            q = c
+            i += 1
+            while i < n and text[i] != q:
+                i += 1
+            i += 1
+            continue
+        if c == open_ch:
+            depth += 1
+        elif c == close_ch:
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    raise PsEvalError(f"unbalanced {open_ch!r}")
+
+
+def _skip_ws_comments(text: str, i: int) -> int:
+    n = len(text)
+    while True:
+        while i < n and text[i] in " \t\r\n":
+            i += 1
+        if i < n and text[i] == "#":
+            j = text.find("\n", i)
+            i = n if j == -1 else j
+            continue
+        return i
+
+
+def _split_top(text: str, sep: str) -> list[str]:
+    """Split on `sep` at depth 0, skipping quoted strings and anything inside () [] {}."""
+    out, cur, depth = [], [], 0
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c in "\"'":
+            q = c
+            cur.append(c)
+            i += 1
+            while i < n and text[i] != q:
+                cur.append(text[i])
+                i += 1
+            if i < n:
+                cur.append(text[i])
+                i += 1
+            continue
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        if c == sep and depth == 0:
+            out.append("".join(cur))
+            cur = []
+            i += 1
+            continue
+        cur.append(c)
+        i += 1
+    out.append("".join(cur))
+    return out
+
+
+def _truthy_ps(cond_text: str, shell) -> bool:
+    try:
+        return _PsExprEval._truthy(_PsExprEval(cond_text, shell, None).run())
+    except (PsEvalError, IndexError, ZeroDivisionError):
+        return False
+
+
+def _eval_ps_rhs(text: str, shell):
+    """An assignment's right-hand side: a range (1..5), an array literal (@(1,2,3) or a bare comma list), or a plain
+    scalar expression — everything _PsExprEval already understands."""
+    text = text.strip()
+    m = re.fullmatch(r"(-?\d+)\.\.(-?\d+)", text)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        return list(range(a, b + 1)) if b >= a else list(range(a, b - 1, -1))
+    inner = text[2:-1] if text.startswith("@(") and text.endswith(")") else text
+    items = _split_top(inner, ",")
+    if len(items) > 1 or text.startswith("@("):
+        return [_PsExprEval(item, shell, None).run() for item in items if item.strip() or len(items) == 1]
+    return _PsExprEval(text, shell, None).run()
+
+
+def _try_ps_assign(shell, stmt_text: str) -> bool:
+    m = _ASSIGN_RE.match(stmt_text.strip())
+    if not m:
+        return False
+    name, op, rest = m.groups()
+    cur = shell.vars.get(name, 0)
+    if op == "++":
+        shell.vars[name] = _PsExprEval._num(cur) + 1
+    elif op == "--":
+        shell.vars[name] = _PsExprEval._num(cur) - 1
+    elif op == "+=":
+        value = _eval_ps_rhs(rest, shell)
+        shell.vars[name] = (str(cur) + str(value)) if isinstance(cur, str) or isinstance(value, str) else _PsExprEval._num(cur) + _PsExprEval._num(value)
+    elif op == "-=":
+        shell.vars[name] = _PsExprEval._num(cur) - _PsExprEval._num(_eval_ps_rhs(rest, shell))
+    else:
+        shell.vars[name] = _eval_ps_rhs(rest, shell)
+    return True
+
+
+def _read_ps_line(text: str, i: int) -> tuple[int, str]:
+    n = len(text)
+    start = i
+    while i < n:
+        c = text[i]
+        if c in "\"'":
+            q = c
+            i += 1
+            while i < n and text[i] != q:
+                i += 1
+            i += 1
+            continue
+        if c == "\n":
+            return i + 1, text[start:i]
+        i += 1
+    return i, text[start:i]
+
+
+def _ps_keyword_at(text: str, i: int) -> str:
+    m = _KEYWORD_RE.match(text, i)
+    if not m:
+        return ""
+    nxt = text[m.end():m.end() + 1]
+    if nxt.isalnum() or nxt == "_":
+        return ""
+    return m.group(0).lower()
+
+
+def _exec_ps_if(shell, text: str, i: int, res: "Result") -> tuple[int, int]:
+    n = len(text)
+    i += 2  # "if"
+    status, executed = 0, False
+    while True:
+        i = _skip_ws_comments(text, i)
+        if i >= n or text[i] != "(":
+            raise PsEvalError("expected '(' after if/elseif")
+        cond_end = _scan_balanced(text, i)
+        cond_text = text[i + 1:cond_end - 1]
+        i = _skip_ws_comments(text, cond_end)
+        if i >= n or text[i] != "{":
+            raise PsEvalError("expected '{' after if/elseif condition")
+        block_end = _scan_balanced(text, i)
+        block_text = text[i + 1:block_end - 1]
+        i = block_end
+        if not executed and _truthy_ps(cond_text, shell):
+            status = _exec_ps_block(shell, block_text, res)
+            executed = True
+        save = i
+        j = _skip_ws_comments(text, i)
+        if _ps_keyword_at(text, j) == "elseif":
+            i = j + 6
+            continue
+        if _ps_keyword_at(text, j) == "else":
+            i = _skip_ws_comments(text, j + 4)
+            if i < n and text[i] == "{":
+                block_end = _scan_balanced(text, i)
+                else_block = text[i + 1:block_end - 1]
+                i = block_end
+                if not executed:
+                    status = _exec_ps_block(shell, else_block, res)
+                    executed = True
+            break
+        i = save
+        break
+    return i, status
+
+
+def _exec_ps_foreach(shell, text: str, i: int, res: "Result") -> tuple[int, int]:
+    n = len(text)
+    i = _skip_ws_comments(text, i + 7)  # "foreach"
+    if i >= n or text[i] != "(":
+        raise PsEvalError("expected '(' after foreach")
+    header_end = _scan_balanced(text, i)
+    header = text[i + 1:header_end - 1]
+    i = _skip_ws_comments(text, header_end)
+    if i >= n or text[i] != "{":
+        raise PsEvalError("expected '{' after foreach header")
+    block_end = _scan_balanced(text, i)
+    block_text = text[i + 1:block_end - 1]
+    i = block_end
+    m = re.match(r"\$([A-Za-z_]\w*)\s+in\s+(.*)", header.strip(), re.S)
+    if not m:
+        raise PsEvalError("bad foreach header, expected $x in LIST")
+    var, items = m.group(1), _eval_ps_rhs(m.group(2), shell)
+    if not isinstance(items, list):
+        items = [items]
+    status = 0
+    for item in items:
+        shell.vars[var] = item
+        status = _exec_ps_block(shell, block_text, res)
+        if shell.ps_exit is not None:
+            break
+    return i, status
+
+
+def _exec_ps_for(shell, text: str, i: int, res: "Result") -> tuple[int, int]:
+    n = len(text)
+    i = _skip_ws_comments(text, i + 3)  # "for"
+    if i >= n or text[i] != "(":
+        raise PsEvalError("expected '(' after for")
+    header_end = _scan_balanced(text, i)
+    header = text[i + 1:header_end - 1]
+    i = _skip_ws_comments(text, header_end)
+    if i >= n or text[i] != "{":
+        raise PsEvalError("expected '{' after for header")
+    block_end = _scan_balanced(text, i)
+    block_text = text[i + 1:block_end - 1]
+    i = block_end
+    parts = _split_top(header, ";")
+    if len(parts) != 3:
+        raise PsEvalError("for needs (init; cond; incr)")
+    init, cond, incr = parts
+    if init.strip():
+        _try_ps_assign(shell, init.strip())
+    status, guard = 0, 0
+    while (not cond.strip()) or _truthy_ps(cond, shell):
+        guard += 1
+        if guard > 100000:
+            break
+        status = _exec_ps_block(shell, block_text, res)
+        if shell.ps_exit is not None:
+            break
+        if incr.strip():
+            _try_ps_assign(shell, incr.strip())
+    return i, status
+
+
+def _exec_ps_while(shell, text: str, i: int, res: "Result") -> tuple[int, int]:
+    n = len(text)
+    i = _skip_ws_comments(text, i + 5)  # "while"
+    if i >= n or text[i] != "(":
+        raise PsEvalError("expected '(' after while")
+    cond_end = _scan_balanced(text, i)
+    cond_text = text[i + 1:cond_end - 1]
+    i = _skip_ws_comments(text, cond_end)
+    if i >= n or text[i] != "{":
+        raise PsEvalError("expected '{' after while condition")
+    block_end = _scan_balanced(text, i)
+    block_text = text[i + 1:block_end - 1]
+    i = block_end
+    status, guard = 0, 0
+    while _truthy_ps(cond_text, shell):
+        guard += 1
+        if guard > 100000:
+            break
+        status = _exec_ps_block(shell, block_text, res)
+        if shell.ps_exit is not None:
+            break
+    return i, status
+
+
+def _exec_ps_block(shell, text: str, res: "Result") -> int:
+    i, n = 0, len(text)
+    status, steps = 0, 0
+    while i < n:
+        i = _skip_ws_comments(text, i)
+        if i >= n:
+            break
+        steps += 1
+        if steps > MAX_STEPS:
+            break
+        kw = _ps_keyword_at(text, i)
+        if kw == "if":
+            i, status = _exec_ps_if(shell, text, i, res)
+        elif kw == "foreach":
+            i, status = _exec_ps_foreach(shell, text, i, res)
+        elif kw == "for":
+            i, status = _exec_ps_for(shell, text, i, res)
+        elif kw == "while":
+            i, status = _exec_ps_while(shell, text, i, res)
+        else:
+            j, line = _read_ps_line(text, i)
+            i = j
+            for seg in _split_top(line, ";"):          # a ';'-joined line can mix assignments and cmdlets, e.g. "Write-Output $i; $i++"
+                stripped = seg.strip()
+                if not stripped:
+                    continue
+                if _try_ps_assign(shell, stripped):
+                    continue
+                sub = run_ps(shell, seg, record_history=False)
+                res.chunks.extend(sub.chunks)
+                res.delay_ms += sub.delay_ms
+                res.interactive.extend(sub.interactive)
+                status = sub.status
+                if shell.ps_exit is not None:
+                    break
+        if shell.ps_exit is not None:
+            break
+    return status
+
+
+def run_ps_script(shell, text: str) -> Result:
+    """Run a .ps1 script's full text: a sequence of statements and the control flow above."""
+    res = Result()
+    shell.ps_exit = None
+    status = _exec_ps_block(shell, text, res)
+    shell.session.last_status = res.status = status
+    return res
+
+
+def _run_ps1_file(shell, path: str) -> Result:
+    res = Result()
+    sess = shell.session
+    shell.session.history.append(path.strip())
+    try:
+        text = sess.machine.fs.read(sess.user, path, sess.cwd)
+        if isinstance(text, bytes):
+            text = text.decode("latin-1")
+        shell.emit("file_read", path=sess.machine.fs.norm(path, sess.cwd), machine=sess.machine.id)
+    except FsError as exc:
+        res.chunks.append((2, f"{path} : {exc.text}\n"))
+        shell.session.last_status = res.status = 1
+        return res
+    shell.ps_exit = None
+    status = _exec_ps_block(shell, text, res)
+    shell.session.last_status = res.status = status
+    return res
+
+
 # ======================================================================================= cmd.exe
 def _cmd_tokens(line: str) -> list[str]:
     out, i, n = [], 0, len(line)
@@ -467,10 +810,14 @@ def _cmd_expand(tok: str, shell) -> str:
     return re.sub(r"%([A-Za-z_][\w]*)%", lambda m: shell.session.env.get(m.group(1), ""), tok)
 
 
-def run_cmd(shell, src: str) -> Result:
+def run_cmd(shell, src: str, record_history: bool = True) -> Result:
+    stripped = src.strip()
+    first_tok = stripped.split(None, 1)[0] if stripped else ""
+    if first_tok.lower().endswith((".bat", ".cmd")):
+        return _run_batch_file(shell, first_tok)
     res = Result()
-    if src.strip():
-        shell.session.history.append(src.strip())
+    if record_history and stripped:
+        shell.session.history.append(stripped)
     tokens = _cmd_tokens(src)
     segments: list[tuple[str, list[str]]] = []          # (connector-before, tokens)
     cur, connector = [], ""
@@ -569,3 +916,157 @@ def _run_cmd_pipeline(shell, tokens: list[str], res: Result) -> int:
         else:
             res.chunks.extend(chunks)
     return status
+
+
+# --------------------------------------------------------------------------------- .bat/.cmd scripts (B8)
+# Same idea as the .ps1 layer above, much smaller: cmd.exe's own batch language. Supports @echo off / rem comments,
+# `if A==B (...) [else (...)]`, `if [not] exist PATH (...) [else (...)]`, `for %%v in (a b c) do command`, and plain
+# sequential lines (each run through run_cmd). Deliberately no goto/labels/call :sub — the gnarliest, most quirk-ridden
+# part of real batch syntax and not needed for mission-style automation scripts.
+def _read_cmd_line(text: str, i: int) -> tuple[int, str]:
+    n = len(text)
+    start = i
+    while i < n and text[i] != "\n":
+        i += 1
+    return (i + 1 if i < n else i), text[start:i]
+
+
+def _cmd_keyword_at(line: str) -> tuple[str, str]:
+    """(keyword, rest) if line starts with a recognised batch keyword, else ("", line)."""
+    m = re.match(r"\s*(if|for)\b", line, re.I)
+    if not m:
+        return "", line
+    return m.group(1).lower(), line[m.end():]
+
+
+def _exec_cmd_if(shell, text: str, i: int, res: Result) -> tuple[int, int]:
+    """`text[i]` is the start of an 'if' line. The condition and the opening '(' of its block must be on that same
+    physical line (real cmd.exe syntax); the block itself (and any 'else (...)') can span further lines."""
+    n = len(text)
+    line_end = text.find("\n", i)
+    if line_end == -1:
+        line_end = n
+    header = text[i:line_end]
+    m = re.match(r"if\s+", header, re.I)
+    rest = header[m.end():]
+    paren_idx = rest.find("(")
+    if paren_idx == -1:
+        raise PsEvalError("expected '(' on if line")
+    cond_part = rest[:paren_idx]
+    block_start = i + m.end() + paren_idx
+    neg = False
+    mm = re.match(r"\s*not\s+", cond_part, re.I)
+    if mm:
+        neg = True
+        cond_part = cond_part[mm.end():]
+    mm = re.match(r"\s*exist\s+(\S+)", cond_part, re.I)
+    if mm:
+        path = _cmd_expand(mm.group(1), shell)
+        cond_true = shell.session.machine.fs.exists(shell.session.machine.fs.norm(path, shell.session.cwd))
+    else:
+        mm = re.match(r"\s*(.+?)==(.+)", cond_part)
+        if mm:
+            cond_true = _cmd_expand(mm.group(1).strip(), shell) == _cmd_expand(mm.group(2).strip(), shell)
+        else:
+            cond_true = bool(_cmd_expand(cond_part.strip(), shell))
+    if neg:
+        cond_true = not cond_true
+    block_end = _scan_balanced(text, block_start)
+    block_text = text[block_start + 1:block_end - 1]
+    i = block_end
+    status = 0
+    executed = False
+    if cond_true:
+        status = _exec_cmd_block(shell, block_text, res)
+        executed = True
+    save = i
+    j = _skip_ws_comments(text, i)
+    if re.match(r"else\b", text[j:j + 5], re.I):
+        j2 = _skip_ws_comments(text, j + 4)
+        if j2 < n and text[j2] == "(":
+            block_end2 = _scan_balanced(text, j2)
+            else_block = text[j2 + 1:block_end2 - 1]
+            i = block_end2
+            if not executed:
+                status = _exec_cmd_block(shell, else_block, res)
+            return i, status
+        i = save
+        return i, status
+    i = save
+    return i, status
+
+
+def _exec_cmd_for(shell, rest: str, res: Result) -> int:
+    """`for %%v in (a b c) do command` — the whole thing is on one line, already captured in `rest` (everything after
+    'for')."""
+    m = re.match(r"\s*%%(\w+)\s+in\s*\(([^)]*)\)\s*do\s+(.*)", rest, re.I | re.S)
+    if not m:
+        raise PsEvalError("bad for header, expected %%v in (...) do command")
+    var, items_text, cmd_template = m.group(1), m.group(2), m.group(3)
+    items = [it for it in re.split(r"[\s,]+", items_text.strip()) if it]
+    status = 0
+    for item in items:
+        shell.session.env[var] = item
+        line = cmd_template.replace(f"%%{var}", item)
+        sub = run_cmd(shell, line, record_history=False)
+        res.chunks.extend(sub.chunks)
+        res.delay_ms += sub.delay_ms
+        res.interactive.extend(sub.interactive)
+        status = sub.status
+    return status
+
+
+def _exec_cmd_block(shell, text: str, res: Result) -> int:
+    i, n = 0, len(text)
+    status, steps = 0, 0
+    while i < n:
+        while i < n and text[i] in " \t\r\n":
+            i += 1
+        if i >= n:
+            break
+        steps += 1
+        if steps > MAX_STEPS:
+            break
+        line_end = text.find("\n", i)
+        preview = text[i:line_end if line_end != -1 else n].strip()
+        if re.match(r"rem\b", preview, re.I) or preview.startswith("::") or not preview:
+            i = (line_end + 1) if line_end != -1 else n
+            continue
+        if re.match(r"@?echo\s+(off|on)\s*$", preview, re.I):
+            i = (line_end + 1) if line_end != -1 else n
+            continue
+        if re.match(r"if\b", preview, re.I):
+            i, status = _exec_cmd_if(shell, text, i, res)
+            continue
+        if re.match(r"for\b", preview, re.I):
+            j, line = _read_cmd_line(text, i)
+            i = j
+            _, rest = _cmd_keyword_at(line.strip())
+            status = _exec_cmd_for(shell, rest, res)
+            continue
+        j, line = _read_cmd_line(text, i)
+        i = j
+        sub = run_cmd(shell, line, record_history=False)
+        res.chunks.extend(sub.chunks)
+        res.delay_ms += sub.delay_ms
+        res.interactive.extend(sub.interactive)
+        status = sub.status
+    return status
+
+
+def _run_batch_file(shell, path: str) -> Result:
+    res = Result()
+    sess = shell.session
+    shell.session.history.append(path.strip())
+    try:
+        text = sess.machine.fs.read(sess.user, path, sess.cwd)
+        if isinstance(text, bytes):
+            text = text.decode("latin-1")
+        shell.emit("file_read", path=sess.machine.fs.norm(path, sess.cwd), machine=sess.machine.id)
+    except FsError as exc:
+        res.chunks.append((2, f"'{path}' is not recognized as an internal or external command,\noperable program or batch file.\n"))
+        shell.session.last_status = res.status = 1
+        return res
+    status = _exec_cmd_block(shell, text, res)
+    shell.session.last_status = res.status = status
+    return res
