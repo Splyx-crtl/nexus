@@ -376,7 +376,8 @@ def tasklist_cmd(ctx, args):
     return 0
 
 
-@command("taskkill", family="cmd", level=6, summary="Terminates a process.", usage="taskkill /PID pid")
+@command("taskkill", family="cmd", level=6, summary="Terminates a process.", usage="taskkill /PID pid",
+        lesson="taskkill stops a running process by its PID: 'taskkill /PID 4821' — the Windows equivalent of Linux's 'kill'.")
 def taskkill_cmd(ctx, args):
     pid = None
     for i, a in enumerate(args):
@@ -398,7 +399,8 @@ def taskkill_cmd(ctx, args):
     return 0
 
 
-@command("systeminfo", family="cmd", level=8, summary="Displays detailed configuration information.", usage="systeminfo")
+@command("systeminfo", family="cmd", level=8, summary="Displays detailed configuration information.", usage="systeminfo",
+        lesson="systeminfo dumps detailed configuration about the machine — OS version, memory, network and more, all in one report.")
 def systeminfo_cmd(ctx, args):
     ctx.out(f"Host Name:                 {ctx.machine.hostname.upper()}")
     ctx.out("OS Name:                   Microsoft Windows 11 Enterprise")

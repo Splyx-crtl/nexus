@@ -468,13 +468,15 @@ def get_local_user(ctx, args):
     return 0
 
 
-@command("whoami", family="ps", level=1, summary="Prints the current user name.", usage="whoami")
+@command("whoami", family="ps", level=1, summary="Prints the current user name.", usage="whoami",
+        lesson="whoami prints the currently logged-in user's name — same command as in cmd and bash, PowerShell just falls back to it directly.")
 def whoami_ps(ctx, args):
     ctx.out(f"{ctx.machine.hostname}\\{ctx.user.name}" if "/" not in args and "--upn" not in args else ctx.user.name)
     return 0
 
 
-@command("hostname", family="ps", level=1, summary="Prints the computer name.", usage="hostname")
+@command("hostname", family="ps", level=1, summary="Prints the computer name.", usage="hostname",
+        lesson="hostname prints this computer's name on the network — same command PowerShell falls back to from cmd.")
 def hostname_ps(ctx, args):
     ctx.out(ctx.machine.hostname.upper())
     return 0

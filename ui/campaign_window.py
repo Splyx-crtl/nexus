@@ -18,7 +18,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QDialog, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QMainWindow, QPushButton, QScrollArea,
-    QVBoxLayout, QWidget,
+    QToolBar, QVBoxLayout, QWidget,
 )
 
 from nexus.campaign.content import ALL_MISSIONS
@@ -275,6 +275,15 @@ class CampaignWindow(QMainWindow):
         self.current_mission: Mission | None = None
         self.runner: MissionRunner | None = None
         self.terminal: ShellTerminal | None = None
+        self.lexicon_dialog = None
+
+        toolbar = QToolBar("Reference")
+        toolbar.setMovable(False)
+        toolbar.setStyleSheet(f"QToolBar {{ background:{COLORS['bg_alt']}; border-bottom:1px solid {COLORS['border']}; spacing:8px; padding:4px; }}")
+        lexicon_btn = NeonButton("[ LEXICON ]", "Look up anything you've unlocked, any time (not just the first time)")
+        lexicon_btn.clicked.connect(self._open_lexicon)
+        toolbar.addWidget(lexicon_btn)
+        self.addToolBar(toolbar)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -296,6 +305,7 @@ class CampaignWindow(QMainWindow):
         self.mission_select_dialog = None
         self.ending_select_dialog = None
         self._endless_counter = 0
+        self._stuck_counter = 0
         self.character_dialog = None
         if self.profile.completed_count == 0 and not self.profile.get_character()["name"]:
             self._show_character_dialog()
@@ -325,6 +335,7 @@ class CampaignWindow(QMainWindow):
     def _play_mission(self, mission: Mission, level) -> None:
         mission = localize_mission(mission, ui_language())
         self.current_mission = mission
+        self._stuck_counter = 0
         self.runner = MissionRunner.start(mission, level=level)
         self._swap_terminal()
         self.panel.set_mission(mission, self.profile)
@@ -362,15 +373,22 @@ class CampaignWindow(QMainWindow):
         self.terminal.focus_input()
 
     def _on_command(self, line: str) -> None:
+        hits_before = sum(s.hits for s in self.runner.states)
         self.panel.refresh_objectives(self.runner)
         self._maybe_record_decision(line)
         self._maybe_show_lesson(line)
+        if sum(s.hits for s in self.runner.states) > hits_before:
+            self._stuck_counter = 0           # real progress — the player isn't stuck
+        else:
+            self._maybe_offer_hint()
         if self.runner.is_complete:
             self._on_mission_complete()
 
     def _maybe_show_lesson(self, line: str) -> None:
-        """C6 "Guided" mode: explain a command in full the first time it's used, not just on unlock."""
-        if self.profile.get_mode() != "guided":
+        """C6: explain a command the first time it's used, not just on unlock — the full lesson in Guided mode,
+        a short one-liner in Medium mode ("kurze Freischalt-Meldung"), nothing in Hardcore."""
+        mode = self.profile.get_mode()
+        if mode == "hardcore":
             return
         name = line.strip().split(None, 1)[0] if line.strip() else ""
         if not name or self.profile.has_seen_lesson(name):
@@ -382,7 +400,25 @@ class CampaignWindow(QMainWindow):
         if spec is None or not spec.lesson:
             return
         self.profile.mark_lesson_seen(name)
-        self.terminal.print_system(f"[LESSON] {spec.lesson}", COLORS["purple"])
+        if mode == "guided":
+            self.terminal.print_system(f"[LESSON] {spec.lesson}", COLORS["purple"])
+        else:
+            self.terminal.print_system(f"[{name}] {spec.summary}", COLORS["purple"])
+
+    def _maybe_offer_hint(self) -> None:
+        """C6 "Angebot nach Fehlversuchen": a handful of commands in a row with no objective progress gently
+        offers the hint button's next tier, instead of waiting for the player to find it themselves. Not shown in
+        Hardcore mode, which deliberately offers no help at all."""
+        if self.profile.get_mode() == "hardcore" or self.runner is None or self.runner.is_complete:
+            return
+        self._stuck_counter += 1
+        if self._stuck_counter < 5:
+            return
+        self._stuck_counter = 0
+        hint = self.panel.next_hint(self.runner)
+        if hint:
+            self.panel.hint_label.setText(hint)
+            self.terminal.print_system(f"[STUCK?] {hint}", COLORS["amber"])
 
     def _maybe_record_decision(self, line: str) -> None:
         mission = self.current_mission
@@ -432,6 +468,11 @@ class CampaignWindow(QMainWindow):
             return
         hint = self.panel.next_hint(self.runner)
         self.panel.hint_label.setText(hint or "No hints left — you've got everything you need.")
+
+    def _open_lexicon(self) -> None:
+        from .lexicon_dialog import LexiconDialog
+        self.lexicon_dialog = LexiconDialog(self.profile.level, self)
+        self.lexicon_dialog.show()
 
     def _on_campaign_finished(self) -> None:
         self.current_mission = None

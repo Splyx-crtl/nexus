@@ -106,15 +106,17 @@ win._on_hint()
 second_hint = win.panel.hint_label.text()
 check(bool(first_hint) and first_hint != second_hint, "hint button advances through tiers")
 
-# C6 guided mode: a command's lesson text appears the first time it's used
+# C6 guided mode: a command's lesson text appears the first time it's used (whoami: not run by anything earlier
+# in this script, so it's a clean "never seen" probe — ls/cat/echo were all already run in Medium mode above,
+# and Medium now marks a lesson seen too, same as Guided, just with shorter text)
 win.profile.set_mode("guided")
-check(not win.profile.has_seen_lesson("ls"), "lesson unseen before first use")
-win.terminal.run_command("ls")
+check(not win.profile.has_seen_lesson("whoami"), "lesson unseen before first use")
+win.terminal.run_command("whoami")
 pump()
-check(win.profile.has_seen_lesson("ls"), "lesson marked seen after first use")
+check(win.profile.has_seen_lesson("whoami"), "lesson marked seen after first use")
 check("[LESSON]" in win.terminal.output.toPlainText(), "lesson text printed into the terminal")
 win.terminal.output.clear()
-win.terminal.run_command("ls")
+win.terminal.run_command("whoami")
 pump()
 check("[LESSON]" not in win.terminal.output.toPlainText(), "lesson not repeated on later uses")
 win.profile.set_mode("medium")
@@ -176,6 +178,47 @@ if "de" in TRANSLATIONS.get("act1_m01", {}):
     check(win.current_mission.title != act1_m01.title, "german translation changes the displayed title")
     win.grab().save(str(OUT / "campaign_german.png"))
     ui_i18n.set_language("en")
+
+# C6: the lexicon — look up anything unlocked, any time, with search
+win.profile.db.update_profile(level=50)
+win._open_lexicon()
+pump()
+check(win.lexicon_dialog is not None, "lexicon opens")
+check(win.lexicon_dialog.list.count() > 0, "lexicon lists unlocked commands")
+all_count = win.lexicon_dialog.list.count()
+win.lexicon_dialog.search.setText("grep")
+pump()
+check(0 < win.lexicon_dialog.list.count() < all_count, "search narrows the list")
+win.lexicon_dialog.list.setCurrentRow(0)
+pump()
+check("grep" in win.lexicon_dialog.detail.text().lower(), "selecting an entry shows its lesson text")
+win.lexicon_dialog.search.setText("")
+pump()
+check(win.lexicon_dialog.list.count() == all_count, "clearing the search restores the full list")
+win.lexicon_dialog.grab().save(str(OUT / "campaign_lexicon.png"))
+
+# C6: Medium mode shows a short one-liner instead of the full lesson
+m2 = next(m for m in ALL_MISSIONS if m.id == "act1_m02")
+win.profile.set_mode("medium")
+win._play_mission(m2, level=lambda: 50)
+pump()
+win.terminal.run_command("cat welcome.txt")
+pump()
+out = win.terminal.output.toPlainText()
+check("[cat]" in out, "medium mode shows a short [command] notice")
+check("[LESSON]" not in out, "medium mode does not show the full guided-mode lesson")
+
+# C6: a handful of commands with no objective progress gently offers a hint
+m3 = next(m for m in ALL_MISSIONS if m.id == "act1_m03")
+win.profile.set_mode("medium")
+win._play_mission(m3, level=lambda: 50)
+pump()
+win.panel.hint_label.setText("")
+for _ in range(5):
+    win.terminal.run_command("pwd")
+    pump()
+check(bool(win.panel.hint_label.text()), "five unproductive commands auto-offer a hint")
+check("[STUCK?]" in win.terminal.output.toPlainText(), "the auto-offered hint is also printed into the terminal")
 
 win.db.close()
 

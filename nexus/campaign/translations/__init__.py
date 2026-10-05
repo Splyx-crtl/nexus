@@ -3,3 +3,5 @@ each registering its missions into nexus/campaign/i18n.py's TRANSLATIONS table o
 enough to load every translated block that exists so far; ui/campaign_window.py does this once at startup.
 """
 from . import de_act1  # noqa: F401
+from . import de_act2  # noqa: F401
+from . import de_act3  # noqa: F401
