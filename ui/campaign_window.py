@@ -202,8 +202,9 @@ class CampaignWindow(QMainWindow):
         self.character_dialog.created.connect(self._on_character_created)
         self.character_dialog.show()
 
-    def _on_character_created(self, name: str, look: str) -> None:
+    def _on_character_created(self, name: str, look: str, mode: str) -> None:
         self.profile.set_character(name, look)
+        self.profile.set_mode(mode)
         self.character_dialog = None
         self._load_mission()
 
@@ -234,8 +235,25 @@ class CampaignWindow(QMainWindow):
     def _on_command(self, line: str) -> None:
         self.panel.refresh_objectives(self.runner)
         self._maybe_record_decision(line)
+        self._maybe_show_lesson(line)
         if self.runner.is_complete:
             self._on_mission_complete()
+
+    def _maybe_show_lesson(self, line: str) -> None:
+        """C6 "Guided" mode: explain a command in full the first time it's used, not just on unlock."""
+        if self.profile.get_mode() != "guided":
+            return
+        name = line.strip().split(None, 1)[0] if line.strip() else ""
+        if not name or self.profile.has_seen_lesson(name):
+            return
+        from nexus.shell.registry import lookup
+        from .shell_terminal import _family_of
+        family = _family_of(self.runner.shell.session.shell)
+        spec = lookup(family, name)
+        if spec is None or not spec.lesson:
+            return
+        self.profile.mark_lesson_seen(name)
+        self.terminal.print_system(f"[LESSON] {spec.lesson}", COLORS["purple"])
 
     def _maybe_record_decision(self, line: str) -> None:
         mission = self.current_mission

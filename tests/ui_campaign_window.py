@@ -52,10 +52,12 @@ check(win.character_dialog is not None, "a brand-new profile is asked for a call
 check(win.current_mission is None, "no mission loads until the character dialog is answered")
 win.character_dialog.name_input.setText("Kestrel")
 win.character_dialog.look_input.setPlainText("quiet, methodical")
+win.character_dialog.mode_buttons["medium"].setChecked(True)
 win.character_dialog.ok_btn.click()
 pump()
 check(win.character_dialog is None, "dialog closes itself after submission")
 check(win.profile.get_character() == {"name": "Kestrel", "look": "quiet, methodical"}, "character saved to the profile")
+check(win.profile.get_mode() == "medium", "chosen help mode saved to the profile")
 check("Kestrel" in win.panel.stats.text(), "callsign shown in the mission panel")
 win.grab().save(str(OUT / "campaign_character.png"))
 
@@ -102,6 +104,19 @@ first_hint = win.panel.hint_label.text()
 win._on_hint()
 second_hint = win.panel.hint_label.text()
 check(bool(first_hint) and first_hint != second_hint, "hint button advances through tiers")
+
+# C6 guided mode: a command's lesson text appears the first time it's used
+win.profile.set_mode("guided")
+check(not win.profile.has_seen_lesson("ls"), "lesson unseen before first use")
+win.terminal.run_command("ls")
+pump()
+check(win.profile.has_seen_lesson("ls"), "lesson marked seen after first use")
+check("[LESSON]" in win.terminal.output.toPlainText(), "lesson text printed into the terminal")
+win.terminal.output.clear()
+win.terminal.run_command("ls")
+pump()
+check("[LESSON]" not in win.terminal.output.toPlainText(), "lesson not repeated on later uses")
+win.profile.set_mode("medium")
 
 # campaign-finished path
 for m in ALL_MISSIONS:

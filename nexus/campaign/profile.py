@@ -139,6 +139,15 @@ class CampaignProfile:
     def set_character(self, name: str, look: str = "") -> None:
         self.db.set_world("character", {"name": name, "look": look})
 
+    # -- learning progress (C6 "Geführt" mode: each command explained once, before first use) -----------------------
+    def has_seen_lesson(self, command_name: str) -> bool:
+        return command_name in (self.db.get_world("seen_lessons") or [])
+
+    def mark_lesson_seen(self, command_name: str) -> None:
+        seen = self.db.get_world("seen_lessons") or []
+        if command_name not in seen:
+            self.db.set_world("seen_lessons", [*seen, command_name])
+
     # -- v3 identity ------------------------------------------------------------------------------------------------
     @staticmethod
     def is_v3(db: "Database") -> bool:

@@ -126,6 +126,17 @@ class DecisionsModeCharacter(ProfileBase):
         self.profile.set_character("Kestrel", "short dark hair, old jacket")
         self.assertEqual(self.profile.get_character(), {"name": "Kestrel", "look": "short dark hair, old jacket"})
 
+    def test_lessons_are_unseen_until_marked(self):
+        self.assertFalse(self.profile.has_seen_lesson("grep"))
+        self.profile.mark_lesson_seen("grep")
+        self.assertTrue(self.profile.has_seen_lesson("grep"))
+        self.assertFalse(self.profile.has_seen_lesson("sed"))
+
+    def test_marking_a_lesson_seen_twice_does_not_duplicate(self):
+        self.profile.mark_lesson_seen("grep")
+        self.profile.mark_lesson_seen("grep")
+        self.assertEqual(self.db.get_world("seen_lessons"), ["grep"])
+
 
 if __name__ == "__main__":
     unittest.main()
