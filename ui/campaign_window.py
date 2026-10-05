@@ -18,7 +18,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QDialog, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QMainWindow, QPushButton, QScrollArea,
-    QVBoxLayout, QWidget,
+    QToolBar, QVBoxLayout, QWidget,
 )
 
 from nexus.campaign.content import ALL_MISSIONS
@@ -275,6 +275,15 @@ class CampaignWindow(QMainWindow):
         self.current_mission: Mission | None = None
         self.runner: MissionRunner | None = None
         self.terminal: ShellTerminal | None = None
+        self.lexicon_dialog = None
+
+        toolbar = QToolBar("Reference")
+        toolbar.setMovable(False)
+        toolbar.setStyleSheet(f"QToolBar {{ background:{COLORS['bg_alt']}; border-bottom:1px solid {COLORS['border']}; spacing:8px; padding:4px; }}")
+        lexicon_btn = NeonButton("[ LEXICON ]", "Look up anything you've unlocked, any time (not just the first time)")
+        lexicon_btn.clicked.connect(self._open_lexicon)
+        toolbar.addWidget(lexicon_btn)
+        self.addToolBar(toolbar)
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -432,6 +441,11 @@ class CampaignWindow(QMainWindow):
             return
         hint = self.panel.next_hint(self.runner)
         self.panel.hint_label.setText(hint or "No hints left — you've got everything you need.")
+
+    def _open_lexicon(self) -> None:
+        from .lexicon_dialog import LexiconDialog
+        self.lexicon_dialog = LexiconDialog(self.profile.level, self)
+        self.lexicon_dialog.show()
 
     def _on_campaign_finished(self) -> None:
         self.current_mission = None

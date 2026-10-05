@@ -177,6 +177,24 @@ if "de" in TRANSLATIONS.get("act1_m01", {}):
     win.grab().save(str(OUT / "campaign_german.png"))
     ui_i18n.set_language("en")
 
+# C6: the lexicon — look up anything unlocked, any time, with search
+win.profile.db.update_profile(level=50)
+win._open_lexicon()
+pump()
+check(win.lexicon_dialog is not None, "lexicon opens")
+check(win.lexicon_dialog.list.count() > 0, "lexicon lists unlocked commands")
+all_count = win.lexicon_dialog.list.count()
+win.lexicon_dialog.search.setText("grep")
+pump()
+check(0 < win.lexicon_dialog.list.count() < all_count, "search narrows the list")
+win.lexicon_dialog.list.setCurrentRow(0)
+pump()
+check("grep" in win.lexicon_dialog.detail.text().lower(), "selecting an entry shows its lesson text")
+win.lexicon_dialog.search.setText("")
+pump()
+check(win.lexicon_dialog.list.count() == all_count, "clearing the search restores the full list")
+win.lexicon_dialog.grab().save(str(OUT / "campaign_lexicon.png"))
+
 win.db.close()
 
 # --- the real finale flow: complete everything up to the last mission live, then play the finale for real ---
