@@ -4,3 +4,4 @@ enough to load every translated block that exists so far; ui/campaign_window.py 
 """
 from . import de_act1  # noqa: F401
 from . import de_act2  # noqa: F401
+from . import de_act3  # noqa: F401
