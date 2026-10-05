@@ -53,6 +53,7 @@ GATED = bool(GUILD_ID) or os.environ.get("NEXUS_REQUIRE_KEY", "") == "1" or (boo
 SESSION_DAYS = int(os.environ.get("NEXUS_SESSION_DAYS", "30"))     # gated servers re-check membership at least this often
 KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"                  # no 0/O/1/I
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()     # optional: weekly winners are posted into your Discord server
+DISCORD_TEAM_WEBHOOK_URL = os.environ.get("DISCORD_TEAM_WEBHOOK_URL", "").strip()   # optional, separate channel: player reports and bans (F4)
 CHALLENGES = [("xp", "XP RUSH", "Earn the most XP this week."),
               ("missions", "OPERATOR", "Complete the most missions this week."),
               ("credits", "PAYDAY", "Earn the most credits this week."),
@@ -84,6 +85,8 @@ CREATE TABLE IF NOT EXISTS week_results (week TEXT NOT NULL, user_id INTEGER NOT
 CREATE TABLE IF NOT EXISTS announcements (week TEXT PRIMARY KEY, posted_at REAL);
 CREATE TABLE IF NOT EXISTS edits (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, ops TEXT NOT NULL, created_at REAL, applied_at REAL);
 CREATE TABLE IF NOT EXISTS admin_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, action TEXT, user_id INTEGER, key_id INTEGER, detail TEXT);
+CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, reporter_id INTEGER NOT NULL, target_name TEXT NOT NULL,
+    message TEXT NOT NULL, created_at REAL, status TEXT DEFAULT 'open', resolved_by INTEGER, resolved_at REAL, resolution_note TEXT DEFAULT '');
 """
 
 # Columns added after the first release: databases created earlier get them without losing any data.
@@ -610,18 +613,28 @@ def week_table(conn: sqlite3.Connection, week: str, metric: str) -> list[dict]:
     return out
 
 
-def send_webhook(text: str) -> None:
-    """Post a message into the Discord server (server -> Discord only). Replaceable in tests."""
-    if not DISCORD_WEBHOOK_URL:
+def send_webhook(text: str, url: str | None = None) -> None:
+    """Post a message into a Discord channel via webhook (server -> Discord only). Replaceable in tests.
+    ``url`` defaults to the public weekly-winners webhook, read live (not bound at def time) so tests and real
+    deployments can set ``DISCORD_WEBHOOK_URL`` after import and have it take effect."""
+    if url is None:
+        url = DISCORD_WEBHOOK_URL
+    if not url:
         return
 
     def work():
         try:
-            httpx.post(DISCORD_WEBHOOK_URL, json={"content": text[:1900], "allowed_mentions": {"parse": []}}, timeout=8)
+            httpx.post(url, json={"content": text[:1900], "allowed_mentions": {"parse": []}}, timeout=8)
         except httpx.HTTPError:
             pass
 
     threading.Thread(target=work, daemon=True).start()
+
+
+def notify_team(text: str) -> None:
+    """F4: a separate, optional channel for staff-facing events (new reports, bans) - deliberately not the same
+    webhook as the public weekly-winners announcement."""
+    send_webhook(text, DISCORD_TEAM_WEBHOOK_URL)
 
 
 def announce_last_week(conn: sqlite3.Connection) -> None:
@@ -656,6 +669,28 @@ def challenge(user=Depends(current_user)):
     mine = next((r for r in rows if r["me"]), None)
     return {"week": week, "metric": metric, "title": title, "text": text, "ends_in": max(0, ends_in),
             "entries": rows[:20], "me": mine, "players": len(rows), "community_total": int(total)}
+
+
+# ------------------------------------------------------------------- reports (F4) --
+class ReportBody(BaseModel):
+    target_name: str = Field(min_length=1, max_length=32)
+    message: str = Field(min_length=1, max_length=500)
+
+
+@app.post("/report")
+def submit_report(body: ReportBody, user=Depends(current_user)):
+    """A player flags another player's name/messages for staff attention. Rate-limited separately from the
+    general API limit so a handful of reports a day is never a problem, but spamming the queue is."""
+    rate_limit("report:" + str(user["id"]), limit=5, window=3600)
+    target = "".join(c for c in body.target_name if c.isprintable()).strip()
+    message = "".join(c for c in body.message if c.isprintable()).strip()
+    if not target or not message:
+        raise HTTPException(422, "Report needs a target name and a message.")
+    with db() as conn:
+        cur = conn.execute("INSERT INTO reports(reporter_id, target_name, message, created_at) VALUES(?,?,?,?)",
+                            (user["id"], target, message, time.time()))
+    notify_team(f"**New player report** from {user['name']}\nTarget: {target}\n{message[:300]}")
+    return {"ok": True, "id": cur.lastrowid}
 
 
 # ------------------------------------------------------------------ friends --
@@ -1096,11 +1131,13 @@ def admin_player_status(user_id: int, body: StatusBody):
     if body.status not in ACCOUNT_STATUSES:
         raise HTTPException(422, "Status must be one of: " + ", ".join(ACCOUNT_STATUSES) + ".")
     with db() as conn:
-        _player_or_404(conn, user_id)
+        player = _player_or_404(conn, user_id)
         reason = "".join(c for c in body.reason if c.isprintable()).strip() if body.status != "active" else ""
         conn.execute("UPDATE users SET account_status=?, status_reason=? WHERE id=?", (body.status, reason, user_id))
         # no need to delete the sessions: current_user() refuses them at once and tells the player why
         audit(conn, "player." + body.status, user_id=user_id, detail=reason)
+    if body.status == "banned":
+        notify_team(f"**Player banned**: {player['name']}" + (f" — {reason}" if reason else ""))
     return {"ok": True, "status": body.status}
 
 
@@ -1110,3 +1147,35 @@ def admin_audit(limit: int = 50):
         rows = conn.execute("SELECT a.ts, a.action, a.user_id, a.key_id, a.detail, u.name AS user FROM admin_audit a LEFT JOIN users u ON u.id = a.user_id "
                             "ORDER BY a.id DESC LIMIT ?", (max(1, min(limit, 200)),)).fetchall()
     return {"entries": [dict(r) for r in rows]}
+
+
+# -------------------------------------------------------------- reports (F4) --
+@app.get("/admin/reports", dependencies=[Depends(admin_only)])
+def admin_list_reports(status: str = "open", page: int = 1, per_page: int = 50):
+    per_page, page = max(1, min(per_page, 200)), max(1, page)
+    where, params = "1=1", {}
+    if status:
+        where, params = "r.status=:status", {"status": status}
+    with db() as conn:
+        total = conn.execute(f"SELECT COUNT(*) FROM reports r WHERE {where}", params).fetchone()[0]
+        rows = conn.execute(f"""SELECT r.*, u.name AS reporter_name FROM reports r LEFT JOIN users u ON u.id = r.reporter_id
+                                WHERE {where} ORDER BY r.id DESC LIMIT :lim OFFSET :off""",
+                            {**params, "lim": per_page, "off": (page - 1) * per_page}).fetchall()
+    return {"reports": [dict(r) for r in rows], "total": total, "page": page, "pages": max(1, -(-total // per_page))}
+
+
+class ResolveReportBody(BaseModel):
+    note: str = Field(default="", max_length=400)
+
+
+@app.post("/admin/reports/{report_id}/resolve", dependencies=[Depends(admin_only)])
+def admin_resolve_report(report_id: int, body: ResolveReportBody):
+    # resolved_by stays NULL until F3 gives staff their own accounts - today's admin auth is a single shared login
+    with db() as conn:
+        row = conn.execute("SELECT * FROM reports WHERE id=?", (report_id,)).fetchone()
+        if row is None:
+            raise HTTPException(404, "No such report.")
+        conn.execute("UPDATE reports SET status='resolved', resolved_at=?, resolution_note=? WHERE id=?",
+                     (time.time(), body.note.strip(), report_id))
+        audit(conn, "report.resolve", detail=f"report #{report_id}: {body.note.strip()}")
+    return {"ok": True, "id": report_id, "status": "resolved"}
