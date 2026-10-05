@@ -159,10 +159,29 @@ class MissionPanel(QWidget):
         self.hint_btn.hide()
         self.hint_label.setText("")
         self.debrief_title.show()
-        endings = profile.reachable_endings(all_missions)
-        lines = ["Endings reachable with what you found this run:", ""]
-        lines += [f"  {e.title} ({e.subtitle})" for e in endings]
-        self.debrief.setText("\n".join(lines))
+        chosen_id = profile.db.get_profile().get("ending")
+        if chosen_id:
+            from nexus.campaign.endings import ENDINGS
+            ending = ENDINGS[chosen_id]
+            self.debrief.setText(f"Your ending: {ending.title} ({ending.subtitle})\n\n{ending.summary}")
+        else:
+            endings = profile.reachable_endings(all_missions)
+            lines = ["Endings reachable with what you found this run:", ""]
+            lines += [f"  {e.title} ({e.subtitle})" for e in endings]
+            self.debrief.setText("\n".join(lines))
+        self.continue_btn.hide()
+        self.replay_btn.show()
+        self.endless_btn.show()
+
+    def show_epilogue(self, ending, profile: CampaignProfile) -> None:
+        self.header.setText(f"ENDING: {ending.title.upper()}")
+        self.update_stats(profile)
+        self.briefing.setText("")
+        self._rebuild_objectives_cleared()
+        self.hint_btn.hide()
+        self.hint_label.setText("")
+        self.debrief_title.show()
+        self.debrief.setText(f"{ending.title} — {ending.subtitle}\n\n{ending.summary}")
         self.continue_btn.hide()
         self.replay_btn.show()
         self.endless_btn.show()
@@ -207,6 +226,41 @@ class MissionSelectDialog(QDialog):
         self.accept()
 
 
+class EndingSelectDialog(QDialog):
+    """C5/decision:8: the finale itself (act9_m200, tagged "finale"). Lists only the endings
+    nexus/campaign/endings.py's reachable_endings() actually returns for this save — the secret ending only
+    appears here if its real requirements (clues 2/5/8 + the Act IX side-mission) were met. Non-blocking, same
+    convention as the other dialogs."""
+
+    chosen = Signal(str)       # ending id
+
+    def __init__(self, endings: list, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("The Choice")
+        self.resize(560, 420)
+        self.setStyleSheet(f"QDialog {{ background:{COLORS['bg']}; }}")
+        lay = QVBoxLayout(self)
+        title = QLabel("WHAT HAPPENS TO NEXUS AND ZERO?")
+        title.setStyleSheet(f"color:{COLORS['green']}; font-size:14px; font-weight:bold;")
+        lay.addWidget(title)
+        self.list = QListWidget()
+        self.list.setFont(mono_font(11))
+        self.list.setWordWrap(True)
+        for e in endings:
+            item = QListWidgetItem(f"{e.title} ({e.subtitle})\n{e.summary}")
+            item.setData(Qt.ItemDataRole.UserRole, e.id)
+            self.list.addItem(item)
+        self.list.itemDoubleClicked.connect(self._on_pick)
+        lay.addWidget(self.list, 1)
+        go_btn = NeonButton("[ DECIDE ]", "This is final for this save")
+        go_btn.clicked.connect(lambda: self.list.currentItem() and self._on_pick(self.list.currentItem()))
+        lay.addWidget(go_btn)
+
+    def _on_pick(self, item: QListWidgetItem) -> None:
+        self.chosen.emit(item.data(Qt.ItemDataRole.UserRole))
+        self.accept()
+
+
 class CampaignWindow(QMainWindow):
     def __init__(self, saves: SaveSystem, default_username: str = "operator", parent=None):
         super().__init__(parent)
@@ -240,6 +294,7 @@ class CampaignWindow(QMainWindow):
         lay.addWidget(self.terminal_holder, 1)
 
         self.mission_select_dialog = None
+        self.ending_select_dialog = None
         self._endless_counter = 0
         self.character_dialog = None
         if self.profile.completed_count == 0 and not self.profile.get_character()["name"]:
@@ -350,6 +405,27 @@ class CampaignWindow(QMainWindow):
         for line in mission.debrief:
             self.terminal.print_system(line, COLORS["amber"])
         self.terminal.focus_input()
+        if "finale" in mission.tags and not self.profile.db.get_profile().get("ending"):
+            self.panel.continue_btn.hide()        # the ending dialog decides what happens next, not CONTINUE
+            self._show_ending_select()
+
+    def _show_ending_select(self) -> None:
+        reachable = self.profile.reachable_endings(self.all_missions)
+        self.ending_select_dialog = EndingSelectDialog(reachable, self)
+        self.ending_select_dialog.chosen.connect(self._on_ending_chosen)
+        self.ending_select_dialog.show()
+
+    def _on_ending_chosen(self, ending_id: str) -> None:
+        from nexus.campaign.endings import ENDINGS
+        self.profile.set_ending(ending_id)
+        self.ending_select_dialog = None
+        self.current_mission = None
+        self.runner = None
+        if self.terminal is not None:
+            self.terminal_holder.layout().removeWidget(self.terminal)
+            self.terminal.deleteLater()
+            self.terminal = None
+        self.panel.show_epilogue(ENDINGS[ending_id], self.profile)
 
     def _on_hint(self) -> None:
         if self.runner is None:

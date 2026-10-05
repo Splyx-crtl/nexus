@@ -178,4 +178,53 @@ if "de" in TRANSLATIONS.get("act1_m01", {}):
     ui_i18n.set_language("en")
 
 win.db.close()
+
+# --- the real finale flow: complete everything up to the last mission live, then play the finale for real ---
+saves2 = SaveSystem(profiles_dir=root / "profiles2", slots_dir=root / "slots2")
+win2 = CampaignWindow(saves2, default_username="finisher")
+win2.resize(1220, 780)
+win2.show()
+pump()
+win2.character_dialog.name_input.setText("Finisher")
+win2.character_dialog.ok_btn.click()
+pump()
+
+finale = next(m for m in ALL_MISSIONS if "finale" in m.tags)
+for m in ALL_MISSIONS:
+    if m.id != finale.id:
+        win2.profile.complete_mission(m, ALL_MISSIONS)
+win2._load_mission()
+pump()
+check(win2.current_mission is not None and win2.current_mission.id == finale.id, "only the finale is left")
+
+for line in finale.solution:
+    win2.terminal.run_command(line)
+    pump()
+check(win2.runner.is_complete, "the finale's own solution completes it")
+check(win2.ending_select_dialog is not None, "completing the finale opens the ending choice")
+check(not win2.panel.continue_btn.isVisible(), "no plain CONTINUE past the finale — the ending dialog decides")
+reachable_ids = {win2.ending_select_dialog.list.item(i).data(Qt.ItemDataRole.UserRole)
+                for i in range(win2.ending_select_dialog.list.count())}
+# every mission except the finale was bulk-completed above, including the clue and secret-ending-track missions,
+# so the secret ending is legitimately reachable here too.
+check(reachable_ids == {"A", "B", "C", "D"}, "all four endings are offered when every requirement was actually met")
+win2.grab().save(str(OUT / "campaign_ending_choice.png"))
+
+first_ending_item = win2.ending_select_dialog.list.item(0)
+chosen_id = first_ending_item.data(Qt.ItemDataRole.UserRole)
+win2.ending_select_dialog._on_pick(first_ending_item)
+pump()
+check(win2.ending_select_dialog is None, "ending dialog closes after a choice")
+check(win2.profile.db.get_profile()["ending"] == chosen_id, "the chosen ending is saved to the profile")
+check(win2.terminal is None and win2.current_mission is None, "the epilogue replaces the terminal, not another mission")
+from nexus.campaign.endings import ENDINGS
+check(ENDINGS[chosen_id].title.upper() in win2.panel.header.text(), "the epilogue names the chosen ending")
+win2.grab().save(str(OUT / "campaign_epilogue.png"))
+
+win2.panel.replay_btn.click()
+pump()
+check(win2.mission_select_dialog is not None, "C7 still works after choosing an ending")
+win2.mission_select_dialog.reject()
+win2.db.close()
+
 print("ALL OK — screenshots in", OUT)
