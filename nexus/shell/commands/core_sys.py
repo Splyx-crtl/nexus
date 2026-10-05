@@ -37,7 +37,8 @@ def id_cmd(ctx, args):
     return 0
 
 
-@command("groups", level=1, summary="Print the groups a user is in.", usage="groups [USER]...")
+@command("groups", level=1, summary="Print the groups a user is in.", usage="groups [USER]...",
+        lesson="groups lists which groups a user belongs to — group membership often controls what that user is allowed to touch.")
 def groups(ctx, args):
     u = ctx.machine.user(args[0]) if args else ctx.user
     if u is None:
@@ -81,7 +82,8 @@ def uname(ctx, args):
     return 0
 
 
-@command("date", level=2, summary="Print or set the system date and time.", usage="date [OPTION]... [+FORMAT]")
+@command("date", level=2, summary="Print or set the system date and time.", usage="date [OPTION]... [+FORMAT]",
+        lesson="date prints the current date and time. 'date +%Y-%m-%d' formats it exactly how you want.")
 def date(ctx, args):
     o = opts.parse(ctx, args, short="uRI", with_arg="d")
     if o is None:
@@ -115,7 +117,8 @@ def env(ctx, args):
     return 0
 
 
-@command("printenv", level=3, summary="Print all or part of environment.", usage="printenv [OPTION]... [VARIABLE]...")
+@command("printenv", level=3, summary="Print all or part of environment.", usage="printenv [OPTION]... [VARIABLE]...",
+        lesson="printenv prints environment variables: 'printenv PATH' shows just one; with no argument it shows them all.")
 def printenv(ctx, args):
     if not args:
         for k, v in ctx.env.items():
@@ -165,7 +168,8 @@ def ps(ctx, args):
     return 0
 
 
-@command("kill", level=6, summary="Send a signal to a process.", usage="kill [-s SIGNAL | -SIGNAL] PID...")
+@command("kill", level=6, summary="Send a signal to a process.", usage="kill [-s SIGNAL | -SIGNAL] PID...",
+        lesson="kill sends a signal to a running process by its PID, normally asking it to stop: 'kill 4821'. You need to own the process, or be root.")
 def kill(ctx, args):
     pids = [a for a in args if re.fullmatch(r"\d+", a)]
     if not pids:
@@ -186,7 +190,8 @@ def kill(ctx, args):
     return status
 
 
-@command("which", level=2, summary="Locate a command.", usage="which [-a] filename ...")
+@command("which", level=2, summary="Locate a command.", usage="which [-a] filename ...",
+        lesson="which shows the full path of the command that would run if you typed its name: 'which grep' usually prints '/usr/bin/grep'.")
 def which(ctx, args):
     status = 0
     for a in [x for x in args if not x.startswith("-")]:
@@ -198,7 +203,8 @@ def which(ctx, args):
     return status
 
 
-@command("whereis", level=4, summary="Locate the binary, source, and manual page files for a command.", usage="whereis [options] name...")
+@command("whereis", level=4, summary="Locate the binary, source, and manual page files for a command.", usage="whereis [options] name...",
+        lesson="whereis finds where a command's binary, source and manual page actually live on disk, not just whether it runs.")
 def whereis(ctx, args):
     for a in args:
         spec = lookup("bash", a)
@@ -249,7 +255,8 @@ def man(ctx, args):
     return status
 
 
-@command("help", level=1, summary="Display information about builtin commands.", usage="help [pattern ...]")
+@command("help", level=1, summary="Display information about builtin commands.", usage="help [pattern ...]",
+        lesson="help lists the shell's builtin commands, or explains one by name: 'help cd'.")
 def help_cmd(ctx, args):
     if args:
         for a in args:
@@ -276,14 +283,16 @@ def clear(ctx, args):
     return 0
 
 
-@command("uptime", level=4, summary="Tell how long the system has been running.", usage="uptime [OPTION]")
+@command("uptime", level=4, summary="Tell how long the system has been running.", usage="uptime [OPTION]",
+        lesson="uptime shows how long the system has been running without a restart — a quick health signal.")
 def uptime(ctx, args):
     t = time.gmtime(ctx.now())
     ctx.out(f" {time.strftime('%H:%M:%S', t)} up 3 days,  4:12,  1 user,  load average: 0.08, 0.03, 0.01")
     return 0
 
 
-@command("free", level=6, summary="Display amount of free and used memory in the system.", usage="free [options]")
+@command("free", level=6, summary="Display amount of free and used memory in the system.", usage="free [options]",
+        lesson="free shows how much memory is in use versus available: 'free -h' gives human-readable sizes.")
 def free(ctx, args):
     o = opts.parse(ctx, args, short="hmgbk")
     if o is None:
@@ -295,13 +304,15 @@ def free(ctx, args):
     return 0
 
 
-@command("who", level=6, summary="Show who is logged on.", usage="who [OPTION]...")
+@command("who", level=6, summary="Show who is logged on.", usage="who [OPTION]...",
+        lesson="who lists who is logged in right now, and from where — the live companion to 'last's history.")
 def who(ctx, args):
     ctx.out(f"{ctx.user.name:<9}pts/0        {time.strftime('%Y-%m-%d %H:%M', time.gmtime(ctx.now() - 600))} (10.0.0.9)")
     return 0
 
 
-@command("w", level=6, summary="Show who is logged on and what they are doing.", usage="w [options]")
+@command("w", level=6, summary="Show who is logged on and what they are doing.", usage="w [options]",
+        lesson="w shows who's logged in and what they're currently running — 'who' plus a column for their active command.")
 def w_cmd(ctx, args):
     t = time.gmtime(ctx.now())
     ctx.out(f" {time.strftime('%H:%M:%S', t)} up 3 days,  4:12,  1 user,  load average: 0.08, 0.03, 0.01")

@@ -14,7 +14,7 @@ from nexus.i18n import tr
 
 from .widgets import GlitchTitle, NeonBar, NeonButton, hline, mono_font
 
-MENU_ITEMS = ["continue", "operations", "terminal", "network", "market", "loadout", "profile", "achievements", "archives", "settings", "exit"]
+MENU_ITEMS = ["continue", "operations", "terminal", "network", "market", "loadout", "profile", "achievements", "archives", "campaign30", "settings", "exit"]
 
 
 class BackgroundCanvas(QWidget):
@@ -178,7 +178,9 @@ class MainMenu(QWidget):
                 "terminal": "Open the command terminal", "network": "The map of the simulated network",
                 "market": "NEXUS MARKET: tools, upgrades, cosmetics, access, intel", "loadout": "Equip gear into five slots",
                 "profile": "Operator profile, statistics and charts", "achievements": "Your achievements",
-                "archives": "Lore, endings and logs", "settings": "Audio, text speed, display, theme, language", "exit": "Quit to desktop"}
+                "archives": "Lore, endings and logs",
+                "campaign30": "The new 200-level campaign: a real bash/PowerShell/cmd shell, no minigames (in progress)",
+                "settings": "Audio, text speed, display, theme, language", "exit": "Quit to desktop"}
         for key in MENU_ITEMS:
             btn = NeonButton(f"[ {tr(key)} ]", tips[key], "danger" if key == "exit" else "")
             btn.setMinimumWidth(320)
@@ -227,7 +229,7 @@ class MainMenu(QWidget):
     def set_engine(self, engine) -> None:
         enabled = engine is not None
         for key, btn in self.buttons.items():
-            if key != "exit":
+            if key not in ("exit", "campaign30"):      # campaign30 has its own, independent v3 profile
                 btn.setEnabled(enabled)
         if enabled:
             self.card.update_from(engine)

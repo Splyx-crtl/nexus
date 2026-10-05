@@ -286,7 +286,7 @@ ACT3_CHAPTER3 = [
         objectives=[Objective(event="file_read", match={"path__glob": "*relay.log"}, text="Read the relay's own log",
                               hints=["Same folder as the README.", "Try: cat /srv/relay/relay.log", "cat /srv/relay/relay.log"])],
         solution=["sshpass -p n3xus-deploy! ssh deploy@nexus-company.com", "cat /srv/relay/relay.log"],
-        reward_xp=100, tags=["bash", "act3", "story", "architect"],
+        reward_xp=100, tags=["bash", "act3", "story", "architect", "clue:2"],
     ),
     Mission(
         id="act3_m66", number=66, act=3, size="mini", title="Taking a Copy", scenario="network_loot",

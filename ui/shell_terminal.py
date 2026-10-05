@@ -118,6 +118,13 @@ class ShellTerminal(QWidget):
         self.output.insertHtml(f'<span style="color:{color}">{safe}</span>')
         self.output.moveCursor(QTextCursor.MoveOperation.End)
 
+    def print_system(self, text: str, color: str | None = None) -> None:
+        """Append a line (or block) that didn't come from running a command — briefing/debrief text, story beats.
+        Used by campaign integrations (ui/campaign_window.py) to narrate between missions in the same transcript."""
+        if not text.endswith("\n"):
+            text += "\n"
+        self._append(text, color or COLORS["cyan"])
+
     def run_command(self, line: str, echo: bool = True) -> None:
         """Run one line (used by Enter and by anything scripting the terminal, e.g. tests)."""
         if echo:

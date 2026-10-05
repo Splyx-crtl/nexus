@@ -42,7 +42,8 @@ def dir_cmd(ctx, args):
     return 0
 
 
-@command("cd", family="cmd", level=1, summary="Displays the name of or changes the current directory.", usage="cd [path]", aliases=("chdir",))
+@command("cd", family="cmd", level=1, summary="Displays the name of or changes the current directory.", usage="cd [path]", aliases=("chdir",),
+        lesson="cd shows or changes the current directory, same idea as on Linux: 'cd Documents' moves in, 'cd ..' moves up.")
 def cd_cmd(ctx, args):
     rest, _ = _split_flags(args)
     if not rest:
@@ -76,7 +77,8 @@ def type_cmd(ctx, args):
     return 0
 
 
-@command("copy", family="cmd", level=3, summary="Copies one or more files to another location.", usage="copy source destination")
+@command("copy", family="cmd", level=3, summary="Copies one or more files to another location.", usage="copy source destination",
+        lesson="copy duplicates a file to a new location: 'copy report.txt backup\\report.txt'.")
 def copy_cmd(ctx, args):
     rest, _ = _split_flags(args)
     if len(rest) < 2:
@@ -91,7 +93,8 @@ def copy_cmd(ctx, args):
     return 0
 
 
-@command("move", family="cmd", level=3, summary="Moves files from one directory to another.", usage="move source destination")
+@command("move", family="cmd", level=3, summary="Moves files from one directory to another.", usage="move source destination",
+        lesson="move relocates a file (or renames it, if the destination is in the same folder): 'move draft.txt done\\draft.txt'.")
 def move_cmd(ctx, args):
     rest, _ = _split_flags(args)
     if len(rest) < 2:
@@ -106,7 +109,8 @@ def move_cmd(ctx, args):
     return 0
 
 
-@command("del", family="cmd", level=3, summary="Deletes one or more files.", usage="del file", aliases=("erase",))
+@command("del", family="cmd", level=3, summary="Deletes one or more files.", usage="del file", aliases=("erase",),
+        lesson="del deletes a file for good, no trash can: 'del old.txt'. Same idea as Linux's 'rm'.")
 def del_cmd(ctx, args):
     rest, flags = _split_flags(args)
     status = 0
@@ -119,7 +123,8 @@ def del_cmd(ctx, args):
     return status
 
 
-@command("ren", family="cmd", level=3, summary="Renames a file.", usage="ren oldname newname", aliases=("rename",))
+@command("ren", family="cmd", level=3, summary="Renames a file.", usage="ren oldname newname", aliases=("rename",),
+        lesson="ren renames a file: 'ren draft.txt final.txt'.")
 def ren_cmd(ctx, args):
     rest, _ = _split_flags(args)
     if len(rest) < 2:
@@ -134,7 +139,8 @@ def ren_cmd(ctx, args):
     return 0
 
 
-@command("md", family="cmd", level=2, summary="Creates a directory.", usage="md path", aliases=("mkdir",))
+@command("md", family="cmd", level=2, summary="Creates a directory.", usage="md path", aliases=("mkdir",),
+        lesson="md (same as mkdir) creates a new directory: 'md jobs'.")
 def md_cmd(ctx, args):
     rest, _ = _split_flags(args)
     if not rest:
@@ -148,7 +154,8 @@ def md_cmd(ctx, args):
     return 0
 
 
-@command("rd", family="cmd", level=3, summary="Removes a directory.", usage="rd path [/s]", aliases=("rmdir",))
+@command("rd", family="cmd", level=3, summary="Removes a directory.", usage="rd path [/s]", aliases=("rmdir",),
+        lesson="rd removes a directory: 'rd old_folder'. Add '/s' to remove one that still has files inside.")
 def rd_cmd(ctx, args):
     rest, flags = _split_flags(args)
     if not rest:
@@ -162,32 +169,37 @@ def rd_cmd(ctx, args):
     return 0
 
 
-@command("echo", family="cmd", level=1, summary="Displays messages.", usage="echo message")
+@command("echo", family="cmd", level=1, summary="Displays messages.", usage="echo message",
+        lesson="echo prints text back to the screen, or toggles command-echoing on/off in a batch script: 'echo Hello'.")
 def echo_cmd(ctx, args):
     ctx.out(" ".join(args))
     return 0
 
 
-@command("cls", family="cmd", level=1, summary="Clears the screen.", usage="cls")
+@command("cls", family="cmd", level=1, summary="Clears the screen.", usage="cls",
+        lesson="cls clears the screen — the Windows equivalent of Linux's 'clear'.")
 def cls_cmd(ctx, args):
     ctx.request("clear")
     return 0
 
 
-@command("ver", family="cmd", level=1, summary="Displays the Windows version.", usage="ver")
+@command("ver", family="cmd", level=1, summary="Displays the Windows version.", usage="ver",
+        lesson="ver prints the Windows version this machine reports itself as running.")
 def ver_cmd(ctx, args):
     ctx.out("\nMicrosoft Windows [Version 11.0.30000.2050]")
     return 0
 
 
-@command("vol", family="cmd", level=2, summary="Displays the disk volume label and serial number.", usage="vol")
+@command("vol", family="cmd", level=2, summary="Displays the disk volume label and serial number.", usage="vol",
+        lesson="vol shows the disk's volume label and serial number.")
 def vol_cmd(ctx, args):
     ctx.out(" Volume in drive C has no label.")
     ctx.out(f" Volume Serial Number is {abs(hash(ctx.machine.id)) % 0xFFFF:04X}-{abs(hash(ctx.machine.hostname)) % 0xFFFF:04X}")
     return 0
 
 
-@command("set", family="cmd", level=2, summary="Displays, sets, or removes environment variables.", usage="set [name=value]")
+@command("set", family="cmd", level=2, summary="Displays, sets, or removes environment variables.", usage="set [name=value]",
+        lesson="set shows or sets environment variables: 'set NAME=value' defines one, 'set' alone lists them all.")
 def set_cmd(ctx, args):
     if not args:
         for k, v in sorted(ctx.env.items()):
@@ -196,19 +208,22 @@ def set_cmd(ctx, args):
     return 0                                            # var assignment is handled by the cmd runner itself
 
 
-@command("whoami", family="cmd", level=1, summary="Displays the current user name.", usage="whoami")
+@command("whoami", family="cmd", level=1, summary="Displays the current user name.", usage="whoami",
+        lesson="whoami prints the currently logged-in user's name.")
 def whoami_cmd(ctx, args):
     ctx.out(f"{ctx.machine.hostname.lower()}\\{ctx.user.name}")
     return 0
 
 
-@command("hostname", family="cmd", level=1, summary="Prints the computer's name.", usage="hostname")
+@command("hostname", family="cmd", level=1, summary="Prints the computer's name.", usage="hostname",
+        lesson="hostname prints the computer's own name on the network.")
 def hostname_cmd(ctx, args):
     ctx.out(ctx.machine.hostname)
     return 0
 
 
-@command("tree", family="cmd", level=5, summary="Graphically displays the folder structure of a drive or path.", usage="tree [path]")
+@command("tree", family="cmd", level=5, summary="Graphically displays the folder structure of a drive or path.", usage="tree [path]",
+        lesson="tree draws a folder and everything inside it as a tree, same idea as the Linux command of the same name.")
 def tree_cmd(ctx, args):
     rest, _ = _split_flags(args)
     path = rest[0] if rest else "."
@@ -253,7 +268,8 @@ def findstr_cmd(ctx, args):
     return 0 if found else 1
 
 
-@command("attrib", family="cmd", level=6, summary="Displays or changes file attributes.", usage="attrib [path]")
+@command("attrib", family="cmd", level=6, summary="Displays or changes file attributes.", usage="attrib [path]",
+        lesson="attrib shows or changes a file's attributes (read-only, hidden, system, archive) — the Windows equivalent of Linux permission bits, just a different set of flags.")
 def attrib_cmd(ctx, args):
     rest, _ = _split_flags(args)
     path = rest[0] if rest else "."
@@ -267,7 +283,8 @@ def attrib_cmd(ctx, args):
     return 0
 
 
-@command("more", family="cmd", level=2, summary="Displays output one screen at a time.", usage="more file")
+@command("more", family="cmd", level=2, summary="Displays output one screen at a time.", usage="more file",
+        lesson="more shows a file one screen at a time instead of dumping it all at once — useful for a file too long to fit the window.")
 def more_cmd(ctx, args):
     rest, _ = _split_flags(args)
     if rest:
@@ -281,7 +298,8 @@ def more_cmd(ctx, args):
     return 0
 
 
-@command("exit", family="cmd", level=1, summary="Quits the CMD.EXE program or the current batch script.", usage="exit [code]")
+@command("exit", family="cmd", level=1, summary="Quits the CMD.EXE program or the current batch script.", usage="exit [code]",
+        lesson="exit closes the current cmd session (or stops a running batch script).")
 def exit_cmd(ctx, args):
     status = int(args[0]) if args and args[0].isdigit() else ctx.session.last_status
     if ctx.session.parent is not None:
@@ -293,7 +311,8 @@ def exit_cmd(ctx, args):
 
 
 # ------------------------------------------------------------------------------------------------ legacy network / admin tools
-@command("ipconfig", family="cmd", level=9, summary="Displays IP configuration.", usage="ipconfig [/all]")
+@command("ipconfig", family="cmd", level=9, summary="Displays IP configuration.", usage="ipconfig [/all]",
+        lesson="ipconfig shows this machine's network configuration: 'ipconfig /all' adds more detail — the Windows equivalent of Linux's 'ip'/'ifconfig'.")
 def ipconfig_cmd(ctx, args):
     base = ctx.machine.ip.rsplit(".", 1)[0]
     ctx.out("Windows IP Configuration\n")
@@ -347,7 +366,8 @@ def ping_cmd(ctx, args):
     return 0
 
 
-@command("tasklist", family="cmd", level=6, summary="Displays running processes.", usage="tasklist")
+@command("tasklist", family="cmd", level=6, summary="Displays running processes.", usage="tasklist",
+        lesson="tasklist shows every running process, similar to Linux's 'ps aux', just formatted the Windows way.")
 def tasklist_cmd(ctx, args):
     ctx.out("Image Name                     PID Session Name        Session#    Mem Usage")
     ctx.out("========================= ======== ================ =========== ============")

@@ -133,7 +133,8 @@ def nslookup(ctx, args):
     return 0
 
 
-@command("host", level=10, summary="DNS lookup utility (simple output).", usage="host name", category="net")
+@command("host", level=10, summary="DNS lookup utility (simple output).", usage="host name", category="net",
+        lesson="host is a simple DNS lookup: 'host example.com' resolves a name to an address, with less output than 'dig'.")
 def host_cmd(ctx, args):
     rest = [a for a in args if not a.startswith("-")]
     if not rest:
@@ -306,7 +307,8 @@ def netstat(ctx, args):
     return 0
 
 
-@command("ss", level=12, summary="Another utility to investigate sockets.", usage="ss [OPTION]...", category="net")
+@command("ss", level=12, summary="Another utility to investigate sockets.", usage="ss [OPTION]...", category="net",
+        lesson="ss is the modern replacement for netstat: 'ss -tulpn' shows the same listening-ports-and-programs view with a newer tool.")
 def ss_cmd(ctx, args):
     o = opts.parse(ctx, args, short="tulpan")
     if o is None:
@@ -380,7 +382,8 @@ def _mac(seed: str) -> str:
     return ":".join(f"{p:02x}" for p in parts)
 
 
-@command("ifconfig", level=9, summary="Configure a network interface.", usage="ifconfig [interface]", category="net")
+@command("ifconfig", level=9, summary="Configure a network interface.", usage="ifconfig [interface]", category="net",
+        lesson="ifconfig shows (or configures) network interfaces — the older command 'ip' is meant to replace, but still common on older systems.")
 def ifconfig(ctx, args):
     base = ctx.machine.ip.rsplit(".", 1)[0]
     ctx.out(f"eth0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500")

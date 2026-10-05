@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
         self.engine: GameEngine | None = None
         self._license_refused = ""
         self.shell: AppShell | None = None
+        self.campaign_window = None
         self.tutorial: TutorialOverlay | None = None
         self.pending_ending: str | None = None
         self._after_story = None
@@ -292,8 +293,22 @@ class MainWindow(QMainWindow):
             self.close()
         elif key == "continue":
             self.enter_game("terminal")
+        elif key == "campaign30":
+            self.open_campaign_window()
         else:
             self.enter_game(key)
+
+    def open_campaign_window(self) -> None:
+        """The new 200-level campaign (nexus/campaign/, docs/3.0-PROGRESS.md) — a standalone window with its own
+        v3 save profile, deliberately kept separate from AppShell/GameEngine's 2.x mechanics (heat/trace/market/
+        loadout) rather than grafted into them. See nexus/campaign/profile.py's docstring for why."""
+        if self.campaign_window is None:
+            from .campaign_window import CampaignWindow
+            default_username = self.engine.player.username if self.engine else "operator"
+            self.campaign_window = CampaignWindow(self.saves, default_username=default_username)
+        self.campaign_window.show()
+        self.campaign_window.raise_()
+        self.campaign_window.activateWindow()
 
     def enter_game(self, page: str) -> None:
         if not self.engine:

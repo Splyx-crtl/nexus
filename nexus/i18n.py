@@ -72,6 +72,11 @@ STRINGS: dict[str, dict[str, str]] = {
                  "de": "NUR SIMULATION — alle Systeme, IPs und Netzwerke sind fiktiv."},
     "language": {"en": "LANGUAGE", "de": "SPRACHE"},
     "theme": {"en": "THEME", "de": "DESIGN"},
+    "campaign30": {"en": "CAMPAIGN 3.0 (BETA)", "de": "KAMPAGNE 3.0 (BETA)"},
+    "hint": {"en": "HINT", "de": "HINWEIS"},
+    "objectives": {"en": "OBJECTIVES", "de": "ZIELE"},
+    "briefing": {"en": "BRIEFING", "de": "BRIEFING"},
+    "debrief": {"en": "DEBRIEF", "de": "ABSCHLUSSBERICHT"},
 }
 
 

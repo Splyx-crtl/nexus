@@ -285,7 +285,7 @@ ACT4_CHAPTER3 = [
                                     "Try: gpg --decrypt --batch --passphrase outreach-program-7 vault/architect_status.txt.gpg",
                                     "gpg --decrypt --batch --passphrase outreach-program-7 vault/architect_status.txt.gpg"])],
         solution=["gpg --decrypt --batch --passphrase outreach-program-7 vault/architect_status.txt.gpg"],
-        reward_xp=200, tags=["bash", "act4", "story", "gpg", "architect-reveal"],
+        reward_xp=200, tags=["bash", "act4", "story", "gpg", "architect-reveal", "clue:4"],
     ),
     Mission(
         id="act4_m92", number=92, act=4, size="story", title="Give Me a Moment", scenario="keys_aftermath",
