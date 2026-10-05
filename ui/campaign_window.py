@@ -12,13 +12,17 @@ ideally with the user able to click through it rather than it being GUI surgery 
 """
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+import random
+
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
-    QHBoxLayout, QLabel, QMainWindow, QPushButton, QScrollArea, QVBoxLayout, QWidget,
+    QDialog, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QMainWindow, QPushButton, QScrollArea,
+    QVBoxLayout, QWidget,
 )
 
 from nexus.campaign.content import ALL_MISSIONS
+from nexus.campaign.endless import generate_endless_mission
 from nexus.campaign.migrate import ensure_v3_profile
 from nexus.campaign.mission import Mission
 from nexus.campaign.profile import CampaignProfile
@@ -75,10 +79,14 @@ class MissionPanel(QWidget):
         self.debrief.setWordWrap(True)
         self.continue_btn = NeonButton("[ CONTINUE ]", "Move on to the next mission")
         self.continue_btn.hide()
+        self.replay_btn = NeonButton("[ REPLAY A MISSION ]", "Pick any of the 200 missions to run again (C7)")
+        self.replay_btn.hide()
+        self.endless_btn = NeonButton("[ KEEP GOING (ENDLESS) ]", "One more procedurally-generated op, for as long as you want")
+        self.endless_btn.hide()
 
         for w in (self.header, self.stats, hline(), self.briefing_title, self.briefing, hline(),
                  self.objectives_title, obj_widget, self.hint_btn, self.hint_label,
-                 self.debrief_title, self.debrief, self.continue_btn):
+                 self.debrief_title, self.debrief, self.continue_btn, self.replay_btn, self.endless_btn):
             lay.addWidget(w)
         lay.addStretch(1)
         scroll.setWidget(inner)
@@ -94,6 +102,8 @@ class MissionPanel(QWidget):
         self.debrief.setText("")
         self.debrief_title.hide()
         self.continue_btn.hide()
+        self.replay_btn.hide()
+        self.endless_btn.hide()
         self._hint_tier = 0
         self.hint_label.setText("")
         self.hint_btn.setVisible(profile.get_mode() != "hardcore")
@@ -151,6 +161,8 @@ class MissionPanel(QWidget):
         lines += [f"  {e.title} ({e.subtitle})" for e in endings]
         self.debrief.setText("\n".join(lines))
         self.continue_btn.hide()
+        self.replay_btn.show()
+        self.endless_btn.show()
 
     def _rebuild_objectives_cleared(self) -> None:
         while self.objectives_box.count():
@@ -158,6 +170,38 @@ class MissionPanel(QWidget):
             if item.widget():
                 item.widget().deleteLater()
         self._obj_labels = []
+
+
+class MissionSelectDialog(QDialog):
+    """C7: after level 200, every mission is freely selectable and repeatable. Non-blocking by the same convention
+    as CharacterDialog — connect ``picked`` and call ``show()``, not ``exec()``."""
+
+    picked = Signal(str)       # mission id
+
+    def __init__(self, all_missions: list[Mission], parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Replay a Mission")
+        self.resize(520, 640)
+        self.setStyleSheet(f"QDialog {{ background:{COLORS['bg']}; }}")
+        lay = QVBoxLayout(self)
+        title = QLabel("PICK A MISSION TO REPLAY")
+        title.setStyleSheet(f"color:{COLORS['green']}; font-size:14px; font-weight:bold;")
+        lay.addWidget(title)
+        self.list = QListWidget()
+        self.list.setFont(mono_font(11))
+        for m in sorted(all_missions, key=lambda m: m.number):
+            item = QListWidgetItem(f"LEVEL {m.number:>3}  —  {m.title}  [{m.size}]")
+            item.setData(Qt.ItemDataRole.UserRole, m.id)
+            self.list.addItem(item)
+        self.list.itemDoubleClicked.connect(self._on_pick)
+        lay.addWidget(self.list, 1)
+        go_btn = NeonButton("[ PLAY ]", "Run the selected mission again")
+        go_btn.clicked.connect(lambda: self.list.currentItem() and self._on_pick(self.list.currentItem()))
+        lay.addWidget(go_btn)
+
+    def _on_pick(self, item: QListWidgetItem) -> None:
+        self.picked.emit(item.data(Qt.ItemDataRole.UserRole))
+        self.accept()
 
 
 class CampaignWindow(QMainWindow):
@@ -184,12 +228,16 @@ class CampaignWindow(QMainWindow):
         self.panel = MissionPanel()
         self.panel.hint_btn.clicked.connect(self._on_hint)
         self.panel.continue_btn.clicked.connect(self._load_mission)
+        self.panel.replay_btn.clicked.connect(self._open_mission_select)
+        self.panel.endless_btn.clicked.connect(self._start_endless_mission)
         lay.addWidget(self.panel)
         self.terminal_holder = QWidget()
         hold_lay = QVBoxLayout(self.terminal_holder)
         hold_lay.setContentsMargins(10, 10, 10, 10)
         lay.addWidget(self.terminal_holder, 1)
 
+        self.mission_select_dialog = None
+        self._endless_counter = 0
         self.character_dialog = None
         if self.profile.completed_count == 0 and not self.profile.get_character()["name"]:
             self._show_character_dialog()
@@ -214,13 +262,35 @@ class CampaignWindow(QMainWindow):
         if mission is None:
             self._on_campaign_finished()
             return
+        self._play_mission(mission, level=lambda: self.profile.level)
+
+    def _play_mission(self, mission: Mission, level) -> None:
         self.current_mission = mission
-        self.runner = MissionRunner.start(mission, level=lambda: self.profile.level)
+        self.runner = MissionRunner.start(mission, level=level)
         self._swap_terminal()
         self.panel.set_mission(mission, self.profile)
         self.terminal.print_system(f"=== LEVEL {mission.number}: {mission.title} ===", COLORS["green"])
         for line in mission.briefing:
             self.terminal.print_system(line, COLORS["cyan"])
+
+    # -- C7: post-200 free mission select / endless ops --------------------------------------------------------------
+    def _open_mission_select(self) -> None:
+        self.mission_select_dialog = MissionSelectDialog(self.all_missions, self)
+        self.mission_select_dialog.picked.connect(self._on_mission_picked)
+        self.mission_select_dialog.show()
+
+    def _on_mission_picked(self, mission_id: str) -> None:
+        self.mission_select_dialog = None
+        mission = next(m for m in self.all_missions if m.id == mission_id)
+        from nexus.campaign.progression import MAX_LEVEL
+        self._play_mission(mission, level=lambda: MAX_LEVEL)
+
+    def _start_endless_mission(self) -> None:
+        from nexus.campaign.progression import MAX_LEVEL
+        self._endless_counter += 1
+        seed = random.randint(0, 10**9)
+        mission = generate_endless_mission(f"endless_replay_{self._endless_counter}_{seed}", MAX_LEVEL, 9, seed)
+        self._play_mission(mission, level=lambda: MAX_LEVEL)
 
     def _swap_terminal(self) -> None:
         if self.terminal is not None:

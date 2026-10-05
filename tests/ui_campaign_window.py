@@ -12,6 +12,7 @@ os.environ["NEXUS_NO_AUDIO"] = "1"
 os.environ["NEXUS_LICENSE_PUBKEY"] = ""
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from nexus.campaign.content import ALL_MISSIONS
@@ -126,7 +127,43 @@ pump()
 check(win.current_mission is None and win.terminal is None, "finished state clears the active mission/terminal")
 check("CAMPAIGN COMPLETE" in win.panel.header.text(), "finished screen shown")
 check("Full Truth" in win.panel.debrief.text(), "secret ending listed once every clue/track mission is done")
+check(win.panel.replay_btn.isVisible() and win.panel.endless_btn.isVisible(), "C7 buttons appear once the campaign is done")
 win.grab().save(str(OUT / "campaign_finished.png"))
+
+# C7: replay any of the 200 missions freely
+win.panel.replay_btn.click()
+pump()
+check(win.mission_select_dialog is not None, "replay opens the mission-select dialog")
+check(win.mission_select_dialog.list.count() == len(ALL_MISSIONS), "every mission listed")
+first_item = win.mission_select_dialog.list.item(0)
+win.mission_select_dialog._on_pick(first_item)
+pump()
+check(win.mission_select_dialog is None, "dialog closes after picking")
+check(win.current_mission is not None and win.current_mission.id == first_item.data(Qt.ItemDataRole.UserRole), "picked mission loads")
+for line in win.current_mission.solution:
+    win.terminal.run_command(line)
+    pump()
+check(win.runner.is_complete, "a replayed mission can be solved again")
+win.panel.continue_btn.click()
+pump()
+check(win.current_mission is None, "finishing a replay returns to the C7 hub (nothing left to require)")
+win.grab().save(str(OUT / "campaign_replay.png"))
+
+# C7: endless ops keep generating fresh missions
+win.panel.endless_btn.click()
+pump()
+check(win.current_mission is not None and win.current_mission.id.startswith("endless_replay_1_"), "endless op generated")
+endless_mission = win.current_mission
+for line in endless_mission.solution:
+    win.terminal.run_command(line)
+    pump()
+check(win.runner.is_complete, "a generated endless op is itself solvable")
+win.panel.continue_btn.click()
+pump()
+win.panel.endless_btn.click()
+pump()
+check(win.current_mission.id != endless_mission.id, "a second endless op is a different generated mission")
+win.grab().save(str(OUT / "campaign_endless.png"))
 
 win.db.close()
 print("ALL OK — screenshots in", OUT)
