@@ -23,11 +23,14 @@ from PySide6.QtWidgets import (
 
 from nexus.campaign.content import ALL_MISSIONS
 from nexus.campaign.endless import generate_endless_mission
+from nexus.campaign.i18n import localize as localize_mission
+from nexus.campaign import translations as _campaign_translations  # noqa: F401 (registers TRANSLATIONS on import)
 from nexus.campaign.migrate import ensure_v3_profile
 from nexus.campaign.mission import Mission
 from nexus.campaign.profile import CampaignProfile
 from nexus.campaign.runner import MissionRunner
 from nexus.config import COLORS
+from nexus.i18n import language as ui_language
 from nexus.save_system import SaveSystem
 
 from .shell_terminal import ShellTerminal
@@ -265,6 +268,7 @@ class CampaignWindow(QMainWindow):
         self._play_mission(mission, level=lambda: self.profile.level)
 
     def _play_mission(self, mission: Mission, level) -> None:
+        mission = localize_mission(mission, ui_language())
         self.current_mission = mission
         self.runner = MissionRunner.start(mission, level=level)
         self._swap_terminal()

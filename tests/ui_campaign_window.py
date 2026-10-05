@@ -165,5 +165,17 @@ pump()
 check(win.current_mission.id != endless_mission.id, "a second endless op is a different generated mission")
 win.grab().save(str(OUT / "campaign_endless.png"))
 
+# German localization (nexus.campaign.i18n), if act1_m01 has a registered translation
+from nexus import i18n as ui_i18n
+from nexus.campaign.i18n import TRANSLATIONS
+act1_m01 = next(m for m in ALL_MISSIONS if m.id == "act1_m01")
+if "de" in TRANSLATIONS.get("act1_m01", {}):
+    ui_i18n.set_language("de")
+    win._play_mission(act1_m01, level=lambda: 1)
+    pump()
+    check(win.current_mission.title != act1_m01.title, "german translation changes the displayed title")
+    win.grab().save(str(OUT / "campaign_german.png"))
+    ui_i18n.set_language("en")
+
 win.db.close()
 print("ALL OK — screenshots in", OUT)
