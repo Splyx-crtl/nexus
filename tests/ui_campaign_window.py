@@ -48,6 +48,19 @@ def check(cond, msg):
 
 
 pump()
+check(win.character_dialog is not None, "a brand-new profile is asked for a callsign first")
+check(win.current_mission is None, "no mission loads until the character dialog is answered")
+win.character_dialog.name_input.setText("Kestrel")
+win.character_dialog.look_input.setPlainText("quiet, methodical")
+win.character_dialog.ok_btn.click()
+pump()
+check(win.character_dialog is None, "dialog closes itself after submission")
+check(win.profile.get_character() == {"name": "Kestrel", "look": "quiet, methodical"}, "character saved to the profile")
+check("Kestrel" in win.panel.stats.text(), "callsign shown in the mission panel")
+win.grab().save(str(OUT / "campaign_character.png"))
+
+
+pump()
 check(win.current_mission is not None and win.current_mission.id == "act1_m01", "opens on level 1")
 check(win.profile.level == 1 and win.profile.xp == 0, "fresh profile starts at level 1, 0 xp")
 

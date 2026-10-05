@@ -52,6 +52,7 @@ class MissionPanel(QWidget):
         self.header.setWordWrap(True)
         self.header.setStyleSheet(f"color:{COLORS['green']}; font-size:16px; font-weight:bold;")
         self.stats = QLabel("")
+        self.stats.setWordWrap(True)
         self.stats.setStyleSheet(f"color:{COLORS['cyan']}; font-weight:bold;")
         self.briefing_title = QLabel("BRIEFING")
         self.briefing_title.setObjectName("h2")
@@ -99,7 +100,8 @@ class MissionPanel(QWidget):
         self._rebuild_objectives(mission)
 
     def update_stats(self, profile: CampaignProfile) -> None:
-        self.stats.setText(f"RANK {profile.rank}   ·   LEVEL {profile.level}   ·   XP {profile.xp}")
+        name = profile.get_character().get("name") or profile.username
+        self.stats.setText(f"{name}   ·   RANK {profile.rank}   ·   LEVEL {profile.level}   ·   XP {profile.xp}")
 
     def _rebuild_objectives(self, mission: Mission) -> None:
         while self.objectives_box.count():
@@ -188,6 +190,21 @@ class CampaignWindow(QMainWindow):
         hold_lay.setContentsMargins(10, 10, 10, 10)
         lay.addWidget(self.terminal_holder, 1)
 
+        self.character_dialog = None
+        if self.profile.completed_count == 0 and not self.profile.get_character()["name"]:
+            self._show_character_dialog()
+        else:
+            self._load_mission()
+
+    def _show_character_dialog(self) -> None:
+        from .character_dialog import CharacterDialog
+        self.character_dialog = CharacterDialog(self)
+        self.character_dialog.created.connect(self._on_character_created)
+        self.character_dialog.show()
+
+    def _on_character_created(self, name: str, look: str) -> None:
+        self.profile.set_character(name, look)
+        self.character_dialog = None
         self._load_mission()
 
     # ------------------------------------------------------------------ mission lifecycle
