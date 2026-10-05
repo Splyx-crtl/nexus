@@ -86,10 +86,12 @@ class MissionPanel(QWidget):
         self.replay_btn.hide()
         self.endless_btn = NeonButton("[ KEEP GOING (ENDLESS) ]", "One more procedurally-generated op, for as long as you want")
         self.endless_btn.hide()
+        self.daily_btn = NeonButton("[ DAILY OP ]", "Today's op - the same seed for every player, every day")
+        self.daily_btn.hide()
 
         for w in (self.header, self.stats, hline(), self.briefing_title, self.briefing, hline(),
                  self.objectives_title, obj_widget, self.hint_btn, self.hint_label,
-                 self.debrief_title, self.debrief, self.continue_btn, self.replay_btn, self.endless_btn):
+                 self.debrief_title, self.debrief, self.continue_btn, self.replay_btn, self.endless_btn, self.daily_btn):
             lay.addWidget(w)
         lay.addStretch(1)
         scroll.setWidget(inner)
@@ -107,6 +109,7 @@ class MissionPanel(QWidget):
         self.continue_btn.hide()
         self.replay_btn.hide()
         self.endless_btn.hide()
+        self.daily_btn.hide()
         self._hint_tier = 0
         self.hint_label.setText("")
         self.hint_btn.setVisible(profile.get_mode() != "hardcore")
@@ -172,6 +175,7 @@ class MissionPanel(QWidget):
         self.continue_btn.hide()
         self.replay_btn.show()
         self.endless_btn.show()
+        self.daily_btn.show()
 
     def show_epilogue(self, ending, profile: CampaignProfile) -> None:
         self.header.setText(f"ENDING: {ending.title.upper()}")
@@ -185,6 +189,7 @@ class MissionPanel(QWidget):
         self.continue_btn.hide()
         self.replay_btn.show()
         self.endless_btn.show()
+        self.daily_btn.show()
 
     def _rebuild_objectives_cleared(self) -> None:
         while self.objectives_box.count():
@@ -283,6 +288,16 @@ class CampaignWindow(QMainWindow):
         lexicon_btn = NeonButton("[ LEXICON ]", "Look up anything you've unlocked, any time (not just the first time)")
         lexicon_btn.clicked.connect(self._open_lexicon)
         toolbar.addWidget(lexicon_btn)
+        share_btn = NeonButton("[ SHARE PROFILE ]", "Save a PNG summary of your profile (callsign, rank, progress) to saves/screenshots")
+        share_btn.clicked.connect(self._share_profile)
+        toolbar.addWidget(share_btn)
+        map_btn = NeonButton("[ MISSION MAP ]", "See your progress across all 9 acts at a glance")
+        map_btn.clicked.connect(self._open_mission_map)
+        toolbar.addWidget(map_btn)
+        self.mission_map_dialog = None
+        self.toolbar_status = QLabel("")
+        self.toolbar_status.setStyleSheet(f"color:{COLORS['dim']}; padding-left:8px;")
+        toolbar.addWidget(self.toolbar_status)
         self.addToolBar(toolbar)
 
         central = QWidget()
@@ -296,6 +311,7 @@ class CampaignWindow(QMainWindow):
         self.panel.continue_btn.clicked.connect(self._load_mission)
         self.panel.replay_btn.clicked.connect(self._open_mission_select)
         self.panel.endless_btn.clicked.connect(self._start_endless_mission)
+        self.panel.daily_btn.clicked.connect(self._start_daily_mission)
         lay.addWidget(self.panel)
         self.terminal_holder = QWidget()
         hold_lay = QVBoxLayout(self.terminal_holder)
@@ -306,6 +322,7 @@ class CampaignWindow(QMainWindow):
         self.ending_select_dialog = None
         self._endless_counter = 0
         self._stuck_counter = 0
+        self._daily_missions: dict[str, Mission] = {}      # cache: same id can't be registered with generate_endless_mission twice
         self.character_dialog = None
         if self.profile.completed_count == 0 and not self.profile.get_character()["name"]:
             self._show_character_dialog()
@@ -360,6 +377,18 @@ class CampaignWindow(QMainWindow):
         self._endless_counter += 1
         seed = random.randint(0, 10**9)
         mission = generate_endless_mission(f"endless_replay_{self._endless_counter}_{seed}", MAX_LEVEL, 9, seed)
+        self._play_mission(mission, level=lambda: MAX_LEVEL)
+
+    def _start_daily_mission(self) -> None:
+        """F1: the same op for every player, every day (nexus/campaign/daily.py) - cached per id, since
+        generate_endless_mission refuses to register the same mission_id twice in one process."""
+        from nexus.campaign.daily import daily_mission_id, daily_seed
+        from nexus.campaign.progression import MAX_LEVEL
+        mid = daily_mission_id()
+        mission = self._daily_missions.get(mid)
+        if mission is None:
+            mission = generate_endless_mission(mid, MAX_LEVEL, 9, daily_seed())
+            self._daily_missions[mid] = mission
         self._play_mission(mission, level=lambda: MAX_LEVEL)
 
     def _swap_terminal(self) -> None:
@@ -473,6 +502,23 @@ class CampaignWindow(QMainWindow):
         from .lexicon_dialog import LexiconDialog
         self.lexicon_dialog = LexiconDialog(self.profile.level, self)
         self.lexicon_dialog.show()
+
+    def _share_profile(self) -> None:
+        import time
+
+        from nexus.config import SAVES_DIR
+
+        from .profile_card import render_profile_card
+        folder = SAVES_DIR / "screenshots"
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / f"nexus_profile_{time.strftime('%Y%m%d_%H%M%S')}.png"
+        render_profile_card(self.profile, total_missions=len(self.all_missions)).save(str(path))
+        self.toolbar_status.setText(f"Saved: {path.name}")
+
+    def _open_mission_map(self) -> None:
+        from .mission_map_dialog import MissionMapDialog
+        self.mission_map_dialog = MissionMapDialog(self.all_missions, self.profile, self)
+        self.mission_map_dialog.show()
 
     def _on_campaign_finished(self) -> None:
         self.current_mission = None

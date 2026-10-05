@@ -15,8 +15,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
+from PySide6.QtGui import QPixmap
+
 from nexus import config
 from nexus.campaign.content import ALL_MISSIONS
+from nexus.config import SAVES_DIR
 from nexus.campaign.runner import MissionRunner
 from nexus.save_system import SaveSystem
 from ui.campaign_window import CampaignWindow
@@ -71,6 +74,16 @@ config.set_showcase_mode(False)
 win.panel.update_stats(win.profile)
 check("Kestrel" in win.panel.stats.text(), "turning showcase mode back off unmasks the callsign")
 
+# ------------------------------------------------------------------- D1: profile card / share image
+win._share_profile()
+saved_name = win.toolbar_status.text().removeprefix("Saved: ")
+check(saved_name.startswith("nexus_profile_") and saved_name.endswith(".png"), "share profile saves a PNG and reports its name")
+saved_path = SAVES_DIR / "screenshots" / saved_name
+check(saved_path.exists(), "the profile card PNG actually exists on disk")
+loaded = QPixmap(str(saved_path))
+check(loaded.width() == 1200 and loaded.height() == 675, "profile card is the expected 1200x675 share-image size")
+saved_path.unlink()
+
 
 pump()
 check(win.current_mission is not None and win.current_mission.id == "act1_m01", "opens on level 1")
@@ -90,6 +103,16 @@ win.grab().save(str(OUT / "campaign_m1_done.png"))
 win.panel.continue_btn.click()
 pump()
 check(win.current_mission.id == "act1_m02", "continue advances to the next mission")
+
+# D1: the mission map as a graph (early playthrough state: exactly one done, exactly one up next)
+win._open_mission_map()
+pump()
+early_nodes = [it for it in win.mission_map_dialog.scene.items() if it.data(0)]
+early_statuses = {it.data(0): it.data(1) for it in early_nodes}
+check(early_statuses["act1_m01"] == "complete", "mission map marks the finished mission as complete")
+check(early_statuses["act1_m02"] == "up next", "mission map marks the actual next mission as up next")
+check(early_statuses["act1_m03"] == "locked", "mission map marks a not-yet-reachable mission as locked")
+win.mission_map_dialog.close()
 
 # decision capture, driven directly against a decision-tagged mission
 decision_mission = next(m for m in ALL_MISSIONS if any(t.startswith("decision:") for t in m.tags))
@@ -176,6 +199,15 @@ pump()
 check(win.current_mission.id != endless_mission.id, "a second endless op is a different generated mission")
 win.grab().save(str(OUT / "campaign_endless.png"))
 
+# F1: the daily op - same cached mission every time it's (re)started today
+win._start_daily_mission()
+pump()
+daily_mission = win.current_mission
+check(daily_mission is not None and daily_mission.id.startswith("daily_"), "daily op generated")
+win._start_daily_mission()
+pump()
+check(win.current_mission.id == daily_mission.id, "starting the daily op again today reuses the same cached mission")
+
 # German localization (nexus.campaign.i18n), if act1_m01 has a registered translation
 from nexus import i18n as ui_i18n
 from nexus.campaign.i18n import TRANSLATIONS
@@ -205,6 +237,19 @@ win.lexicon_dialog.search.setText("")
 pump()
 check(win.lexicon_dialog.list.count() == all_count, "clearing the search restores the full list")
 win.lexicon_dialog.grab().save(str(OUT / "campaign_lexicon.png"))
+
+# D1: the mission map as a graph
+win._open_mission_map()
+pump()
+check(win.mission_map_dialog is not None, "mission map opens")
+nodes = [it for it in win.mission_map_dialog.scene.items() if it.data(0)]
+check(len(nodes) == len(ALL_MISSIONS), "mission map draws a node for every mission")
+statuses = [it.data(1) for it in nodes]
+# by this point in the script the whole 200-level campaign is already finished (see "C7 buttons appear" above)
+check(statuses.count("complete") == len(ALL_MISSIONS), "every mission shown as complete once the campaign is finished")
+check(statuses.count("up next") == 0, "nothing marked as up next once there's nothing left to play")
+win.mission_map_dialog.grab().save(str(OUT / "campaign_mission_map.png"))
+win.mission_map_dialog.close()
 
 # C6: Medium mode shows a short one-liner instead of the full lesson
 m2 = next(m for m in ALL_MISSIONS if m.id == "act1_m02")
