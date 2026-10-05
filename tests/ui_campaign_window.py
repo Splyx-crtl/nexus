@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
+from nexus import config
 from nexus.campaign.content import ALL_MISSIONS
 from nexus.campaign.runner import MissionRunner
 from nexus.save_system import SaveSystem
@@ -61,6 +62,14 @@ check(win.profile.get_character() == {"name": "Kestrel", "look": "quiet, methodi
 check(win.profile.get_mode() == "medium", "chosen help mode saved to the profile")
 check("Kestrel" in win.panel.stats.text(), "callsign shown in the mission panel")
 win.grab().save(str(OUT / "campaign_character.png"))
+
+# ------------------------------------------------------------------- D3: showcase mode masks the callsign
+config.set_showcase_mode(True)
+win.panel.update_stats(win.profile)
+check("Kestrel" not in win.panel.stats.text() and "OPERATOR" in win.panel.stats.text(), "showcase mode masks the callsign in the mission panel")
+config.set_showcase_mode(False)
+win.panel.update_stats(win.profile)
+check("Kestrel" in win.panel.stats.text(), "turning showcase mode back off unmasks the callsign")
 
 
 pump()

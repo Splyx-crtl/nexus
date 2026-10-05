@@ -225,6 +225,27 @@ shell = win.shell
 term = shell.terminal_page.terminal
 check(config.COLORS["green"] == "#00ff9c", "theme reset to default")
 
+# ------------------------------------------------------------------- accessibility (D3)
+sp = shell.pages["settings"]            # earlier theme reloads replaced the settings page; grab the live one
+sp._fill_themes()
+check(sp.theme.findData("colorblind") >= 0 and sp.theme.findData("mono") >= 0, "colorblind-safe and mono themes offered in settings")
+sp._controls["reduced_motion"].setChecked(True)
+pump(200)
+check(win.scan.reduce_motion, "reduced motion freezes the scanline overlay")
+check(not win.menu.bg.animated and not win.menu.title.enabled and not win.banner.glitch_enabled,
+      "reduced motion overrides animations/glitch toggles even if they're individually on")
+sp._controls["reduced_motion"].setChecked(False)
+pump(200)
+check(not win.scan.reduce_motion, "reduced motion off restores normal motion")
+check(win.menu.card.name.text() == "TESTER", "callsign shown normally with showcase mode off")
+sp._controls["showcase_mode"].setChecked(True)
+pump(300)
+check(win.menu.card.name.text() == "OPERATOR", "showcase mode masks the callsign in the sidebar")
+sp = win.shell.pages["settings"]        # reload_ui() rebuilt the menu/settings page
+sp._controls["showcase_mode"].setChecked(False)
+pump(300)
+check(win.menu.card.name.text() == "TESTER", "turning showcase mode back off unmasks the callsign")
+
 # ------------------------------------------------------------------- save / load slots
 win.saves.save_slot(win.engine.db, 1)
 slot_info = saves.list_slots()[0]

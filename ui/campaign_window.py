@@ -29,7 +29,7 @@ from nexus.campaign.migrate import ensure_v3_profile
 from nexus.campaign.mission import Mission
 from nexus.campaign.profile import CampaignProfile
 from nexus.campaign.runner import MissionRunner
-from nexus.config import COLORS
+from nexus.config import COLORS, mask_name
 from nexus.i18n import language as ui_language
 from nexus.save_system import SaveSystem
 
@@ -113,7 +113,7 @@ class MissionPanel(QWidget):
         self._rebuild_objectives(mission)
 
     def update_stats(self, profile: CampaignProfile) -> None:
-        name = profile.get_character().get("name") or profile.username
+        name = mask_name(profile.get_character().get("name") or profile.username)
         self.stats.setText(f"{name}   ·   RANK {profile.rank}   ·   LEVEL {profile.level}   ·   XP {profile.xp}")
 
     def _rebuild_objectives(self, mission: Mission) -> None:

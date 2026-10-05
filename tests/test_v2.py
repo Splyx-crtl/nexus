@@ -232,7 +232,7 @@ class ContentTests(unittest.TestCase):
         self.assertTrue({"INFILTRATION", "DECRYPTION", "INVESTIGATION", "TRACE", "FIREWALL", "RECOVERY", "DEFENSE", "ESCAPE", "INTELLIGENCE", "STORY"} <= types)
         self.assertEqual({m["difficulty"] for m in d.missions}, {1, 2, 3, 4, 5})
         self.assertEqual(len(d.chapters), 6)
-        self.assertEqual(len(d.themes), 8)
+        self.assertEqual(len(d.themes), 10)
         for m in d.missions:
             for key in ("title", "description", "reward", "required_level", "objectives", "story_start", "chapter", "type"):
                 self.assertIn(key, m, f"{m['id']} missing {key}")

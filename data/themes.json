@@ -170,6 +170,50 @@
     "white": "#ffffff",
     "purple": "#d8c8ff"
    }
+  },
+  {
+   "id": "colorblind",
+   "name": "COLORBLIND SAFE",
+   "free": true,
+   "palette": {
+    "bg": "#05070d",
+    "bg_alt": "#0a0e1a",
+    "panel": "#0d1220",
+    "panel_hi": "#141b2e",
+    "border": "#2a3550",
+    "green": "#648fff",
+    "green_dim": "#415a99",
+    "cyan": "#dc267f",
+    "cyan_dim": "#8a1a52",
+    "red": "#fe6100",
+    "amber": "#ffb000",
+    "text": "#d8e2ff",
+    "dim": "#6b7aa0",
+    "white": "#f2f5ff",
+    "purple": "#785ef0"
+   }
+  },
+  {
+   "id": "mono",
+   "name": "MONOCHROME",
+   "free": true,
+   "palette": {
+    "bg": "#060606",
+    "bg_alt": "#0b0b0b",
+    "panel": "#101010",
+    "panel_hi": "#1a1a1a",
+    "border": "#3a3a3a",
+    "green": "#cfcfcf",
+    "green_dim": "#8a8a8a",
+    "cyan": "#9a9a9a",
+    "cyan_dim": "#6e6e6e",
+    "red": "#f5f5f5",
+    "amber": "#b0b0b0",
+    "text": "#d8d8d8",
+    "dim": "#6e6e6e",
+    "white": "#ffffff",
+    "purple": "#888888"
+   }
   }
  ]
 }

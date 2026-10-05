@@ -141,4 +141,24 @@ DEFAULT_SETTINGS = {
     "device_id": "",
     "license_token": "",
     "license_key": "",
+    "reduced_motion": False,    # accessibility: turns off the moving scanline band, alert pulse, glitches and page-fade
+    "showcase_mode": False,     # accessibility/streaming: masks the callsign on screen, safe for recording
 }
+
+# --- Showcase mode (module-level like nexus.i18n's language, so windows that aren't handed a Settings
+# object directly - e.g. CampaignWindow - can still read it) --------------------------------------------
+_SHOWCASE_MODE = False
+
+
+def set_showcase_mode(value: bool) -> None:
+    global _SHOWCASE_MODE
+    _SHOWCASE_MODE = bool(value)
+
+
+def showcase_mode() -> bool:
+    return _SHOWCASE_MODE
+
+
+def mask_name(name: str) -> str:
+    """Replace a player-identifying name with a neutral placeholder while showcase mode is on."""
+    return "OPERATOR" if _SHOWCASE_MODE else name

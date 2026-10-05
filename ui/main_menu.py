@@ -8,7 +8,7 @@ from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from nexus import reputation
-from nexus.config import APP_SUBTITLE, COLORS, VERSION
+from nexus.config import APP_SUBTITLE, COLORS, VERSION, mask_name
 from nexus.version import AUTHOR, DISCORD_URL
 from nexus.i18n import tr
 
@@ -142,7 +142,7 @@ class OperatorCard(QFrame):
 
     def update_from(self, engine) -> None:
         p = engine.player
-        self.name.setText(p.username.upper())
+        self.name.setText(mask_name(p.username.upper()))
         self.rank.setText(f"{tr('level')} {p.level}  ·  {p.rank}")
         self.xp_bar.set_value(p.xp, p.xp_needed, f"{p.xp} / {p.xp_needed} {tr('xp')}")
         self.credits.setText(f"{tr('credits')}  ${p.credits:,}")

@@ -355,10 +355,14 @@ class MainWindow(QMainWindow):
     def apply_settings(self) -> None:
         s = self.settings
         self._apply_language()
-        self.scan.show_lines = bool(s.get("scanlines"))
-        self.menu.title.enabled = bool(s.get("glitch_effects"))
-        self.menu.bg.animated = bool(s.get("animations"))
-        self.banner.glitch_enabled = bool(s.get("glitch_effects"))
+        reduce_motion = bool(s.get("reduced_motion"))
+        self.scan.reduce_motion = reduce_motion
+        self.scan.show_lines = bool(s.get("scanlines")) and not reduce_motion
+        self.menu.title.enabled = bool(s.get("glitch_effects")) and not reduce_motion
+        self.menu.bg.animated = bool(s.get("animations")) and not reduce_motion
+        self.banner.glitch_enabled = bool(s.get("glitch_effects")) and not reduce_motion
+        self.scan.update()
+        config.set_showcase_mode(bool(s.get("showcase_mode")))
         self.sound.apply_volumes()
         if self.shell:
             self.shell.terminal_page.terminal.apply_font_size()
@@ -405,7 +409,7 @@ class MainWindow(QMainWindow):
         self.apply_settings()
 
     def _transition(self, callback) -> None:
-        if self.settings.get("animations"):
+        if self.settings.get("animations") and not self.settings.get("reduced_motion"):
             self.fade.transition(callback)
         else:
             callback()

@@ -82,6 +82,7 @@ class SettingsWidget(QWidget):
         dl.addStretch(1)
         self.tabs.addTab(display, "DISPLAY")
 
+        self.tabs.addTab(self._accessibility_tab(), "ACCESSIBILITY")
         self.tabs.addTab(self._about_tab(), "ABOUT")
 
         row = QHBoxLayout()
@@ -90,6 +91,38 @@ class SettingsWidget(QWidget):
         row.addWidget(reset)
         row.addStretch(1)
         lay.addLayout(row)
+
+    def _accessibility_tab(self) -> QWidget:
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        lay.addWidget(self._check("reduced_motion", "Reduced motion",
+                                   "Turns off the moving scanline band, the pulsing alert glow, glitch bursts and "
+                                   "the menu background animation. The red alert tint and page transitions still "
+                                   "show, just without the motion."))
+        lay.addWidget(self._check_reload("showcase_mode", "Showcase / recording mode",
+                                          "Replaces your callsign with \"OPERATOR\" everywhere it's shown on screen "
+                                          "- safe for streaming or screen recording."))
+        note = QLabel("Colorblind-friendly palette: pick \"COLORBLIND SAFE\" under Display -> Theme. It replaces "
+                       "the usual red/green contrast with blue/orange/magenta so status colors stay distinguishable.")
+        note.setObjectName("dim")
+        note.setWordWrap(True)
+        lay.addWidget(note)
+        keys = QLabel("Keyboard: Tab / Shift+Tab moves focus, Enter confirms, Esc closes dialogs or opens the pause "
+                       "menu, F11 toggles fullscreen, F12 saves a screenshot, F1 opens help, Ctrl+1..9 jumps between "
+                       "sections.")
+        keys.setObjectName("dim")
+        keys.setWordWrap(True)
+        lay.addWidget(keys)
+        lay.addStretch(1)
+        return w
+
+    def _check_reload(self, key: str, label: str, hint: str) -> QCheckBox:
+        c = QCheckBox(label)
+        c.setToolTip(hint)
+        c.setChecked(bool(self.settings.get(key)))
+        c.toggled.connect(lambda v: self._set(key, v, reload=True))
+        self._controls[key] = c
+        return c
 
     def _about_tab(self) -> QWidget:
         from PySide6.QtCore import QUrl
