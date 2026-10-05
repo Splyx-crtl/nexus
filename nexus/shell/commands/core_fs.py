@@ -225,7 +225,8 @@ def cat(ctx, args):
     return status
 
 
-@command("tac", level=2, summary="Concatenate and print files in reverse.", usage="tac [FILE]...")
+@command("tac", level=2, summary="Concatenate and print files in reverse.", usage="tac [FILE]...",
+        lesson="tac prints a file backwards, last line first — the mirror image of 'cat'. Handy for reading a log newest-first.")
 def tac(ctx, args):
     inputs, status = _inputs(ctx, args)
     for _, text in inputs:
@@ -386,7 +387,8 @@ def mkdir(ctx, args):
     return status
 
 
-@command("rmdir", level=2, summary="Remove empty directories.", usage="rmdir [OPTION]... DIRECTORY...")
+@command("rmdir", level=2, summary="Remove empty directories.", usage="rmdir [OPTION]... DIRECTORY...",
+        lesson="rmdir removes a directory, but only if it's empty. For a folder that still has files in it, use 'rm -r' instead.")
 def rmdir(ctx, args):
     o = opts.parse(ctx, args, short="pv")
     if o is None:
@@ -669,7 +671,8 @@ def chown(ctx, args):
     return status
 
 
-@command("stat", level=5, summary="Display file or file system status.", usage="stat [OPTION]... FILE...")
+@command("stat", level=5, summary="Display file or file system status.", usage="stat [OPTION]... FILE...",
+        lesson="stat shows everything about one file — size, permissions, owner, timestamps — more detail in one place than 'ls -l'.")
 def stat(ctx, args):
     o = opts.parse(ctx, args, short="L")
     if o is None:
@@ -720,7 +723,8 @@ def du(ctx, args):
     return status
 
 
-@command("df", level=6, summary="Report file system space usage.", usage="df [OPTION]... [FILE]...")
+@command("df", level=6, summary="Report file system space usage.", usage="df [OPTION]... [FILE]...",
+        lesson="df shows how full each mounted filesystem is: 'df -h' gives human-readable sizes (K/M/G) instead of raw block counts.")
 def df(ctx, args):
     o = opts.parse(ctx, args, short="hTa")
     if o is None:
@@ -1042,7 +1046,8 @@ def file_cmd(ctx, args):
     return 0
 
 
-@command("basename", level=3, summary="Strip directory and suffix from filenames.", usage="basename NAME [SUFFIX]")
+@command("basename", level=3, summary="Strip directory and suffix from filenames.", usage="basename NAME [SUFFIX]",
+        lesson="basename strips the directory from a path, leaving just the final name: 'basename /var/log/system.log' prints 'system.log'.")
 def basename(ctx, args):
     if not args:
         ctx.err("basename: missing operand")
@@ -1054,7 +1059,8 @@ def basename(ctx, args):
     return 0
 
 
-@command("dirname", level=3, summary="Strip last component from file name.", usage="dirname NAME...")
+@command("dirname", level=3, summary="Strip last component from file name.", usage="dirname NAME...",
+        lesson="dirname prints everything except the final name: 'dirname /var/log/system.log' prints '/var/log'. The counterpart to basename.")
 def dirname(ctx, args):
     if not args:
         ctx.err("dirname: missing operand")
@@ -1065,7 +1071,8 @@ def dirname(ctx, args):
     return 0
 
 
-@command("realpath", level=5, summary="Print the resolved absolute file name.", usage="realpath FILE...")
+@command("realpath", level=5, summary="Print the resolved absolute file name.", usage="realpath FILE...",
+        lesson="realpath turns a relative or messy path into a full, clean absolute one: 'realpath ../notes.txt' shows exactly where that file really is.")
 def realpath(ctx, args):
     status = 0
     for a in [x for x in args if not x.startswith("-")]:
@@ -1078,7 +1085,8 @@ def realpath(ctx, args):
     return status
 
 
-@command("readlink", level=5, summary="Print resolved symbolic links or canonical file names.", usage="readlink [OPTION]... FILE...")
+@command("readlink", level=5, summary="Print resolved symbolic links or canonical file names.", usage="readlink [OPTION]... FILE...",
+        lesson="readlink shows where a symbolic link actually points: 'readlink shortcut' reveals the real target without following it yourself.")
 def readlink(ctx, args):
     o = opts.parse(ctx, args, short="fenm")
     if o is None:

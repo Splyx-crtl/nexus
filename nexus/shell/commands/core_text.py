@@ -415,7 +415,8 @@ def tr(ctx, args):
     return 0
 
 
-@command("tee", level=8, summary="Read from standard input and write to standard output and files.", usage="tee [OPTION]... [FILE]...")
+@command("tee", level=8, summary="Read from standard input and write to standard output and files.", usage="tee [OPTION]... [FILE]...",
+        lesson="tee writes its input to a file AND passes it straight through, so you can save a result and still see it (or keep piping it further): 'cmd | tee out.txt'.")
 def tee(ctx, args):
     o = opts.parse(ctx, args, short="ai")
     if o is None:
@@ -432,7 +433,8 @@ def tee(ctx, args):
     return status
 
 
-@command("rev", level=9, summary="Reverse lines characterwise.", usage="rev [FILE]...")
+@command("rev", level=9, summary="Reverse lines characterwise.", usage="rev [FILE]...",
+        lesson="rev reverses every line character by character — not word order, the literal string. Sometimes the trick to reading something written backwards.")
 def rev(ctx, args):
     inputs, status = _lines_from(ctx, args)
     for _, text in inputs:
@@ -441,7 +443,8 @@ def rev(ctx, args):
     return status
 
 
-@command("nl", level=9, summary="Number lines of files.", usage="nl [OPTION]... [FILE]...")
+@command("nl", level=9, summary="Number lines of files.", usage="nl [OPTION]... [FILE]...",
+        lesson="nl numbers every line of a file, like 'cat -n' but with more formatting control.")
 def nl(ctx, args):
     inputs, status = _lines_from(ctx, [a for a in args if not a.startswith("-")])
     n = 0
@@ -455,7 +458,8 @@ def nl(ctx, args):
     return status
 
 
-@command("seq", level=9, summary="Print a sequence of numbers.", usage="seq [OPTION]... LAST | FIRST LAST | FIRST INCREMENT LAST")
+@command("seq", level=9, summary="Print a sequence of numbers.", usage="seq [OPTION]... LAST | FIRST LAST | FIRST INCREMENT LAST",
+        lesson="seq prints a sequence of numbers: 'seq 1 5' gives 1 through 5, one per line. Useful for generating test data or counting in a loop.")
 def seq(ctx, args):
     o = opts.parse(ctx, args, short="w", with_arg="s")
     if o is None:
@@ -481,14 +485,16 @@ def seq(ctx, args):
     return 0
 
 
-@command("yes", level=9, summary="Output a string repeatedly until killed.", usage="yes [STRING]...")
+@command("yes", level=9, summary="Output a string repeatedly until killed.", usage="yes [STRING]...",
+        lesson="yes repeats a string (or 'y' by default) forever until stopped — classically piped into a prompt that keeps asking for confirmation.")
 def yes(ctx, args):
     for _ in range(2000):
         ctx.out(" ".join(args) or "y")
     return 0
 
 
-@command("sleep", level=9, summary="Delay for a specified amount of time.", usage="sleep NUMBER[SUFFIX]...")
+@command("sleep", level=9, summary="Delay for a specified amount of time.", usage="sleep NUMBER[SUFFIX]...",
+        lesson="sleep pauses for a number of seconds before the next command runs: 'sleep 3' waits three seconds. Useful for spacing out automated steps.")
 def sleep(ctx, args):
     total = 0.0
     for a in args:
@@ -576,7 +582,8 @@ def xargs(ctx, args):
     return status
 
 
-@command("paste", level=10, summary="Merge lines of files.", usage="paste [OPTION]... [FILE]...")
+@command("paste", level=10, summary="Merge lines of files.", usage="paste [OPTION]... [FILE]...",
+        lesson="paste merges files side by side, line by line: 'paste names.txt scores.txt' joins matching rows into one table instead of two separate lists.")
 def paste(ctx, args):
     o = opts.parse(ctx, args, short="s", with_arg="d")
     if o is None:
@@ -593,7 +600,8 @@ def paste(ctx, args):
     return status
 
 
-@command("column", level=10, summary="Columnate lists.", usage="column [OPTION]... [FILE]...")
+@command("column", level=10, summary="Columnate lists.", usage="column [OPTION]... [FILE]...",
+        lesson="column lines up whitespace- or delimiter-separated text into neat columns: 'column -t file' turns ragged rows into a readable table.")
 def column(ctx, args):
     o = opts.parse(ctx, args, short="t", with_arg="s")
     if o is None:
