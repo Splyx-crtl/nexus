@@ -1,5 +1,50 @@
 # Changelog
 
+## 3.0.0 — The 200-level campaign, a real shell, 3D network map
+
+### Added
+- **NEXUS CAMPAIGN 3.0 (BETA)**: a whole second game-in-the-game, reachable from the main menu, independent of the
+  classic game below (which is untouched and stays the default). 200 hand-written levels across 9 acts, no
+  minigames — you type real commands into a real **bash, PowerShell or cmd shell** (pipes, redirection, variables,
+  scripts, history, tab completion, `man`/`--help`/`Get-Help`, real file permissions, `ssh`/`scp` between
+  machines) against a fully simulated network, Windows targets included. A real story runs alongside it: NEXUS,
+  Mira and ZERO, with choices that matter and four different endings (one secret).
+- **Three ways to play it**: Guided mode explains every command the first time you use it, Medium gives a one-line
+  nudge, Hardcore says nothing — and if you're stuck for a few commands in a row, Guided/Medium now gently offer
+  the next hint instead of making you go find the button. A searchable **Lexicon** (toolbar button) lists every
+  command you've unlocked, any time, not just the first time.
+- **After level 200**: replay any of the 200 missions, generate endless procedural ops forever, or play today's
+  **Daily Op** — the same seeded challenge for every player, every day.
+- **A profile card** (toolbar: SHARE PROFILE) renders your callsign, rank, progress and chosen ending as a PNG you
+  can actually post somewhere, and a **mission map** (toolbar: MISSION MAP) shows your progress across all 9 acts
+  as a graph at a glance.
+- **Music and sound** for the campaign (previously silent): terminal music while you play, menu music the rest of
+  the time, sound cues for real progress, finishing a mission and choosing an ending.
+- **Call-style story scenes** (Settings → Gameplay, off by default): key story beats can play as an incoming call
+  — accept/decline, subtitles, a per-character voice-filter color — instead of plain terminal text.
+- **German localization** has begun: Acts I-III (66 of 200 missions) are fully translated; the rest follow.
+- **A real 3D network map**, as an alternative to the existing flat one (Settings → Display → Network Map:
+  Flat/3D, Flat stays the default since 3D needs real GPU support): orbit it with the mouse, watch data flow
+  along your active connection and a trace wave ripple out when your heat runs high. Falls back to the flat map
+  automatically if 3D can't load on your machine — nothing breaks either way.
+- **Accessibility**: a "Reduced motion" setting turns off the scanline sweep, the pulsing alert glow, glitch
+  bursts and the menu background animation everywhere in the app; "Showcase / recording mode" masks your callsign
+  on screen for streaming; two new themes, COLORBLIND SAFE and MONOCHROME (10 themes total now).
+- **Staff accounts for server admins** (opt-in, additive — the existing single admin login keeps working exactly
+  as before): named logins with roles (Developer/Owner/Moderator/Helper), mandatory two-factor authentication,
+  invite codes, owner approval for new logins, and optional per-staff key-creation limits.
+- **Player reports**: flag a name and a message for staff attention from in-game; staff can work through the
+  queue, and an optional, separate Discord channel gets notified on a new report or a real ban.
+
+### Changed
+- The in-game update checker and the admin panel's single login/token are unaffected by any of the above — every
+  existing admin API endpoint behaves exactly as it did in 2.4.0.
+
+### Tests
+- Several hundred new tests across the shell engine, the 200-mission campaign, save/profile migration, German
+  localization, accessibility, the 3D map's geometry and rendering, call-style scenes, staff accounts and player
+  reports — see `docs/3.0-PROGRESS.md` on the `claude/v3.0-development` branch for the full build history.
+
 ## 2.4.0 — Weekly challenge, friends bar, Discord announcements, music
 
 ### Added
