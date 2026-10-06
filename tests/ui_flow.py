@@ -279,6 +279,14 @@ check(win.stack.currentIndex() == win.PAGE_STORY, "ending cinematic started")
 win.story._end()
 pump(1500)
 check(win.stack.currentIndex() == win.PAGE_SHELL, "returned to the game after the ending")
+
+# ------------------------------------------------------------------- E3: the campaign window shares MainWindow's sound
+win.on_menu_action("campaign30")
+pump(600)
+check(win.campaign_window is not None and win.campaign_window.sound is win.sound,
+      "opening the 3.0 campaign window shares MainWindow's own sound manager, not a separate one")
+win.campaign_window.close()
+
 print("mini-games solved:", solved)
 win.close()
 print("ALL UI FLOW CHECKS PASSED")

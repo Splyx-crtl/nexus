@@ -305,7 +305,7 @@ class MainWindow(QMainWindow):
         if self.campaign_window is None:
             from .campaign_window import CampaignWindow
             default_username = self.engine.player.username if self.engine else "operator"
-            self.campaign_window = CampaignWindow(self.saves, default_username=default_username)
+            self.campaign_window = CampaignWindow(self.saves, default_username=default_username, sound=self.sound)
         self.campaign_window.show()
         self.campaign_window.raise_()
         self.campaign_window.activateWindow()

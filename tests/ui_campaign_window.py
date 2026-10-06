@@ -52,6 +52,21 @@ def check(cond, msg):
     print("ok:", msg)
 
 
+class FakeSound:
+    """E3: NEXUS_NO_AUDIO disables the real SoundManager's state tracking too (it bails out of set_music() before
+    recording the mood), so the actual event wiring in CampaignWindow is checked against this double instead."""
+
+    def __init__(self):
+        self.played: list[str] = []
+        self.mood: str | None = None
+
+    def play(self, name: str) -> None:
+        self.played.append(name)
+
+    def set_music(self, mood: str | None) -> None:
+        self.mood = mood
+
+
 pump()
 check(win.character_dialog is not None, "a brand-new profile is asked for a callsign first")
 check(win.current_mission is None, "no mission loads until the character dialog is answered")
@@ -278,10 +293,12 @@ win.db.close()
 
 # --- the real finale flow: complete everything up to the last mission live, then play the finale for real ---
 saves2 = SaveSystem(profiles_dir=root / "profiles2", slots_dir=root / "slots2")
-win2 = CampaignWindow(saves2, default_username="finisher")
+fake_sound = FakeSound()
+win2 = CampaignWindow(saves2, default_username="finisher", sound=fake_sound)
 win2.resize(1220, 780)
 win2.show()
 pump()
+check(fake_sound.mood == "terminal", "opening the campaign window starts terminal music (E3)")
 win2.character_dialog.name_input.setText("Finisher")
 win2.character_dialog.ok_btn.click()
 pump()
@@ -298,6 +315,7 @@ for line in finale.solution:
     win2.terminal.run_command(line)
     pump()
 check(win2.runner.is_complete, "the finale's own solution completes it")
+check(fake_sound.played and fake_sound.played[-1] in ("complete", "achievement"), "finishing a mission plays a completion sound (E3)")
 check(win2.ending_select_dialog is not None, "completing the finale opens the ending choice")
 check(not win2.panel.continue_btn.isVisible(), "no plain CONTINUE past the finale — the ending dialog decides")
 reachable_ids = {win2.ending_select_dialog.list.item(i).data(Qt.ItemDataRole.UserRole)
@@ -312,6 +330,7 @@ chosen_id = first_ending_item.data(Qt.ItemDataRole.UserRole)
 win2.ending_select_dialog._on_pick(first_ending_item)
 pump()
 check(win2.ending_select_dialog is None, "ending dialog closes after a choice")
+check("levelup" in fake_sound.played, "choosing an ending plays its own sound cue (E3)")
 check(win2.profile.db.get_profile()["ending"] == chosen_id, "the chosen ending is saved to the profile")
 check(win2.terminal is None and win2.current_mission is None, "the epilogue replaces the terminal, not another mission")
 from nexus.campaign.endings import ENDINGS
@@ -322,6 +341,8 @@ win2.panel.replay_btn.click()
 pump()
 check(win2.mission_select_dialog is not None, "C7 still works after choosing an ending")
 win2.mission_select_dialog.reject()
+win2.close()
+check(fake_sound.mood == "menu", "closing the campaign window hands music mood back to the menu (E3)")
 win2.db.close()
 
 print("ALL OK — screenshots in", OUT)

@@ -12,18 +12,25 @@ from ..save_system import SaveSystem
 from .profile import CampaignProfile
 
 
-def _move_with_retry(src: Path, dest: Path, attempts: int = 10, delay: float = 0.1) -> None:
+def _move_with_retry(src: Path, dest: Path, attempts: int = 10, delay: float = 0.1) -> bool:
     """Windows can briefly hold a just-closed SQLite file locked (antivirus/indexer), so a move right after
     ``Database.close()`` occasionally raises PermissionError even though the connection is genuinely closed —
-    a few short retries clear it without surfacing a user-facing error for what is a transient OS delay."""
+    a few short retries clear it without surfacing a user-facing error for what is a transient OS delay.
+
+    Returns whether the move succeeded. A real, non-transient lock is also possible here (not just antivirus/
+    indexer): opening Campaign 3.0 from the menu while the 2.x engine's own connection to that same profile is
+    still open in the same process - retrying never clears that one, and it used to crash the whole app
+    (discovered via tests/ui_flow.py opening the campaign window mid-2.x-session). The caller treats a failed
+    move as "leave the old file where it is and carry on" rather than a fatal error."""
     for attempt in range(attempts):
         try:
             shutil.move(str(src), str(dest))
-            return
+            return True
         except PermissionError:
             if attempt == attempts - 1:
-                raise
+                return False
             time.sleep(delay)
+    return False
 
 
 def ensure_v3_profile(saves: SaveSystem, username: str, archive_dir: Path | None = None) -> Database:
@@ -44,7 +51,8 @@ def ensure_v3_profile(saves: SaveSystem, username: str, archive_dir: Path | None
         while dest.exists():
             dest = archive_dir / f"{latest.path.stem}_{counter}{latest.path.suffix}"
             counter += 1
-        _move_with_retry(latest.path, dest)
+        _move_with_retry(latest.path, dest)        # if this fails (file still locked), the old save just stays
+                                                     # where it is - not archived, but harmless, and never fatal
     db = saves.create_profile(username)
     CampaignProfile.init_v3(db, username)
     return db

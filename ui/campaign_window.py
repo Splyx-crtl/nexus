@@ -267,11 +267,17 @@ class EndingSelectDialog(QDialog):
 
 
 class CampaignWindow(QMainWindow):
-    def __init__(self, saves: SaveSystem, default_username: str = "operator", parent=None):
+    def __init__(self, saves: SaveSystem, default_username: str = "operator", parent=None, sound=None):
         super().__init__(parent)
         self.setWindowTitle("NEXUS // TERMINAL — Campaign 3.0 (beta)")
         self.resize(1220, 780)
         self.setMinimumSize(900, 600)
+
+        if sound is None:
+            from nexus.audio import SoundManager
+            sound = SoundManager(None)
+        self.sound = sound
+        self.sound.set_music("terminal")
 
         self.saves = saves
         self.db = ensure_v3_profile(saves, default_username)
@@ -408,6 +414,8 @@ class CampaignWindow(QMainWindow):
         self._maybe_show_lesson(line)
         if sum(s.hits for s in self.runner.states) > hits_before:
             self._stuck_counter = 0           # real progress — the player isn't stuck
+            if not self.runner.is_complete:
+                self.sound.play("notify")
         else:
             self._maybe_offer_hint()
         if self.runner.is_complete:
@@ -467,6 +475,7 @@ class CampaignWindow(QMainWindow):
         self.profile.complete_mission(mission, self.all_missions)
         self.panel.update_stats(self.profile)
         self.panel.show_debrief(mission)
+        self.sound.play("achievement" if mission.size == "milestone" else "complete")
         for line in mission.debrief:
             self.terminal.print_system(line, COLORS["amber"])
         self.terminal.focus_input()
@@ -483,6 +492,7 @@ class CampaignWindow(QMainWindow):
     def _on_ending_chosen(self, ending_id: str) -> None:
         from nexus.campaign.endings import ENDINGS
         self.profile.set_ending(ending_id)
+        self.sound.play("levelup")
         self.ending_select_dialog = None
         self.current_mission = None
         self.runner = None
@@ -532,4 +542,5 @@ class CampaignWindow(QMainWindow):
     # ------------------------------------------------------------------ lifecycle
     def closeEvent(self, event: QCloseEvent) -> None:
         self.db.flush()
-        super().closeEvent(event)
+        self.sound.set_music("menu")       # this window doesn't live in MainWindow's own page stack, so nothing
+        super().closeEvent(event)          # else would revert the mood once it closes
