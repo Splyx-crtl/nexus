@@ -72,6 +72,25 @@ class Migrate(unittest.TestCase):
         info = self.saves.latest_profile()
         self.assertEqual(info.rank, "NETRUNNER")
 
+    def test_a_still_open_connection_to_the_old_profile_does_not_crash_the_whole_thing(self):
+        """Real bug, found via tests/ui_flow.py: clicking "CAMPAIGN 3.0" from the menu while a 2.x engine session
+        is still live means GameEngine's own connection to that save is still open when migrate.py tries to move
+        it out of the way. On Windows that's not a transient lock retries can clear (unlike the antivirus/indexer
+        case _move_with_retry was built for) - it used to raise PermissionError and crash the app. The old file
+        staying un-archived is an acceptable outcome; a crash is not."""
+        old = self.saves.create_profile("legacyop")
+        old.update_profile(level=47, xp=500)
+        old_path = old.path
+        old.close()
+        still_open = self.saves.open_profile(old_path)      # deliberately never closed - simulates the live engine
+        try:
+            db = ensure_v3_profile(self.saves, "legacyop", archive_dir=self.archive_dir)
+            self.assertTrue(CampaignProfile.is_v3(db))
+            self.assertEqual(db.get_profile()["username"], "legacyop")
+            db.close()
+        finally:
+            still_open.close()
+
     def test_archiving_does_not_clobber_an_existing_archive_with_the_same_name(self):
         self.archive_dir.mkdir(parents=True)
         old1 = self.saves.create_profile("dup")

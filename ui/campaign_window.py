@@ -29,7 +29,7 @@ from nexus.campaign.migrate import ensure_v3_profile
 from nexus.campaign.mission import Mission
 from nexus.campaign.profile import CampaignProfile
 from nexus.campaign.runner import MissionRunner
-from nexus.config import COLORS
+from nexus.config import COLORS, call_scenes, mask_name
 from nexus.i18n import language as ui_language
 from nexus.save_system import SaveSystem
 
@@ -86,10 +86,12 @@ class MissionPanel(QWidget):
         self.replay_btn.hide()
         self.endless_btn = NeonButton("[ KEEP GOING (ENDLESS) ]", "One more procedurally-generated op, for as long as you want")
         self.endless_btn.hide()
+        self.daily_btn = NeonButton("[ DAILY OP ]", "Today's op - the same seed for every player, every day")
+        self.daily_btn.hide()
 
         for w in (self.header, self.stats, hline(), self.briefing_title, self.briefing, hline(),
                  self.objectives_title, obj_widget, self.hint_btn, self.hint_label,
-                 self.debrief_title, self.debrief, self.continue_btn, self.replay_btn, self.endless_btn):
+                 self.debrief_title, self.debrief, self.continue_btn, self.replay_btn, self.endless_btn, self.daily_btn):
             lay.addWidget(w)
         lay.addStretch(1)
         scroll.setWidget(inner)
@@ -107,13 +109,14 @@ class MissionPanel(QWidget):
         self.continue_btn.hide()
         self.replay_btn.hide()
         self.endless_btn.hide()
+        self.daily_btn.hide()
         self._hint_tier = 0
         self.hint_label.setText("")
         self.hint_btn.setVisible(profile.get_mode() != "hardcore")
         self._rebuild_objectives(mission)
 
     def update_stats(self, profile: CampaignProfile) -> None:
-        name = profile.get_character().get("name") or profile.username
+        name = mask_name(profile.get_character().get("name") or profile.username)
         self.stats.setText(f"{name}   ·   RANK {profile.rank}   ·   LEVEL {profile.level}   ·   XP {profile.xp}")
 
     def _rebuild_objectives(self, mission: Mission) -> None:
@@ -172,6 +175,7 @@ class MissionPanel(QWidget):
         self.continue_btn.hide()
         self.replay_btn.show()
         self.endless_btn.show()
+        self.daily_btn.show()
 
     def show_epilogue(self, ending, profile: CampaignProfile) -> None:
         self.header.setText(f"ENDING: {ending.title.upper()}")
@@ -185,6 +189,7 @@ class MissionPanel(QWidget):
         self.continue_btn.hide()
         self.replay_btn.show()
         self.endless_btn.show()
+        self.daily_btn.show()
 
     def _rebuild_objectives_cleared(self) -> None:
         while self.objectives_box.count():
@@ -262,11 +267,17 @@ class EndingSelectDialog(QDialog):
 
 
 class CampaignWindow(QMainWindow):
-    def __init__(self, saves: SaveSystem, default_username: str = "operator", parent=None):
+    def __init__(self, saves: SaveSystem, default_username: str = "operator", parent=None, sound=None):
         super().__init__(parent)
         self.setWindowTitle("NEXUS // TERMINAL — Campaign 3.0 (beta)")
         self.resize(1220, 780)
         self.setMinimumSize(900, 600)
+
+        if sound is None:
+            from nexus.audio import SoundManager
+            sound = SoundManager(None)
+        self.sound = sound
+        self.sound.set_music("terminal")
 
         self.saves = saves
         self.db = ensure_v3_profile(saves, default_username)
@@ -283,6 +294,17 @@ class CampaignWindow(QMainWindow):
         lexicon_btn = NeonButton("[ LEXICON ]", "Look up anything you've unlocked, any time (not just the first time)")
         lexicon_btn.clicked.connect(self._open_lexicon)
         toolbar.addWidget(lexicon_btn)
+        share_btn = NeonButton("[ SHARE PROFILE ]", "Save a PNG summary of your profile (callsign, rank, progress) to saves/screenshots")
+        share_btn.clicked.connect(self._share_profile)
+        toolbar.addWidget(share_btn)
+        map_btn = NeonButton("[ MISSION MAP ]", "See your progress across all 9 acts at a glance")
+        map_btn.clicked.connect(self._open_mission_map)
+        toolbar.addWidget(map_btn)
+        self.mission_map_dialog = None
+        self.call_dialog = None
+        self.toolbar_status = QLabel("")
+        self.toolbar_status.setStyleSheet(f"color:{COLORS['dim']}; padding-left:8px;")
+        toolbar.addWidget(self.toolbar_status)
         self.addToolBar(toolbar)
 
         central = QWidget()
@@ -296,6 +318,7 @@ class CampaignWindow(QMainWindow):
         self.panel.continue_btn.clicked.connect(self._load_mission)
         self.panel.replay_btn.clicked.connect(self._open_mission_select)
         self.panel.endless_btn.clicked.connect(self._start_endless_mission)
+        self.panel.daily_btn.clicked.connect(self._start_daily_mission)
         lay.addWidget(self.panel)
         self.terminal_holder = QWidget()
         hold_lay = QVBoxLayout(self.terminal_holder)
@@ -306,6 +329,7 @@ class CampaignWindow(QMainWindow):
         self.ending_select_dialog = None
         self._endless_counter = 0
         self._stuck_counter = 0
+        self._daily_missions: dict[str, Mission] = {}      # cache: same id can't be registered with generate_endless_mission twice
         self.character_dialog = None
         if self.profile.completed_count == 0 and not self.profile.get_character()["name"]:
             self._show_character_dialog()
@@ -362,6 +386,18 @@ class CampaignWindow(QMainWindow):
         mission = generate_endless_mission(f"endless_replay_{self._endless_counter}_{seed}", MAX_LEVEL, 9, seed)
         self._play_mission(mission, level=lambda: MAX_LEVEL)
 
+    def _start_daily_mission(self) -> None:
+        """F1: the same op for every player, every day (nexus/campaign/daily.py) - cached per id, since
+        generate_endless_mission refuses to register the same mission_id twice in one process."""
+        from nexus.campaign.daily import daily_mission_id, daily_seed
+        from nexus.campaign.progression import MAX_LEVEL
+        mid = daily_mission_id()
+        mission = self._daily_missions.get(mid)
+        if mission is None:
+            mission = generate_endless_mission(mid, MAX_LEVEL, 9, daily_seed())
+            self._daily_missions[mid] = mission
+        self._play_mission(mission, level=lambda: MAX_LEVEL)
+
     def _swap_terminal(self) -> None:
         if self.terminal is not None:
             self.terminal_holder.layout().removeWidget(self.terminal)
@@ -379,6 +415,8 @@ class CampaignWindow(QMainWindow):
         self._maybe_show_lesson(line)
         if sum(s.hits for s in self.runner.states) > hits_before:
             self._stuck_counter = 0           # real progress — the player isn't stuck
+            if not self.runner.is_complete:
+                self.sound.play("notify")
         else:
             self._maybe_offer_hint()
         if self.runner.is_complete:
@@ -438,9 +476,12 @@ class CampaignWindow(QMainWindow):
         self.profile.complete_mission(mission, self.all_missions)
         self.panel.update_stats(self.profile)
         self.panel.show_debrief(mission)
+        self.sound.play("achievement" if mission.size == "milestone" else "complete")
         for line in mission.debrief:
             self.terminal.print_system(line, COLORS["amber"])
         self.terminal.focus_input()
+        if call_scenes() and "story" in mission.tags and mission.debrief:
+            self._show_call(mission.debrief)
         if "finale" in mission.tags and not self.profile.db.get_profile().get("ending"):
             self.panel.continue_btn.hide()        # the ending dialog decides what happens next, not CONTINUE
             self._show_ending_select()
@@ -454,6 +495,7 @@ class CampaignWindow(QMainWindow):
     def _on_ending_chosen(self, ending_id: str) -> None:
         from nexus.campaign.endings import ENDINGS
         self.profile.set_ending(ending_id)
+        self.sound.play("levelup")
         self.ending_select_dialog = None
         self.current_mission = None
         self.runner = None
@@ -474,6 +516,28 @@ class CampaignWindow(QMainWindow):
         self.lexicon_dialog = LexiconDialog(self.profile.level, self)
         self.lexicon_dialog.show()
 
+    def _share_profile(self) -> None:
+        import time
+
+        from nexus.config import SAVES_DIR
+
+        from .profile_card import render_profile_card
+        folder = SAVES_DIR / "screenshots"
+        folder.mkdir(parents=True, exist_ok=True)
+        path = folder / f"nexus_profile_{time.strftime('%Y%m%d_%H%M%S')}.png"
+        render_profile_card(self.profile, total_missions=len(self.all_missions)).save(str(path))
+        self.toolbar_status.setText(f"Saved: {path.name}")
+
+    def _open_mission_map(self) -> None:
+        from .mission_map_dialog import MissionMapDialog
+        self.mission_map_dialog = MissionMapDialog(self.all_missions, self.profile, self)
+        self.mission_map_dialog.show()
+
+    def _show_call(self, lines: list[str]) -> None:
+        from .call_dialog import CallDialog
+        self.call_dialog = CallDialog(lines, sound=self.sound, parent=self)
+        self.call_dialog.show()
+
     def _on_campaign_finished(self) -> None:
         self.current_mission = None
         self.runner = None
@@ -486,4 +550,5 @@ class CampaignWindow(QMainWindow):
     # ------------------------------------------------------------------ lifecycle
     def closeEvent(self, event: QCloseEvent) -> None:
         self.db.flush()
-        super().closeEvent(event)
+        self.sound.set_music("menu")       # this window doesn't live in MainWindow's own page stack, so nothing
+        super().closeEvent(event)          # else would revert the mood once it closes

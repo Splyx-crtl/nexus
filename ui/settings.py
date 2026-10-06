@@ -51,6 +51,8 @@ class SettingsWidget(QWidget):
         gl.addWidget(self._spin("font_size", "TEXT SIZE (ACCESSIBILITY)", 10, 24))
         gl.addWidget(self._spin("autosave_seconds", "AUTOSAVE EVERY (s)", 20, 600))
         gl.addWidget(self._check("random_events", "Random events", "Occasional alerts, messages and finds while you play"))
+        gl.addWidget(self._check("call_scenes", "Call-style story scenes (3.0 campaign)",
+                                  "Key story moments play as an incoming call (subtitles, accept/decline) instead of plain terminal text"))
         self.lang = QComboBox()
         self.lang.addItem("English", "en")
         self.lang.addItem("Deutsch", "de")
@@ -79,9 +81,18 @@ class SettingsWidget(QWidget):
         dl.addWidget(labeled_row(tr("theme"), self.theme, "Unlock more themes in the market or with achievements"))
         dl.addWidget(self._check("scanlines", "CRT effects", "Scanlines, vignette and the moving refresh band"))
         dl.addWidget(self._check("glitch_effects", "Glitch effects", "Title glitch, banner jitter and screen glitches"))
+        self.map_renderer = QComboBox()
+        self.map_renderer.addItem("Flat (always works)", "flat")
+        self.map_renderer.addItem("3D (experimental)", "3d")
+        idx = self.map_renderer.findData(settings.get("map_renderer"))
+        self.map_renderer.setCurrentIndex(max(0, idx))
+        self.map_renderer.currentIndexChanged.connect(lambda _: self._set("map_renderer", self.map_renderer.currentData(), reload=True))
+        dl.addWidget(labeled_row("NETWORK MAP", self.map_renderer,
+                                  "3D needs Qt Quick 3D / GPU support - falls back to the flat map automatically if it can't load"))
         dl.addStretch(1)
         self.tabs.addTab(display, "DISPLAY")
 
+        self.tabs.addTab(self._accessibility_tab(), "ACCESSIBILITY")
         self.tabs.addTab(self._about_tab(), "ABOUT")
 
         row = QHBoxLayout()
@@ -90,6 +101,38 @@ class SettingsWidget(QWidget):
         row.addWidget(reset)
         row.addStretch(1)
         lay.addLayout(row)
+
+    def _accessibility_tab(self) -> QWidget:
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        lay.addWidget(self._check("reduced_motion", "Reduced motion",
+                                   "Turns off the moving scanline band, the pulsing alert glow, glitch bursts and "
+                                   "the menu background animation. The red alert tint and page transitions still "
+                                   "show, just without the motion."))
+        lay.addWidget(self._check_reload("showcase_mode", "Showcase / recording mode",
+                                          "Replaces your callsign with \"OPERATOR\" everywhere it's shown on screen "
+                                          "- safe for streaming or screen recording."))
+        note = QLabel("Colorblind-friendly palette: pick \"COLORBLIND SAFE\" under Display -> Theme. It replaces "
+                       "the usual red/green contrast with blue/orange/magenta so status colors stay distinguishable.")
+        note.setObjectName("dim")
+        note.setWordWrap(True)
+        lay.addWidget(note)
+        keys = QLabel("Keyboard: Tab / Shift+Tab moves focus, Enter confirms, Esc closes dialogs or opens the pause "
+                       "menu, F11 toggles fullscreen, F12 saves a screenshot, F1 opens help, Ctrl+1..9 jumps between "
+                       "sections.")
+        keys.setObjectName("dim")
+        keys.setWordWrap(True)
+        lay.addWidget(keys)
+        lay.addStretch(1)
+        return w
+
+    def _check_reload(self, key: str, label: str, hint: str) -> QCheckBox:
+        c = QCheckBox(label)
+        c.setToolTip(hint)
+        c.setChecked(bool(self.settings.get(key)))
+        c.toggled.connect(lambda v: self._set(key, v, reload=True))
+        self._controls[key] = c
+        return c
 
     def _about_tab(self) -> QWidget:
         from PySide6.QtCore import QUrl
@@ -187,6 +230,7 @@ class SettingsWidget(QWidget):
         self.mode.setCurrentIndex(1 if self.settings.get("fullscreen") else 0)
         self.res.setCurrentText(self.settings.get("resolution"))
         self.lang.setCurrentIndex(self.lang.findData(self.settings.get("language")))
+        self.map_renderer.setCurrentIndex(max(0, self.map_renderer.findData(self.settings.get("map_renderer"))))
         self._fill_themes()
         self.apply_cb()
         self.reload_cb()

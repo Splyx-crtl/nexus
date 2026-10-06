@@ -256,6 +256,11 @@ class MainWindow(QMainWindow):
         if self.shell is not None:
             self.shell.stop()
             self.shell_holder.layout().removeWidget(self.shell)
+            # hide() immediately, not just removeWidget(): deleteLater()'s actual destruction is deferred to the
+            # next event loop pass, and a still-visible-but-orphaned shell keeps any child QTimer-driven repaint
+            # (e.g. NetworkMapWidget's pulse animation) ticking against this now-stale engine in the meantime -
+            # real bug, found via tests/ui_flow.py rapidly toggling D2's map_renderer setting back and forth.
+            self.shell.hide()
             self.shell.deleteLater()
         self.shell = AppShell(self.engine, self.settings)
         self.shell_holder.layout().addWidget(self.shell)
@@ -305,7 +310,7 @@ class MainWindow(QMainWindow):
         if self.campaign_window is None:
             from .campaign_window import CampaignWindow
             default_username = self.engine.player.username if self.engine else "operator"
-            self.campaign_window = CampaignWindow(self.saves, default_username=default_username)
+            self.campaign_window = CampaignWindow(self.saves, default_username=default_username, sound=self.sound)
         self.campaign_window.show()
         self.campaign_window.raise_()
         self.campaign_window.activateWindow()
@@ -355,10 +360,15 @@ class MainWindow(QMainWindow):
     def apply_settings(self) -> None:
         s = self.settings
         self._apply_language()
-        self.scan.show_lines = bool(s.get("scanlines"))
-        self.menu.title.enabled = bool(s.get("glitch_effects"))
-        self.menu.bg.animated = bool(s.get("animations"))
-        self.banner.glitch_enabled = bool(s.get("glitch_effects"))
+        reduce_motion = bool(s.get("reduced_motion"))
+        self.scan.reduce_motion = reduce_motion
+        self.scan.show_lines = bool(s.get("scanlines")) and not reduce_motion
+        self.menu.title.enabled = bool(s.get("glitch_effects")) and not reduce_motion
+        self.menu.bg.animated = bool(s.get("animations")) and not reduce_motion
+        self.banner.glitch_enabled = bool(s.get("glitch_effects")) and not reduce_motion
+        self.scan.update()
+        config.set_showcase_mode(bool(s.get("showcase_mode")))
+        config.set_call_scenes(bool(s.get("call_scenes")))
         self.sound.apply_volumes()
         if self.shell:
             self.shell.terminal_page.terminal.apply_font_size()
@@ -405,7 +415,7 @@ class MainWindow(QMainWindow):
         self.apply_settings()
 
     def _transition(self, callback) -> None:
-        if self.settings.get("animations"):
+        if self.settings.get("animations") and not self.settings.get("reduced_motion"):
             self.fade.transition(callback)
         else:
             callback()

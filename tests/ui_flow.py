@@ -199,6 +199,38 @@ while term.busy:
 check(e.world.current == "echo" and shell.current == "terminal", "network map CONNECT runs the command in the terminal")
 type_cmd("disconnect")
 
+# ------------------------------------------------------------------- D2: the 3D network map + its fallback
+check(net.map_is_3d is False, "flat map is the default renderer")
+settings.set("map_renderer", "3d")
+win.reload_ui()
+pump(400)
+shell = win.shell
+shell.show_page("network")
+pump(400)
+net = shell.pages["network"]
+check(net.map_is_3d is True, "switching to the 3D renderer setting actually builds the 3D view")
+check(not net.connect_btn.isEnabled() and not net.scan_btn.isEnabled(), "3D view has no node picking yet, so connect/scan stay disabled")
+net.refresh()                     # must not crash with the 3D bridge wired up instead of the flat map
+
+from ui import network_map_3d as _map3d
+real_try_build = _map3d.try_build_3d_view
+_map3d.try_build_3d_view = lambda engine, parent=None: (None, None)      # simulate a real GPU/driver failure
+try:
+    settings.set("map_renderer", "3d")
+    win.reload_ui()
+    pump(400)
+    shell = win.shell
+    shell.show_page("network")
+    pump(400)
+    net = shell.pages["network"]
+    check(net.map_is_3d is False, "a failed 3D load falls back to the flat map instead of crashing")
+finally:
+    _map3d.try_build_3d_view = real_try_build
+    settings.set("map_renderer", "flat")
+    win.reload_ui()
+    pump(400)
+    shell = win.shell
+
 # ------------------------------------------------------------------- profile / achievements / archives / settings
 for page in ("profile", "achievements", "archives", "comms", "settings"):
     shell.show_page(page)
@@ -224,6 +256,27 @@ win.reload_ui()
 shell = win.shell
 term = shell.terminal_page.terminal
 check(config.COLORS["green"] == "#00ff9c", "theme reset to default")
+
+# ------------------------------------------------------------------- accessibility (D3)
+sp = shell.pages["settings"]            # earlier theme reloads replaced the settings page; grab the live one
+sp._fill_themes()
+check(sp.theme.findData("colorblind") >= 0 and sp.theme.findData("mono") >= 0, "colorblind-safe and mono themes offered in settings")
+sp._controls["reduced_motion"].setChecked(True)
+pump(200)
+check(win.scan.reduce_motion, "reduced motion freezes the scanline overlay")
+check(not win.menu.bg.animated and not win.menu.title.enabled and not win.banner.glitch_enabled,
+      "reduced motion overrides animations/glitch toggles even if they're individually on")
+sp._controls["reduced_motion"].setChecked(False)
+pump(200)
+check(not win.scan.reduce_motion, "reduced motion off restores normal motion")
+check(win.menu.card.name.text() == "TESTER", "callsign shown normally with showcase mode off")
+sp._controls["showcase_mode"].setChecked(True)
+pump(300)
+check(win.menu.card.name.text() == "OPERATOR", "showcase mode masks the callsign in the sidebar")
+sp = win.shell.pages["settings"]        # reload_ui() rebuilt the menu/settings page
+sp._controls["showcase_mode"].setChecked(False)
+pump(300)
+check(win.menu.card.name.text() == "TESTER", "turning showcase mode back off unmasks the callsign")
 
 # ------------------------------------------------------------------- save / load slots
 win.saves.save_slot(win.engine.db, 1)
@@ -258,6 +311,14 @@ check(win.stack.currentIndex() == win.PAGE_STORY, "ending cinematic started")
 win.story._end()
 pump(1500)
 check(win.stack.currentIndex() == win.PAGE_SHELL, "returned to the game after the ending")
+
+# ------------------------------------------------------------------- E3: the campaign window shares MainWindow's sound
+win.on_menu_action("campaign30")
+pump(600)
+check(win.campaign_window is not None and win.campaign_window.sound is win.sound,
+      "opening the 3.0 campaign window shares MainWindow's own sound manager, not a separate one")
+win.campaign_window.close()
+
 print("mini-games solved:", solved)
 win.close()
 print("ALL UI FLOW CHECKS PASSED")

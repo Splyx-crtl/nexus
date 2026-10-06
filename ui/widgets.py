@@ -251,6 +251,7 @@ class ScanlineOverlay(QWidget):
         self._band = 0.0
         self.show_lines = True
         self.alert = False
+        self.reduce_motion = False     # accessibility: freeze the moving band and alert pulse, drop glitch bursts
         self._pulse = 0.0
         self._glitch = 0
         self.rng = random.Random()
@@ -270,6 +271,8 @@ class ScanlineOverlay(QWidget):
         return False
 
     def glitch(self, frames: int = 6) -> None:
+        if self.reduce_motion:
+            return
         self._glitch = frames
         self.update()
 
@@ -279,6 +282,11 @@ class ScanlineOverlay(QWidget):
 
     def _tick(self):
         if not self.isVisible():
+            return
+        if self.reduce_motion:
+            if self.alert != getattr(self, "_rm_alert_drawn", None):  # repaint once on change, not every tick
+                self._rm_alert_drawn = self.alert
+                self.update()
             return
         old = self._band_rect()
         self._band = (self._band + 0.006) % 1.2
@@ -343,7 +351,7 @@ class ScanlineOverlay(QWidget):
             grad.setColorAt(1, QColor(band.red(), band.green(), band.blue(), 0))
             p.fillRect(0, int(band_y), w, self.BAND_H, grad)
         if self.alert:
-            p.setOpacity((60 + 40 * math.sin(self._pulse)) / 100)
+            p.setOpacity(0.75 if self.reduce_motion else (60 + 40 * math.sin(self._pulse)) / 100)
             p.drawPixmap(0, 0, self._glow)
             p.setOpacity(1.0)
         if self._glitch:

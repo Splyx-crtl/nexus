@@ -15,7 +15,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
+from PySide6.QtGui import QPixmap
+
+from nexus import config
 from nexus.campaign.content import ALL_MISSIONS
+from nexus.config import SAVES_DIR
 from nexus.campaign.runner import MissionRunner
 from nexus.save_system import SaveSystem
 from ui.campaign_window import CampaignWindow
@@ -48,6 +52,25 @@ def check(cond, msg):
     print("ok:", msg)
 
 
+class FakeSound:
+    """E3: NEXUS_NO_AUDIO disables the real SoundManager's state tracking too (it bails out of set_music() before
+    recording the mood), so the actual event wiring in CampaignWindow is checked against this double instead."""
+
+    def __init__(self):
+        self.played: list[str] = []
+        self.mood: str | None = None
+        self.duck: float = 1.0
+
+    def play(self, name: str) -> None:
+        self.played.append(name)
+
+    def set_music(self, mood: str | None) -> None:
+        self.mood = mood
+
+    def set_duck(self, factor: float) -> None:
+        self.duck = factor
+
+
 pump()
 check(win.character_dialog is not None, "a brand-new profile is asked for a callsign first")
 check(win.current_mission is None, "no mission loads until the character dialog is answered")
@@ -61,6 +84,24 @@ check(win.profile.get_character() == {"name": "Kestrel", "look": "quiet, methodi
 check(win.profile.get_mode() == "medium", "chosen help mode saved to the profile")
 check("Kestrel" in win.panel.stats.text(), "callsign shown in the mission panel")
 win.grab().save(str(OUT / "campaign_character.png"))
+
+# ------------------------------------------------------------------- D3: showcase mode masks the callsign
+config.set_showcase_mode(True)
+win.panel.update_stats(win.profile)
+check("Kestrel" not in win.panel.stats.text() and "OPERATOR" in win.panel.stats.text(), "showcase mode masks the callsign in the mission panel")
+config.set_showcase_mode(False)
+win.panel.update_stats(win.profile)
+check("Kestrel" in win.panel.stats.text(), "turning showcase mode back off unmasks the callsign")
+
+# ------------------------------------------------------------------- D1: profile card / share image
+win._share_profile()
+saved_name = win.toolbar_status.text().removeprefix("Saved: ")
+check(saved_name.startswith("nexus_profile_") and saved_name.endswith(".png"), "share profile saves a PNG and reports its name")
+saved_path = SAVES_DIR / "screenshots" / saved_name
+check(saved_path.exists(), "the profile card PNG actually exists on disk")
+loaded = QPixmap(str(saved_path))
+check(loaded.width() == 1200 and loaded.height() == 675, "profile card is the expected 1200x675 share-image size")
+saved_path.unlink()
 
 
 pump()
@@ -81,6 +122,16 @@ win.grab().save(str(OUT / "campaign_m1_done.png"))
 win.panel.continue_btn.click()
 pump()
 check(win.current_mission.id == "act1_m02", "continue advances to the next mission")
+
+# D1: the mission map as a graph (early playthrough state: exactly one done, exactly one up next)
+win._open_mission_map()
+pump()
+early_nodes = [it for it in win.mission_map_dialog.scene.items() if it.data(0)]
+early_statuses = {it.data(0): it.data(1) for it in early_nodes}
+check(early_statuses["act1_m01"] == "complete", "mission map marks the finished mission as complete")
+check(early_statuses["act1_m02"] == "up next", "mission map marks the actual next mission as up next")
+check(early_statuses["act1_m03"] == "locked", "mission map marks a not-yet-reachable mission as locked")
+win.mission_map_dialog.close()
 
 # decision capture, driven directly against a decision-tagged mission
 decision_mission = next(m for m in ALL_MISSIONS if any(t.startswith("decision:") for t in m.tags))
@@ -167,6 +218,15 @@ pump()
 check(win.current_mission.id != endless_mission.id, "a second endless op is a different generated mission")
 win.grab().save(str(OUT / "campaign_endless.png"))
 
+# F1: the daily op - same cached mission every time it's (re)started today
+win._start_daily_mission()
+pump()
+daily_mission = win.current_mission
+check(daily_mission is not None and daily_mission.id.startswith("daily_"), "daily op generated")
+win._start_daily_mission()
+pump()
+check(win.current_mission.id == daily_mission.id, "starting the daily op again today reuses the same cached mission")
+
 # German localization (nexus.campaign.i18n), if act1_m01 has a registered translation
 from nexus import i18n as ui_i18n
 from nexus.campaign.i18n import TRANSLATIONS
@@ -197,6 +257,19 @@ pump()
 check(win.lexicon_dialog.list.count() == all_count, "clearing the search restores the full list")
 win.lexicon_dialog.grab().save(str(OUT / "campaign_lexicon.png"))
 
+# D1: the mission map as a graph
+win._open_mission_map()
+pump()
+check(win.mission_map_dialog is not None, "mission map opens")
+nodes = [it for it in win.mission_map_dialog.scene.items() if it.data(0)]
+check(len(nodes) == len(ALL_MISSIONS), "mission map draws a node for every mission")
+statuses = [it.data(1) for it in nodes]
+# by this point in the script the whole 200-level campaign is already finished (see "C7 buttons appear" above)
+check(statuses.count("complete") == len(ALL_MISSIONS), "every mission shown as complete once the campaign is finished")
+check(statuses.count("up next") == 0, "nothing marked as up next once there's nothing left to play")
+win.mission_map_dialog.grab().save(str(OUT / "campaign_mission_map.png"))
+win.mission_map_dialog.close()
+
 # C6: Medium mode shows a short one-liner instead of the full lesson
 m2 = next(m for m in ALL_MISSIONS if m.id == "act1_m02")
 win.profile.set_mode("medium")
@@ -224,10 +297,12 @@ win.db.close()
 
 # --- the real finale flow: complete everything up to the last mission live, then play the finale for real ---
 saves2 = SaveSystem(profiles_dir=root / "profiles2", slots_dir=root / "slots2")
-win2 = CampaignWindow(saves2, default_username="finisher")
+fake_sound = FakeSound()
+win2 = CampaignWindow(saves2, default_username="finisher", sound=fake_sound)
 win2.resize(1220, 780)
 win2.show()
 pump()
+check(fake_sound.mood == "terminal", "opening the campaign window starts terminal music (E3)")
 win2.character_dialog.name_input.setText("Finisher")
 win2.character_dialog.ok_btn.click()
 pump()
@@ -244,6 +319,7 @@ for line in finale.solution:
     win2.terminal.run_command(line)
     pump()
 check(win2.runner.is_complete, "the finale's own solution completes it")
+check(fake_sound.played and fake_sound.played[-1] in ("complete", "achievement"), "finishing a mission plays a completion sound (E3)")
 check(win2.ending_select_dialog is not None, "completing the finale opens the ending choice")
 check(not win2.panel.continue_btn.isVisible(), "no plain CONTINUE past the finale — the ending dialog decides")
 reachable_ids = {win2.ending_select_dialog.list.item(i).data(Qt.ItemDataRole.UserRole)
@@ -258,6 +334,7 @@ chosen_id = first_ending_item.data(Qt.ItemDataRole.UserRole)
 win2.ending_select_dialog._on_pick(first_ending_item)
 pump()
 check(win2.ending_select_dialog is None, "ending dialog closes after a choice")
+check("levelup" in fake_sound.played, "choosing an ending plays its own sound cue (E3)")
 check(win2.profile.db.get_profile()["ending"] == chosen_id, "the chosen ending is saved to the profile")
 check(win2.terminal is None and win2.current_mission is None, "the epilogue replaces the terminal, not another mission")
 from nexus.campaign.endings import ENDINGS
@@ -268,6 +345,51 @@ win2.panel.replay_btn.click()
 pump()
 check(win2.mission_select_dialog is not None, "C7 still works after choosing an ending")
 win2.mission_select_dialog.reject()
+win2.close()
+check(fake_sound.mood == "menu", "closing the campaign window hands music mood back to the menu (E3)")
 win2.db.close()
+
+# ------------------------------------------------------------------- E2: the call dialog itself
+from PySide6.QtWidgets import QDialog as _QDialog
+
+from ui.call_dialog import CallDialog, parse_speaker
+
+call_sound = FakeSound()
+cd = CallDialog(["NEXUS: First line.", "MIRA: Second line."], sound=call_sound)
+check(call_sound.played == ["connect"], "opening a call dialog rings")
+check(call_sound.duck == 0.3, "opening a call dialog ducks the music")
+check(cd.speaker_label.text() == "INCOMING CALL" and cd.subtitle.text() == "", "a call waits unanswered, nothing revealed yet")
+cd.accept_btn.click()
+check(cd.speaker_label.text() == "NEXUS" and cd.subtitle.text() == "First line.", "accepting reveals the first speaker and line")
+cd.decline_btn.click()            # relabeled "[ SKIP ]" after accept - skips straight to the end of the call
+pump()
+check(call_sound.duck == 1.0, "ending the call (via skip) restores the music")
+check(cd.result() == _QDialog.DialogCode.Accepted, "skipping to the end still closes the call as accepted, not declined")
+
+decline_sound = FakeSound()
+cd2 = CallDialog(["ZERO: Something."], sound=decline_sound)
+cd2.decline_btn.click()
+check(decline_sound.duck == 1.0, "declining before answering also restores the music")
+check(cd2.result() == _QDialog.DialogCode.Rejected, "declining before answering closes the call as rejected")
+
+# ------------------------------------------------------------------- E2: wired into a real story-mission completion
+saves3 = SaveSystem(profiles_dir=root / "profiles3", slots_dir=root / "slots3")
+call_scene_sound = FakeSound()
+win3 = CampaignWindow(saves3, default_username="caller", sound=call_scene_sound)
+win3.character_dialog.name_input.setText("Caller")
+win3.character_dialog.ok_btn.click()
+pump()
+config.set_call_scenes(True)
+story_mission = next(m for m in ALL_MISSIONS if "story" in m.tags and m.debrief)
+win3._play_mission(story_mission, level=lambda: 200)
+pump()
+for line in story_mission.solution:
+    win3.terminal.run_command(line)
+    pump()
+check(win3.call_dialog is not None, "call_scenes on + a story-tagged mission triggers the call dialog")
+check([l for _, l in win3.call_dialog.lines] == [parse_speaker(l)[1] for l in story_mission.debrief],
+      "the call dialog carries the mission's own debrief lines")
+config.set_call_scenes(False)
+win3.db.close()
 
 print("ALL OK — screenshots in", OUT)

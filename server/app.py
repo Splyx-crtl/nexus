@@ -29,9 +29,10 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field, StrictInt
 
 try:                                              # in the Docker image the file is copied next to this one
-    from . import ed25519
+    from . import ed25519, staff_auth
 except ImportError:
     from nexus import ed25519
+    from server import staff_auth
 from .players import ACCOUNT_STATUSES, EditError, clean_details, key_status as _key_status, mask_key, validate_edit
 from .validation import Rejected, cumulative_xp, validate
 
@@ -47,12 +48,15 @@ ADMIN_USER = os.environ.get("NEXUS_ADMIN_USER", "").strip()        # optional: a
 ADMIN_PASSWORD = os.environ.get("NEXUS_ADMIN_PASSWORD", "")        # (kept only on the server, never in the game); 12+ characters
 ADMIN_LOGIN = bool(ADMIN_USER) and len(ADMIN_PASSWORD) >= 12
 ADMIN_SESSION_MINUTES = 60
+STAFF_SESSION_MINUTES = 60
+STAFF_INVITE_DAYS = 7
 OPEN_LOGIN = os.environ.get("NEXUS_OPEN_LOGIN", "") == "1"         # explicit opt-out: anybody may register without a key
 # A key is required before an account can be created: always on a real Discord server (secure by default), on request elsewhere.
 GATED = bool(GUILD_ID) or os.environ.get("NEXUS_REQUIRE_KEY", "") == "1" or (bool(DISCORD_CLIENT_ID) and not DEV_LOGIN and not OPEN_LOGIN)
 SESSION_DAYS = int(os.environ.get("NEXUS_SESSION_DAYS", "30"))     # gated servers re-check membership at least this often
 KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"                  # no 0/O/1/I
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()     # optional: weekly winners are posted into your Discord server
+DISCORD_TEAM_WEBHOOK_URL = os.environ.get("DISCORD_TEAM_WEBHOOK_URL", "").strip()   # optional, separate channel: player reports and bans (F4)
 CHALLENGES = [("xp", "XP RUSH", "Earn the most XP this week."),
               ("missions", "OPERATOR", "Complete the most missions this week."),
               ("credits", "PAYDAY", "Earn the most credits this week."),
@@ -84,6 +88,14 @@ CREATE TABLE IF NOT EXISTS week_results (week TEXT NOT NULL, user_id INTEGER NOT
 CREATE TABLE IF NOT EXISTS announcements (week TEXT PRIMARY KEY, posted_at REAL);
 CREATE TABLE IF NOT EXISTS edits (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, ops TEXT NOT NULL, created_at REAL, applied_at REAL);
 CREATE TABLE IF NOT EXISTS admin_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, action TEXT, user_id INTEGER, key_id INTEGER, detail TEXT);
+CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, reporter_id INTEGER NOT NULL, target_name TEXT NOT NULL,
+    message TEXT NOT NULL, created_at REAL, status TEXT DEFAULT 'open', resolved_by INTEGER, resolved_at REAL, resolution_note TEXT DEFAULT '');
+CREATE TABLE IF NOT EXISTS staff (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL, username_lc TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL, role TEXT NOT NULL, totp_secret TEXT NOT NULL, totp_confirmed INTEGER DEFAULT 0,
+    approved INTEGER DEFAULT 0, created_at REAL, created_by INTEGER, key_limit INTEGER DEFAULT 0, keys_created INTEGER DEFAULT 0);
+CREATE TABLE IF NOT EXISTS staff_sessions (token TEXT PRIMARY KEY, staff_id INTEGER NOT NULL, created_at REAL, expires_at REAL);
+CREATE TABLE IF NOT EXISTS staff_invites (code TEXT PRIMARY KEY, role TEXT NOT NULL, created_by INTEGER, created_at REAL,
+    expires_at REAL, used_by INTEGER, used_at REAL);
 """
 
 # Columns added after the first release: databases created earlier get them without losing any data.
@@ -610,18 +622,28 @@ def week_table(conn: sqlite3.Connection, week: str, metric: str) -> list[dict]:
     return out
 
 
-def send_webhook(text: str) -> None:
-    """Post a message into the Discord server (server -> Discord only). Replaceable in tests."""
-    if not DISCORD_WEBHOOK_URL:
+def send_webhook(text: str, url: str | None = None) -> None:
+    """Post a message into a Discord channel via webhook (server -> Discord only). Replaceable in tests.
+    ``url`` defaults to the public weekly-winners webhook, read live (not bound at def time) so tests and real
+    deployments can set ``DISCORD_WEBHOOK_URL`` after import and have it take effect."""
+    if url is None:
+        url = DISCORD_WEBHOOK_URL
+    if not url:
         return
 
     def work():
         try:
-            httpx.post(DISCORD_WEBHOOK_URL, json={"content": text[:1900], "allowed_mentions": {"parse": []}}, timeout=8)
+            httpx.post(url, json={"content": text[:1900], "allowed_mentions": {"parse": []}}, timeout=8)
         except httpx.HTTPError:
             pass
 
     threading.Thread(target=work, daemon=True).start()
+
+
+def notify_team(text: str) -> None:
+    """F4: a separate, optional channel for staff-facing events (new reports, bans) - deliberately not the same
+    webhook as the public weekly-winners announcement."""
+    send_webhook(text, DISCORD_TEAM_WEBHOOK_URL)
 
 
 def announce_last_week(conn: sqlite3.Connection) -> None:
@@ -656,6 +678,28 @@ def challenge(user=Depends(current_user)):
     mine = next((r for r in rows if r["me"]), None)
     return {"week": week, "metric": metric, "title": title, "text": text, "ends_in": max(0, ends_in),
             "entries": rows[:20], "me": mine, "players": len(rows), "community_total": int(total)}
+
+
+# ------------------------------------------------------------------- reports (F4) --
+class ReportBody(BaseModel):
+    target_name: str = Field(min_length=1, max_length=32)
+    message: str = Field(min_length=1, max_length=500)
+
+
+@app.post("/report")
+def submit_report(body: ReportBody, user=Depends(current_user)):
+    """A player flags another player's name/messages for staff attention. Rate-limited separately from the
+    general API limit so a handful of reports a day is never a problem, but spamming the queue is."""
+    rate_limit("report:" + str(user["id"]), limit=5, window=3600)
+    target = "".join(c for c in body.target_name if c.isprintable()).strip()
+    message = "".join(c for c in body.message if c.isprintable()).strip()
+    if not target or not message:
+        raise HTTPException(422, "Report needs a target name and a message.")
+    with db() as conn:
+        cur = conn.execute("INSERT INTO reports(reporter_id, target_name, message, created_at) VALUES(?,?,?,?)",
+                            (user["id"], target, message, time.time()))
+    notify_team(f"**New player report** from {user['name']}\nTarget: {target}\n{message[:300]}")
+    return {"ok": True, "id": cur.lastrowid}
 
 
 # ------------------------------------------------------------------ friends --
@@ -772,6 +816,48 @@ def admin_only(request: Request, authorization: str = Header(default="")) -> Non
     raise HTTPException(401, "Admin login required.")
 
 
+def _staff_session(conn: sqlite3.Connection, token: str) -> sqlite3.Row | None:
+    conn.execute("DELETE FROM staff_sessions WHERE expires_at < ?", (time.time(),))
+    return conn.execute("""SELECT st.* FROM staff_sessions s JOIN staff st ON st.id = s.staff_id
+                           WHERE s.token=? AND s.expires_at >= ?""", (token, time.time())).fetchone()
+
+
+def admin_or_staff(request: Request, authorization: str = Header(default="")) -> sqlite3.Row | None:
+    """F3: accepts either the legacy single admin credential (full, unlimited access - unchanged) or a staff
+    session token. Returns None for the legacy path, or the staff row for a staff session, so callers that care
+    about per-staff limits (like key creation) can tell the two apart."""
+    rate_limit("admin:" + client_ip(request), limit=60, window=60)
+    given = authorization.removeprefix("Bearer ").strip()
+    if ADMIN_TOKEN and secrets.compare_digest(given.encode(), ADMIN_TOKEN.encode()):
+        return None
+    now = time.time()
+    for token in [t for t, exp in _admin_sessions.items() if exp < now]:
+        del _admin_sessions[token]
+    if given in _admin_sessions:
+        return None
+    with db() as conn:
+        row = _staff_session(conn, given)
+    if row is not None:
+        return row
+    raise HTTPException(401, "Admin login required.")
+
+
+def require_role(min_role: str):
+    """F3: a staff session whose role is at least ``min_role`` (docs/3.0-PROGRESS.md: Developer > Owner > Moderator
+    > Helper). Never accepts the legacy admin credential - that path has no role and should only be used for
+    /admin/staff/bootstrap and, unchanged, every pre-existing admin_only endpoint."""
+    def dep(authorization: str = Header(default="")) -> sqlite3.Row:
+        given = authorization.removeprefix("Bearer ").strip()
+        with db() as conn:
+            row = _staff_session(conn, given)
+        if row is None:
+            raise HTTPException(401, "Staff login required.")
+        if staff_auth.role_rank(row["role"]) < staff_auth.role_rank(min_role):
+            raise HTTPException(403, "Your role doesn't allow this.")
+        return row
+    return dep
+
+
 class AdminLogin(BaseModel):
     user: str = Field(max_length=80)
     password: str = Field(max_length=200)
@@ -818,9 +904,12 @@ class NewKeys(BaseModel):
     expires_days: int = Field(default=0, ge=0, le=3650)          # 0 = never expires; otherwise it can only be redeemed within that time
 
 
-@app.post("/admin/keys", dependencies=[Depends(admin_only)])
-def admin_create_keys(body: NewKeys):
-    """Create keys. The plain text is returned exactly once; only a hash is stored."""
+@app.post("/admin/keys")
+def admin_create_keys(body: NewKeys, staff=Depends(admin_or_staff)):
+    """Create keys. The plain text is returned exactly once; only a hash is stored. Accepts either the legacy
+    admin credential (unlimited, unchanged) or a staff session, which is subject to F3's optional per-staff quota."""
+    if staff is not None and staff["key_limit"] > 0 and staff["keys_created"] + body.count > staff["key_limit"]:
+        raise HTTPException(403, f"Key limit reached ({staff['keys_created']}/{staff['key_limit']}).")
     made = []
     expires = time.time() + body.expires_days * 86400 if body.expires_days else None
     with db() as conn:
@@ -829,7 +918,14 @@ def admin_create_keys(body: NewKeys):
             cur = conn.execute("INSERT INTO access_keys(key_hash, tail, label, created_at, expires_at) VALUES(?,?,?,?,?)",
                                (hash_key(key), key[-5:], body.label.strip(), time.time(), expires))
             made.append({"id": cur.lastrowid, "key": key, "label": body.label.strip(), "expires_at": expires})
-        audit(conn, "keys.create", detail=f"{body.count} key(s), label '{body.label.strip()}', expires in {body.expires_days or 'never'} days")
+        detail = f"{body.count} key(s), label '{body.label.strip()}', expires in {body.expires_days or 'never'} days"
+        if staff is not None:
+            detail += f" — by staff #{staff['id']} ({staff['username']})"
+            new_total = staff["keys_created"] + body.count
+            conn.execute("UPDATE staff SET keys_created=? WHERE id=?", (new_total, staff["id"]))
+            if staff["key_limit"] > 0 and new_total >= staff["key_limit"]:
+                notify_team(f"**{staff['username']}** has reached their key-creation limit ({new_total}/{staff['key_limit']}).")
+        audit(conn, "keys.create", detail=detail)
     return {"keys": made}
 
 
@@ -1096,11 +1192,13 @@ def admin_player_status(user_id: int, body: StatusBody):
     if body.status not in ACCOUNT_STATUSES:
         raise HTTPException(422, "Status must be one of: " + ", ".join(ACCOUNT_STATUSES) + ".")
     with db() as conn:
-        _player_or_404(conn, user_id)
+        player = _player_or_404(conn, user_id)
         reason = "".join(c for c in body.reason if c.isprintable()).strip() if body.status != "active" else ""
         conn.execute("UPDATE users SET account_status=?, status_reason=? WHERE id=?", (body.status, reason, user_id))
         # no need to delete the sessions: current_user() refuses them at once and tells the player why
         audit(conn, "player." + body.status, user_id=user_id, detail=reason)
+    if body.status == "banned":
+        notify_team(f"**Player banned**: {player['name']}" + (f" — {reason}" if reason else ""))
     return {"ok": True, "status": body.status}
 
 
@@ -1110,3 +1208,219 @@ def admin_audit(limit: int = 50):
         rows = conn.execute("SELECT a.ts, a.action, a.user_id, a.key_id, a.detail, u.name AS user FROM admin_audit a LEFT JOIN users u ON u.id = a.user_id "
                             "ORDER BY a.id DESC LIMIT ?", (max(1, min(limit, 200)),)).fetchall()
     return {"entries": [dict(r) for r in rows]}
+
+
+# -------------------------------------------------------------- reports (F4) --
+@app.get("/admin/reports", dependencies=[Depends(admin_only)])
+def admin_list_reports(status: str = "open", page: int = 1, per_page: int = 50):
+    per_page, page = max(1, min(per_page, 200)), max(1, page)
+    where, params = "1=1", {}
+    if status:
+        where, params = "r.status=:status", {"status": status}
+    with db() as conn:
+        total = conn.execute(f"SELECT COUNT(*) FROM reports r WHERE {where}", params).fetchone()[0]
+        rows = conn.execute(f"""SELECT r.*, u.name AS reporter_name FROM reports r LEFT JOIN users u ON u.id = r.reporter_id
+                                WHERE {where} ORDER BY r.id DESC LIMIT :lim OFFSET :off""",
+                            {**params, "lim": per_page, "off": (page - 1) * per_page}).fetchall()
+    return {"reports": [dict(r) for r in rows], "total": total, "page": page, "pages": max(1, -(-total // per_page))}
+
+
+class ResolveReportBody(BaseModel):
+    note: str = Field(default="", max_length=400)
+
+
+@app.post("/admin/reports/{report_id}/resolve", dependencies=[Depends(admin_only)])
+def admin_resolve_report(report_id: int, body: ResolveReportBody):
+    # resolved_by stays NULL until F3 gives staff their own accounts - today's admin auth is a single shared login
+    with db() as conn:
+        row = conn.execute("SELECT * FROM reports WHERE id=?", (report_id,)).fetchone()
+        if row is None:
+            raise HTTPException(404, "No such report.")
+        conn.execute("UPDATE reports SET status='resolved', resolved_at=?, resolution_note=? WHERE id=?",
+                     (time.time(), body.note.strip(), report_id))
+        audit(conn, "report.resolve", detail=f"report #{report_id}: {body.note.strip()}")
+    return {"ok": True, "id": report_id, "status": "resolved"}
+
+
+# -------------------------------------------------------------- staff accounts (F3) --
+# Deliberately layered ON TOP of the existing single admin credential, never replacing it: every admin_only
+# endpoint above keeps working exactly as before. This section adds named staff logins with roles and mandatory
+# TOTP, for servers that want more than one person with access and an audit trail of who did what.
+def _staff_public(row: sqlite3.Row) -> dict:
+    """A staff row with the secrets (password_hash, totp_secret) stripped - the only shape ever returned to a client."""
+    d = dict(row)
+    d.pop("password_hash", None)
+    d.pop("totp_secret", None)
+    return d
+
+
+class StaffBootstrap(BaseModel):
+    username: str = Field(min_length=3, max_length=32)
+    password: str = Field(min_length=12, max_length=200)
+
+
+@app.post("/admin/staff/bootstrap", dependencies=[Depends(admin_only)])
+def staff_bootstrap(body: StaffBootstrap):
+    """Create the very first staff account (role 'developer', self-approved). Only works once - as soon as any
+    staff account exists, use invites instead. Gated behind the legacy admin credential so this can't be used to
+    create a rogue account on a server you don't already control."""
+    with db() as conn:
+        if conn.execute("SELECT COUNT(*) FROM staff").fetchone()[0] > 0:
+            raise HTTPException(409, "Staff accounts already exist - use an invite instead.")
+        secret = staff_auth.new_totp_secret()
+        cur = conn.execute("""INSERT INTO staff(username, username_lc, password_hash, role, totp_secret, approved, created_at)
+                              VALUES(?,?,?,?,?,1,?)""",
+                           (body.username.strip(), body.username.strip().lower(), staff_auth.hash_password(body.password),
+                            "developer", secret, time.time()))
+    return {"id": cur.lastrowid, "username": body.username.strip(), "role": "developer",
+            "totp_secret": secret, "otpauth_uri": staff_auth.provisioning_uri(secret, body.username.strip())}
+
+
+class StaffInvite(BaseModel):
+    role: str
+
+
+@app.post("/admin/staff/invite")
+def staff_invite(body: StaffInvite, caller=Depends(require_role("moderator"))):
+    if body.role not in staff_auth.INVITABLE_ROLES:
+        raise HTTPException(422, "Role must be one of: " + ", ".join(staff_auth.INVITABLE_ROLES) + ".")
+    if staff_auth.role_rank(body.role) >= staff_auth.role_rank(caller["role"]):
+        raise HTTPException(403, "You can only invite a role below your own.")
+    code = "INV-" + secrets.token_urlsafe(16)
+    with db() as conn:
+        conn.execute("INSERT INTO staff_invites(code, role, created_by, created_at, expires_at) VALUES(?,?,?,?,?)",
+                     (code, body.role, caller["id"], time.time(), time.time() + STAFF_INVITE_DAYS * 86400))
+        audit(conn, "staff.invite", detail=f"role={body.role} by {caller['username']}")
+    return {"code": code, "role": body.role, "expires_in_days": STAFF_INVITE_DAYS}
+
+
+class StaffRedeem(BaseModel):
+    code: str
+    username: str = Field(min_length=3, max_length=32)
+    password: str = Field(min_length=12, max_length=200)
+
+
+@app.post("/admin/staff/redeem")
+def staff_redeem(body: StaffRedeem):
+    """Public (the invite code itself is the credential - same pattern as a player access key). The account is
+    created but not yet active: an Owner+ must approve it (docs: "Login-Genehmigung durch Owner")."""
+    rate_limit("staffredeem:" + body.code[:12], limit=10, window=3600)
+    username_lc = body.username.strip().lower()
+    with db() as conn:
+        invite = conn.execute("SELECT * FROM staff_invites WHERE code=?", (body.code,)).fetchone()
+        if invite is None or invite["used_by"] is not None or invite["expires_at"] < time.time():
+            raise HTTPException(400, "Invalid, used or expired invite code.")
+        if conn.execute("SELECT 1 FROM staff WHERE username_lc=?", (username_lc,)).fetchone():
+            raise HTTPException(409, "That username is already taken.")
+        secret = staff_auth.new_totp_secret()
+        cur = conn.execute("""INSERT INTO staff(username, username_lc, password_hash, role, totp_secret, approved, created_at, created_by)
+                              VALUES(?,?,?,?,?,0,?,?)""",
+                           (body.username.strip(), username_lc, staff_auth.hash_password(body.password),
+                            invite["role"], secret, time.time(), invite["created_by"]))
+        conn.execute("UPDATE staff_invites SET used_by=?, used_at=? WHERE code=?", (cur.lastrowid, time.time(), body.code))
+    notify_team(f"**New staff signup pending approval**: {body.username.strip()} ({invite['role']})")
+    return {"id": cur.lastrowid, "username": body.username.strip(), "role": invite["role"], "approved": False,
+            "totp_secret": secret, "otpauth_uri": staff_auth.provisioning_uri(secret, body.username.strip())}
+
+
+class StaffLogin(BaseModel):
+    username: str
+    password: str
+    totp_code: str
+
+
+@app.post("/admin/staff/login")
+def staff_login(body: StaffLogin, request: Request):
+    rate_limit("stafflogin:" + client_ip(request), limit=10, window=60)
+    with db() as conn:
+        row = conn.execute("SELECT * FROM staff WHERE username_lc=?", (body.username.strip().lower(),)).fetchone()
+        if row is None or not staff_auth.verify_password(body.password, row["password_hash"]):
+            time.sleep(0.4)
+            raise HTTPException(401, "Wrong user name or password.")
+        if not row["approved"]:
+            raise HTTPException(403, "This account is awaiting Owner approval.")
+        if not staff_auth.verify_totp(row["totp_secret"], body.totp_code, time.time()):
+            time.sleep(0.4)
+            raise HTTPException(401, "Wrong or expired authenticator code.")
+        if not row["totp_confirmed"]:
+            conn.execute("UPDATE staff SET totp_confirmed=1 WHERE id=?", (row["id"],))
+        token = secrets.token_urlsafe(32)
+        conn.execute("INSERT INTO staff_sessions(token, staff_id, created_at, expires_at) VALUES(?,?,?,?)",
+                     (token, row["id"], time.time(), time.time() + STAFF_SESSION_MINUTES * 60))
+    return {"token": token, "minutes": STAFF_SESSION_MINUTES, "role": row["role"], "username": row["username"]}
+
+
+@app.post("/admin/staff/logout")
+def staff_logout(authorization: str = Header(default="")):
+    with db() as conn:
+        conn.execute("DELETE FROM staff_sessions WHERE token=?", (authorization.removeprefix("Bearer ").strip(),))
+    return {"ok": True}
+
+
+@app.get("/admin/staff")
+def staff_list(caller=Depends(require_role("owner"))):
+    with db() as conn:
+        rows = conn.execute("SELECT * FROM staff ORDER BY id").fetchall()
+    return {"staff": [_staff_public(r) for r in rows]}
+
+
+def _staff_or_404(conn: sqlite3.Connection, staff_id: int) -> sqlite3.Row:
+    row = conn.execute("SELECT * FROM staff WHERE id=?", (staff_id,)).fetchone()
+    if row is None:
+        raise HTTPException(404, "No such staff account.")
+    return row
+
+
+@app.post("/admin/staff/{staff_id}/approve")
+def staff_approve(staff_id: int, caller=Depends(require_role("owner"))):
+    with db() as conn:
+        target = _staff_or_404(conn, staff_id)
+        conn.execute("UPDATE staff SET approved=1 WHERE id=?", (staff_id,))
+        audit(conn, "staff.approve", detail=f"{target['username']} approved by {caller['username']}")
+    return {"ok": True, "id": staff_id, "approved": True}
+
+
+class StaffRoleBody(BaseModel):
+    role: str
+
+
+@app.post("/admin/staff/{staff_id}/role")
+def staff_set_role(staff_id: int, body: StaffRoleBody, caller=Depends(require_role("owner"))):
+    if body.role not in staff_auth.INVITABLE_ROLES:
+        raise HTTPException(422, "Role must be one of: " + ", ".join(staff_auth.INVITABLE_ROLES) + ".")
+    with db() as conn:
+        target = _staff_or_404(conn, staff_id)
+        if target["id"] == caller["id"]:
+            raise HTTPException(403, "You cannot change your own role.")
+        if target["role"] == "developer":
+            raise HTTPException(403, "The developer account's role can't be changed here.")
+        conn.execute("UPDATE staff SET role=? WHERE id=?", (body.role, staff_id))
+        audit(conn, "staff.role", detail=f"{target['username']}: {target['role']} -> {body.role}, by {caller['username']}")
+    return {"ok": True, "id": staff_id, "role": body.role}
+
+
+class StaffKeyLimitBody(BaseModel):
+    limit: int = Field(ge=0, le=100_000)
+
+
+@app.post("/admin/staff/{staff_id}/key-limit")
+def staff_set_key_limit(staff_id: int, body: StaffKeyLimitBody, caller=Depends(require_role("owner"))):
+    with db() as conn:
+        _staff_or_404(conn, staff_id)
+        conn.execute("UPDATE staff SET key_limit=? WHERE id=?", (body.limit, staff_id))
+        audit(conn, "staff.key_limit", detail=f"staff #{staff_id}: limit={body.limit}, by {caller['username']}")
+    return {"ok": True, "id": staff_id, "key_limit": body.limit}
+
+
+@app.delete("/admin/staff/{staff_id}")
+def staff_delete(staff_id: int, caller=Depends(require_role("owner"))):
+    with db() as conn:
+        target = _staff_or_404(conn, staff_id)
+        if target["id"] == caller["id"]:
+            raise HTTPException(403, "You cannot delete your own account.")
+        if target["role"] == "developer":
+            raise HTTPException(403, "The developer account can't be deleted here.")
+        conn.execute("DELETE FROM staff WHERE id=?", (staff_id,))
+        conn.execute("DELETE FROM staff_sessions WHERE staff_id=?", (staff_id,))
+        audit(conn, "staff.delete", detail=f"{target['username']} deleted by {caller['username']}")
+    return {"ok": True, "id": staff_id}

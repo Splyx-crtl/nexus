@@ -389,6 +389,81 @@ class AccountStatus(AdminBase):
         self.set_status("banned")
         self.assertEqual(self.admin_get("/admin/players", status="banned").json()["total"], 1)
 
+    def test_a_ban_notifies_the_team_channel_but_a_deactivation_does_not(self):
+        srv = self.mod
+        sent = []
+        original = srv.notify_team
+        srv.notify_team = sent.append
+        try:
+            self.set_status("disabled", "inactive")
+            self.assertEqual(sent, [])
+            self.set_status("banned", "cheating")
+            self.assertEqual(len(sent), 1)
+            self.assertIn("Stan", sent[0])
+            self.assertIn("cheating", sent[0])
+        finally:
+            srv.notify_team = original
+
+
+class PlayerReports(AdminBase):
+    def setUp(self):
+        super().setUp()
+        self.p = self.player("Ivy")
+
+    def test_a_player_can_report_another_player(self):
+        r = self.http.post("/report", json={"target_name": "Stan", "message": "spamming the chat"}, headers=self.p["headers"])
+        self.assertEqual(r.status_code, 200, r.text)
+        listed = self.admin_get("/admin/reports").json()
+        self.assertEqual(listed["total"], 1)
+        self.assertEqual(listed["reports"][0]["target_name"], "Stan")
+        self.assertEqual(listed["reports"][0]["reporter_name"], "Ivy")
+        self.assertEqual(listed["reports"][0]["status"], "open")
+
+    def test_report_needs_both_fields(self):
+        for body in ({"target_name": "", "message": "x"}, {"target_name": "Stan", "message": ""}):
+            r = self.http.post("/report", json=body, headers=self.p["headers"])
+            self.assertEqual(r.status_code, 422, r.text)
+
+    def test_reporting_requires_login(self):
+        r = self.http.post("/report", json={"target_name": "Stan", "message": "x"})
+        self.assertEqual(r.status_code, 401)
+
+    def test_reports_are_rate_limited(self):
+        for i in range(5):
+            r = self.http.post("/report", json={"target_name": "Stan", "message": f"report {i}"}, headers=self.p["headers"])
+            self.assertEqual(r.status_code, 200, r.text)
+        r = self.http.post("/report", json={"target_name": "Stan", "message": "one too many"}, headers=self.p["headers"])
+        self.assertEqual(r.status_code, 429)
+
+    def test_a_new_report_notifies_the_team_channel(self):
+        srv = self.mod
+        sent = []
+        original = srv.notify_team
+        srv.notify_team = sent.append
+        try:
+            self.http.post("/report", json={"target_name": "Stan", "message": "spamming"}, headers=self.p["headers"])
+            self.assertEqual(len(sent), 1)
+            self.assertIn("Ivy", sent[0])
+            self.assertIn("Stan", sent[0])
+            self.assertIn("spamming", sent[0])
+        finally:
+            srv.notify_team = original
+
+    def test_admin_can_resolve_a_report(self):
+        rid = self.http.post("/report", json={"target_name": "Stan", "message": "x"}, headers=self.p["headers"]).json()["id"]
+        r = self.http.post(f"/admin/reports/{rid}/resolve", json={"note": "warned the player"}, headers=ADMIN)
+        self.assertEqual(r.status_code, 200, r.text)
+        self.assertEqual(self.admin_get("/admin/reports", status="open").json()["total"], 0)
+        resolved = self.admin_get("/admin/reports", status="resolved").json()["reports"]
+        self.assertEqual(resolved[0]["resolution_note"], "warned the player")
+
+    def test_resolving_an_unknown_report_is_404(self):
+        self.assertEqual(self.http.post("/admin/reports/99999/resolve", json={"note": ""}, headers=ADMIN).status_code, 404)
+
+    def test_reports_need_admin_rights_to_list_or_resolve(self):
+        self.assertEqual(self.http.get("/admin/reports").status_code, 401)
+        self.assertEqual(self.http.post("/admin/reports/1/resolve", json={"note": ""}).status_code, 401)
+
 
 class AccessProtection(AdminBase):
     ADMIN_ENDPOINTS = [("GET", "/admin/keys"), ("POST", "/admin/keys"), ("GET", "/admin/players"), ("GET", "/admin/players/1"),

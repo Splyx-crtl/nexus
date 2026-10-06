@@ -151,6 +151,20 @@ class MusicLibrary(unittest.TestCase):
         sm.apply_volumes()
         sm.stop_ambient()
 
+    def test_ducking_clamps_to_0_1_and_is_safe_without_audio(self):
+        """E2: a call dialog lowers music under itself with set_duck(); must never push the multiplier out of range."""
+        from nexus.audio import SoundManager
+        os.environ["NEXUS_NO_AUDIO"] = "1"
+        sm = SoundManager(_online.FakeSettings(volume_master=80, volume_music=70, volume_sfx=80, typing_sound=True))
+        sm.set_duck(0.3)
+        self.assertEqual(sm.duck, 0.3)
+        sm.set_duck(5.0)
+        self.assertEqual(sm.duck, 1.0)
+        sm.set_duck(-1.0)
+        self.assertEqual(sm.duck, 0.0)
+        sm.set_duck(1.0)
+        self.assertEqual(sm.duck, 1.0)
+
     def test_new_effects_are_synthesised(self):
         from nexus.audio import _build_sounds
         built = _build_sounds()
