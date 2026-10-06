@@ -363,6 +363,7 @@ class MainWindow(QMainWindow):
         self.banner.glitch_enabled = bool(s.get("glitch_effects")) and not reduce_motion
         self.scan.update()
         config.set_showcase_mode(bool(s.get("showcase_mode")))
+        config.set_call_scenes(bool(s.get("call_scenes")))
         self.sound.apply_volumes()
         if self.shell:
             self.shell.terminal_page.terminal.apply_font_size()

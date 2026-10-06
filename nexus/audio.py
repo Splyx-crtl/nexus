@@ -125,6 +125,7 @@ class SoundManager:
         self.music: dict[str, object] = {}
         self.level: dict[str, float] = {}
         self.mood: str | None = None
+        self.duck = 1.0        # E2: temporarily lowered while a call dialog is open, 1.0 = normal
         self.enabled = not os.environ.get("NEXUS_NO_AUDIO")
         self._rr: dict[str, int] = {}
         self._timer = None
@@ -171,9 +172,14 @@ class SoundManager:
         self._apply_music()
 
     def _apply_music(self) -> None:
-        base = self._vol("volume_music")
+        base = self._vol("volume_music") * self.duck
         for name, fx in self.music.items():
             fx.setVolume(base * MUSIC[name] * self.level[name])
+
+    def set_duck(self, factor: float) -> None:
+        """E2: temporarily scale music volume (e.g. 0.3 while a call dialog is open), 1.0 to restore."""
+        self.duck = max(0.0, min(1.0, factor))
+        self._apply_music()
 
     # -- effects -------------------------------------------------------
     def play(self, name: str) -> None:

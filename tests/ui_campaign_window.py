@@ -59,12 +59,16 @@ class FakeSound:
     def __init__(self):
         self.played: list[str] = []
         self.mood: str | None = None
+        self.duck: float = 1.0
 
     def play(self, name: str) -> None:
         self.played.append(name)
 
     def set_music(self, mood: str | None) -> None:
         self.mood = mood
+
+    def set_duck(self, factor: float) -> None:
+        self.duck = factor
 
 
 pump()
@@ -344,5 +348,48 @@ win2.mission_select_dialog.reject()
 win2.close()
 check(fake_sound.mood == "menu", "closing the campaign window hands music mood back to the menu (E3)")
 win2.db.close()
+
+# ------------------------------------------------------------------- E2: the call dialog itself
+from PySide6.QtWidgets import QDialog as _QDialog
+
+from ui.call_dialog import CallDialog, parse_speaker
+
+call_sound = FakeSound()
+cd = CallDialog(["NEXUS: First line.", "MIRA: Second line."], sound=call_sound)
+check(call_sound.played == ["connect"], "opening a call dialog rings")
+check(call_sound.duck == 0.3, "opening a call dialog ducks the music")
+check(cd.speaker_label.text() == "INCOMING CALL" and cd.subtitle.text() == "", "a call waits unanswered, nothing revealed yet")
+cd.accept_btn.click()
+check(cd.speaker_label.text() == "NEXUS" and cd.subtitle.text() == "First line.", "accepting reveals the first speaker and line")
+cd.decline_btn.click()            # relabeled "[ SKIP ]" after accept - skips straight to the end of the call
+pump()
+check(call_sound.duck == 1.0, "ending the call (via skip) restores the music")
+check(cd.result() == _QDialog.DialogCode.Accepted, "skipping to the end still closes the call as accepted, not declined")
+
+decline_sound = FakeSound()
+cd2 = CallDialog(["ZERO: Something."], sound=decline_sound)
+cd2.decline_btn.click()
+check(decline_sound.duck == 1.0, "declining before answering also restores the music")
+check(cd2.result() == _QDialog.DialogCode.Rejected, "declining before answering closes the call as rejected")
+
+# ------------------------------------------------------------------- E2: wired into a real story-mission completion
+saves3 = SaveSystem(profiles_dir=root / "profiles3", slots_dir=root / "slots3")
+call_scene_sound = FakeSound()
+win3 = CampaignWindow(saves3, default_username="caller", sound=call_scene_sound)
+win3.character_dialog.name_input.setText("Caller")
+win3.character_dialog.ok_btn.click()
+pump()
+config.set_call_scenes(True)
+story_mission = next(m for m in ALL_MISSIONS if "story" in m.tags and m.debrief)
+win3._play_mission(story_mission, level=lambda: 200)
+pump()
+for line in story_mission.solution:
+    win3.terminal.run_command(line)
+    pump()
+check(win3.call_dialog is not None, "call_scenes on + a story-tagged mission triggers the call dialog")
+check([l for _, l in win3.call_dialog.lines] == [parse_speaker(l)[1] for l in story_mission.debrief],
+      "the call dialog carries the mission's own debrief lines")
+config.set_call_scenes(False)
+win3.db.close()
 
 print("ALL OK — screenshots in", OUT)

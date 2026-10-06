@@ -143,6 +143,7 @@ DEFAULT_SETTINGS = {
     "license_key": "",
     "reduced_motion": False,    # accessibility: turns off the moving scanline band, alert pulse, glitches and page-fade
     "showcase_mode": False,     # accessibility/streaming: masks the callsign on screen, safe for recording
+    "call_scenes": False,       # E2: show story-mission debriefs as a call dialog instead of plain terminal text
 }
 
 # --- Showcase mode (module-level like nexus.i18n's language, so windows that aren't handed a Settings
@@ -162,3 +163,16 @@ def showcase_mode() -> bool:
 def mask_name(name: str) -> str:
     """Replace a player-identifying name with a neutral placeholder while showcase mode is on."""
     return "OPERATOR" if _SHOWCASE_MODE else name
+
+
+# --- E2 call-scenes toggle (same module-level pattern as showcase mode above) -----------------------------------
+_CALL_SCENES = False
+
+
+def set_call_scenes(value: bool) -> None:
+    global _CALL_SCENES
+    _CALL_SCENES = bool(value)
+
+
+def call_scenes() -> bool:
+    return _CALL_SCENES

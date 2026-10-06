@@ -29,7 +29,7 @@ from nexus.campaign.migrate import ensure_v3_profile
 from nexus.campaign.mission import Mission
 from nexus.campaign.profile import CampaignProfile
 from nexus.campaign.runner import MissionRunner
-from nexus.config import COLORS, mask_name
+from nexus.config import COLORS, call_scenes, mask_name
 from nexus.i18n import language as ui_language
 from nexus.save_system import SaveSystem
 
@@ -301,6 +301,7 @@ class CampaignWindow(QMainWindow):
         map_btn.clicked.connect(self._open_mission_map)
         toolbar.addWidget(map_btn)
         self.mission_map_dialog = None
+        self.call_dialog = None
         self.toolbar_status = QLabel("")
         self.toolbar_status.setStyleSheet(f"color:{COLORS['dim']}; padding-left:8px;")
         toolbar.addWidget(self.toolbar_status)
@@ -479,6 +480,8 @@ class CampaignWindow(QMainWindow):
         for line in mission.debrief:
             self.terminal.print_system(line, COLORS["amber"])
         self.terminal.focus_input()
+        if call_scenes() and "story" in mission.tags and mission.debrief:
+            self._show_call(mission.debrief)
         if "finale" in mission.tags and not self.profile.db.get_profile().get("ending"):
             self.panel.continue_btn.hide()        # the ending dialog decides what happens next, not CONTINUE
             self._show_ending_select()
@@ -529,6 +532,11 @@ class CampaignWindow(QMainWindow):
         from .mission_map_dialog import MissionMapDialog
         self.mission_map_dialog = MissionMapDialog(self.all_missions, self.profile, self)
         self.mission_map_dialog.show()
+
+    def _show_call(self, lines: list[str]) -> None:
+        from .call_dialog import CallDialog
+        self.call_dialog = CallDialog(lines, sound=self.sound, parent=self)
+        self.call_dialog.show()
 
     def _on_campaign_finished(self) -> None:
         self.current_mission = None

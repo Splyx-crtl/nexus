@@ -51,6 +51,8 @@ class SettingsWidget(QWidget):
         gl.addWidget(self._spin("font_size", "TEXT SIZE (ACCESSIBILITY)", 10, 24))
         gl.addWidget(self._spin("autosave_seconds", "AUTOSAVE EVERY (s)", 20, 600))
         gl.addWidget(self._check("random_events", "Random events", "Occasional alerts, messages and finds while you play"))
+        gl.addWidget(self._check("call_scenes", "Call-style story scenes (3.0 campaign)",
+                                  "Key story moments play as an incoming call (subtitles, accept/decline) instead of plain terminal text"))
         self.lang = QComboBox()
         self.lang.addItem("English", "en")
         self.lang.addItem("Deutsch", "de")
