@@ -154,11 +154,14 @@ class NetworkMapWidget(QWidget):
 
 
 class MapPanel(QWidget):
-    """Full NETWORK page: map + region list + node details."""
+    """Full NETWORK page: map + region list + node details. ``settings.get("map_renderer")`` ("flat"/"3d") picks
+    between the always-available flat map (default) and the D2 Qt Quick 3D scene, which falls back to flat
+    automatically if it can't load on this machine (see ui/network_map_3d.py's try_build_3d_view)."""
 
-    def __init__(self, engine, run_command, parent=None):
+    def __init__(self, engine, run_command, parent=None, settings=None):
         super().__init__(parent)
         self.engine, self.run_command = engine, run_command
+        self.map_3d_bridge = None
         lay = QVBoxLayout(self)
         lay.setContentsMargins(14, 10, 14, 10)
         head = QHBoxLayout()
@@ -171,7 +174,15 @@ class MapPanel(QWidget):
         head.addWidget(self.count)
         lay.addLayout(head)
         body = QHBoxLayout()
-        self.map = NetworkMapWidget(engine)
+        self.map = None
+        if settings is not None and settings.get("map_renderer") == "3d":
+            from .network_map_3d import try_build_3d_view
+            widget_3d, bridge = try_build_3d_view(engine)
+            if widget_3d is not None:
+                self.map = widget_3d
+                self.map_3d_bridge = bridge
+        if self.map is None:
+            self.map = NetworkMapWidget(engine)
         body.addWidget(self.map, 3)
         side = QVBoxLayout()
         self.regions = QListWidget()
@@ -181,6 +192,8 @@ class MapPanel(QWidget):
         card.setObjectName("panel")
         cl = QVBoxLayout(card)
         self.info = QLabel("Select a node to inspect it.")
+        if self.map_3d_bridge is not None:
+            self.info.setText("3D view: drag to orbit, scroll to zoom. Switch to the flat map in Settings to select, connect or scan a host.")
         self.info.setWordWrap(True)
         cl.addWidget(self.info, 1)
         row = QHBoxLayout()
@@ -194,9 +207,13 @@ class MapPanel(QWidget):
         side.addWidget(card, 1)
         body.addLayout(side, 2)
         lay.addLayout(body, 1)
-        self.map.node_selected.connect(self._select)
-        self.connect_btn.clicked.connect(lambda: self.run_command(f"connect {self.map.selected}", True))
-        self.scan_btn.clicked.connect(lambda: self.run_command(f"scan {self.map.selected}", True))
+        self.map_is_3d = self.map_3d_bridge is not None
+        if not self.map_is_3d:
+            # D2: the 3D view is watch-only for now (no mouse-picking of nodes in the QtQuick3D scene yet) -
+            # CONNECT/SCAN and click-to-select stay a flat-map feature until that's built.
+            self.map.node_selected.connect(self._select)
+            self.connect_btn.clicked.connect(lambda: self.run_command(f"connect {self.map.selected}", True))
+            self.scan_btn.clicked.connect(lambda: self.run_command(f"scan {self.map.selected}", True))
         engine.server_changed.connect(Deferred(self, self.refresh))
         self.refresh()
 
@@ -214,9 +231,12 @@ class MapPanel(QWidget):
         for region, ids in sorted(regions.items()):
             known = sum(1 for i in ids if w.is_discovered(i))
             self.regions.addItem(f"{region:<10} {known}/{len(ids)}")
-        self.map.update()
-        if self.map.selected:
-            self._select(self.map.selected)
+        if self.map_is_3d:
+            self.map_3d_bridge.refresh(e)
+        else:
+            self.map.update()
+            if self.map.selected:
+                self._select(self.map.selected)
 
     def _select(self, sid: str) -> None:
         w = self.engine.world

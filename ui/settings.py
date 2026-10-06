@@ -81,6 +81,14 @@ class SettingsWidget(QWidget):
         dl.addWidget(labeled_row(tr("theme"), self.theme, "Unlock more themes in the market or with achievements"))
         dl.addWidget(self._check("scanlines", "CRT effects", "Scanlines, vignette and the moving refresh band"))
         dl.addWidget(self._check("glitch_effects", "Glitch effects", "Title glitch, banner jitter and screen glitches"))
+        self.map_renderer = QComboBox()
+        self.map_renderer.addItem("Flat (always works)", "flat")
+        self.map_renderer.addItem("3D (experimental)", "3d")
+        idx = self.map_renderer.findData(settings.get("map_renderer"))
+        self.map_renderer.setCurrentIndex(max(0, idx))
+        self.map_renderer.currentIndexChanged.connect(lambda _: self._set("map_renderer", self.map_renderer.currentData(), reload=True))
+        dl.addWidget(labeled_row("NETWORK MAP", self.map_renderer,
+                                  "3D needs Qt Quick 3D / GPU support - falls back to the flat map automatically if it can't load"))
         dl.addStretch(1)
         self.tabs.addTab(display, "DISPLAY")
 
@@ -222,6 +230,7 @@ class SettingsWidget(QWidget):
         self.mode.setCurrentIndex(1 if self.settings.get("fullscreen") else 0)
         self.res.setCurrentText(self.settings.get("resolution"))
         self.lang.setCurrentIndex(self.lang.findData(self.settings.get("language")))
+        self.map_renderer.setCurrentIndex(max(0, self.map_renderer.findData(self.settings.get("map_renderer"))))
         self._fill_themes()
         self.apply_cb()
         self.reload_cb()

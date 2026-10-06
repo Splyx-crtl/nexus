@@ -32,6 +32,7 @@ echo [BUILD] Running PyInstaller...
     --add-data "data;data" ^
     --add-data "missions;missions" ^
     --add-data "assets;assets" ^
+    --add-data "ui\qml;ui\qml" ^
     --exclude-module tkinter ^
     main.py
 if errorlevel 1 ( echo [BUILD] PyInstaller failed & pause & exit /b 1 )

@@ -199,6 +199,38 @@ while term.busy:
 check(e.world.current == "echo" and shell.current == "terminal", "network map CONNECT runs the command in the terminal")
 type_cmd("disconnect")
 
+# ------------------------------------------------------------------- D2: the 3D network map + its fallback
+check(net.map_is_3d is False, "flat map is the default renderer")
+settings.set("map_renderer", "3d")
+win.reload_ui()
+pump(400)
+shell = win.shell
+shell.show_page("network")
+pump(400)
+net = shell.pages["network"]
+check(net.map_is_3d is True, "switching to the 3D renderer setting actually builds the 3D view")
+check(not net.connect_btn.isEnabled() and not net.scan_btn.isEnabled(), "3D view has no node picking yet, so connect/scan stay disabled")
+net.refresh()                     # must not crash with the 3D bridge wired up instead of the flat map
+
+from ui import network_map_3d as _map3d
+real_try_build = _map3d.try_build_3d_view
+_map3d.try_build_3d_view = lambda engine, parent=None: (None, None)      # simulate a real GPU/driver failure
+try:
+    settings.set("map_renderer", "3d")
+    win.reload_ui()
+    pump(400)
+    shell = win.shell
+    shell.show_page("network")
+    pump(400)
+    net = shell.pages["network"]
+    check(net.map_is_3d is False, "a failed 3D load falls back to the flat map instead of crashing")
+finally:
+    _map3d.try_build_3d_view = real_try_build
+    settings.set("map_renderer", "flat")
+    win.reload_ui()
+    pump(400)
+    shell = win.shell
+
 # ------------------------------------------------------------------- profile / achievements / archives / settings
 for page in ("profile", "achievements", "archives", "comms", "settings"):
     shell.show_page(page)

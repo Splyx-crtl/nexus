@@ -256,6 +256,11 @@ class MainWindow(QMainWindow):
         if self.shell is not None:
             self.shell.stop()
             self.shell_holder.layout().removeWidget(self.shell)
+            # hide() immediately, not just removeWidget(): deleteLater()'s actual destruction is deferred to the
+            # next event loop pass, and a still-visible-but-orphaned shell keeps any child QTimer-driven repaint
+            # (e.g. NetworkMapWidget's pulse animation) ticking against this now-stale engine in the meantime -
+            # real bug, found via tests/ui_flow.py rapidly toggling D2's map_renderer setting back and forth.
+            self.shell.hide()
             self.shell.deleteLater()
         self.shell = AppShell(self.engine, self.settings)
         self.shell_holder.layout().addWidget(self.shell)

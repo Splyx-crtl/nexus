@@ -163,7 +163,7 @@ class AppShell(QWidget):
         run = self.run_command
         self.pages["terminal"] = self.terminal_page
         self.pages["operations"] = OperationsPage(engine, run)
-        self.pages["network"] = MapPanel(engine, run)
+        self.pages["network"] = MapPanel(engine, run, settings=settings)
         self.pages["market"] = MarketPage(engine, run)
         self.pages["loadout"] = LoadoutPage(engine)
         self.pages["inventory"] = InventoryPanel(engine, run)

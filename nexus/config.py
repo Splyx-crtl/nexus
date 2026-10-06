@@ -144,6 +144,7 @@ DEFAULT_SETTINGS = {
     "reduced_motion": False,    # accessibility: turns off the moving scanline band, alert pulse, glitches and page-fade
     "showcase_mode": False,     # accessibility/streaming: masks the callsign on screen, safe for recording
     "call_scenes": False,       # E2: show story-mission debriefs as a call dialog instead of plain terminal text
+    "map_renderer": "flat",     # D2: "flat" (default, always works) or "3d" (Qt Quick 3D, falls back to flat if unavailable)
 }
 
 # --- Showcase mode (module-level like nexus.i18n's language, so windows that aren't handed a Settings
