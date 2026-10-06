@@ -1,6 +1,6 @@
 # NEXUS
 
-### TACTICAL CYBER OPERATIONS — v2.1.0
+### TACTICAL CYBER OPERATIONS — v3.0.0
 
 **Created by Toto.**  Community / Discord: see the *About* tab in Settings (the link is set in `nexus/version.py`).
 
@@ -34,6 +34,22 @@ only inside the game. NEXUS never opens a network connection, never scans anythi
 * **Chapter finales** with story events, new mechanics (loadout slots), items and newly revealed areas.
 * **ZERO** — a mysterious user whose messages change with your progress; hidden logs, secret commands, hidden servers, secret missions (SPECTER, VOID, GENESIS) and alternative endings.
 * **26 simulated servers** with virtual IPs, ports, firewalls, users, file systems, logs, hidden files and secrets; a visual **network map** that unlocks with progress.
+
+**New in 3.0 — NEXUS CAMPAIGN 3.0 (BETA)**
+* A whole second game-in-the-game, reachable from the main menu, independent of the classic campaign above (which
+  is untouched and stays the default). **200 hand-written levels across 9 acts**, no mini-games — you type real
+  commands into a real **bash, PowerShell or cmd shell** (pipes, redirection, variables, scripts, history, tab
+  completion, `man`/`--help`/`Get-Help`, real file permissions, `ssh`/`scp` between machines) against a fully
+  simulated network, Windows targets included, with a real story and four endings (one secret).
+* Guided / Medium / Hardcore help modes, a searchable command **Lexicon**, replay any mission or generate endless
+  procedural ops after level 200, plus a **Daily Op** — the same seeded challenge for every player, every day.
+* A shareable **profile card** (PNG), a **mission map** graph of your progress across all 9 acts, music and sound
+  for the campaign, and optional **call-style story scenes** for key beats.
+* German localization in progress (Acts I-III done so far).
+* A real, optional **3D network map** (Settings → Display) alongside the existing flat one, with an automatic
+  fallback if 3D can't load on your machine.
+* Accessibility: reduced motion, a showcase/streaming mode that masks your callsign, and two new themes
+  (COLORBLIND SAFE, MONOCHROME).
 
 **New in 2.1**
 * **Endless contracts** — procedural jobs (infiltration, recovery, decryption, trace, escape) scaled to your level, after mission 003. `contract new` / `contract start`, or the CONTRACTS tab.

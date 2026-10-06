@@ -1,6 +1,6 @@
 """Single source of truth for the application version and project links."""
 
-VERSION = "2.4.0"
+VERSION = "3.0.0"
 APP_NAME = "NEXUS"
 APP_TITLE = "NEXUS // TERMINAL"
 APP_TAGLINE = "TACTICAL CYBER OPERATIONS"
