@@ -8,7 +8,7 @@ BUILD_CHANNEL = "release"
 AUTHOR = "Toto"
 
 # Community links (opened in the user's browser only when they click a button; empty = button hidden).
-DISCORD_URL = "https://discord.gg/EfFkMVKkna"
+DISCORD_URL = "https://discord.gg/rCfy7C2Zy3"
 RELEASES_URL = ""
 
 # Online services (Discord login, leaderboards, friends). Empty = the game has no online features at all.
